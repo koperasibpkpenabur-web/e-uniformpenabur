@@ -73,7 +73,7 @@ export default function Login() {
     await supabase.auth.signInWithOAuth({ 
       provider: 'google',
       options: {
-        redirectTo: typeof window !== 'undefined' ? \`\${window.location.origin}/register\` : undefined
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/register` : undefined
       }
     });
   };
