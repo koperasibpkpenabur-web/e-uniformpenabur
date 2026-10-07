@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserPlus, ChevronDown } from 'lucide-react';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function RegisterChild() {
   const router = useRouter();
@@ -9,6 +10,18 @@ export default function RegisterChild() {
   const [school, setSchool] = useState('');
   const [name, setName] = useState('');
   const [grade, setGrade] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUserId(session.user.id);
+      } else {
+        router.push('/');
+      }
+    });
+  }, [router]);
 
   // Mock data for schools based on level
   const schoolsData = {
@@ -18,10 +31,28 @@ export default function RegisterChild() {
     'SMA': ['SMAK 1 PENABUR', 'SMAK 2 PENABUR']
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    // In production, save to Supabase here
-    router.push('/dashboard');
+    if (!userId) return;
+    
+    setIsLoading(true);
+    const { error } = await supabase.from('children').insert([
+      {
+        parent_id: userId,
+        full_name: name,
+        school_level: level,
+        school_name: school,
+        class_name: grade
+      }
+    ]);
+
+    if (error) {
+      console.error("Error inserting child:", error);
+      alert("Gagal menyimpan data anak. Silakan coba lagi.");
+      setIsLoading(false);
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   return (
@@ -117,9 +148,10 @@ export default function RegisterChild() {
           <div className="pt-4">
             <button 
               type="submit"
-              className="w-full bg-[#67a683] text-white py-4 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
+              disabled={isLoading}
+              className="w-full bg-[#67a683] text-white py-4 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Simpan & Masuk ke Dashboard
+              {isLoading ? 'Menyimpan...' : 'Simpan & Masuk ke Dashboard'}
             </button>
           </div>
 

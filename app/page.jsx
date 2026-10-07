@@ -1,4 +1,5 @@
 'use client';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -6,11 +7,75 @@ import { useRouter } from 'next/navigation';
 export default function Login() {
   const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Check auth state when the component mounts or URL hash changes
+    const checkUserAndRedirect = async (session) => {
+      if (session?.user) {
+        setIsLoading(true);
+        try {
+          const user = session.user;
+          
+          // 1. Ensure Parent exists in parents table
+          const { data: parentData, error: parentError } = await supabase
+            .from('parents')
+            .select('id')
+            .eq('id', user.id)
+            .single();
+
+          if (parentError && parentError.code === 'PGRST116') {
+            // Parent doesn't exist, create it
+            await supabase.from('parents').insert([
+              { 
+                id: user.id, 
+                email: user.email, 
+                full_name: user.user_metadata?.full_name || 'Orang Tua' 
+              }
+            ]);
+          }
+
+          // 2. Check if Parent has any children
+          const { data: children, error: childrenError } = await supabase
+            .from('children')
+            .select('id')
+            .eq('parent_id', user.id);
+
+          if (!children || children.length === 0) {
+            router.push('/register');
+          } else {
+            router.push('/dashboard');
+          }
+        } catch (error) {
+          console.error("Error during authentication flow:", error);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Initial check in case they are already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      checkUserAndRedirect(session);
+    });
+
+    // Listen to login events (like when redirecting back from Google)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        checkUserAndRedirect(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
+
   const handleGoogleLogin = async () => {
-    // For demo/development purpose, we will just route to dashboard
-    // In production: 
-    // await supabase.auth.signInWithOAuth({ provider: 'google' });
-    router.push('/dashboard');
+    setIsLoading(true);
+    await supabase.auth.signInWithOAuth({ 
+      provider: 'google',
+      options: {
+        redirectTo: typeof window !== 'undefined' ? \`\${window.location.origin}/register\` : undefined
+      }
+    });
   };
 
   return (
@@ -40,10 +105,17 @@ export default function Login() {
         
         <button 
           onClick={handleGoogleLogin}
-          className="w-full h-[56px] border-2 border-gray-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
+          disabled={isLoading}
+          className="w-full h-[56px] border-2 border-gray-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6 group-hover:scale-110 transition-transform" />
-          <span className="font-bold text-gray-700">Masuk dengan Akun Google</span>
+          {isLoading ? (
+            <span className="font-bold text-gray-700">Memuat...</span>
+          ) : (
+            <>
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <span className="font-bold text-gray-700">Masuk dengan Akun Google</span>
+            </>
+          )}
         </button>
         
         <div className="mt-8 text-center text-sm text-gray-500 flex items-center justify-center gap-2">
