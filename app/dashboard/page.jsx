@@ -20,6 +20,9 @@ export default function Dashboard() {
   const [address, setAddress] = useState('');
   const [proofFile, setProofFile] = useState(null);
   const [cart, setCart] = useState([]);
+  
+  const [selectedProductModal, setSelectedProductModal] = useState(null);
+  const [selectedModalSize, setSelectedModalSize] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,6 +85,9 @@ export default function Dashboard() {
   const updateSize = (index, size) => {
     const newCart = [...cart];
     newCart[index].size = size;
+    if (newCart[index].variants && newCart[index].variants[size]) {
+      newCart[index].price = newCart[index].variants[size];
+    }
     setCart(newCart);
   };
 
@@ -91,13 +97,20 @@ export default function Dashboard() {
     setCurrentScreen('products');
   };
 
-  const addToCart = (product) => {
-    const existingIndex = cart.findIndex(item => item.id === product.id);
+  const addToCart = (product, size, price) => {
+    const existingIndex = cart.findIndex(item => item.id === product.id && item.size === size);
     if (existingIndex >= 0) {
       updateQuantity(existingIndex, 1);
     } else {
-      setCart([...cart, { ...product, quantity: 1, size: 'M' }]);
+      setCart([...cart, { ...product, quantity: 1, size: size, price: price }]);
     }
+    setSelectedProductModal(null);
+  };
+
+  const getMinPrice = (product) => {
+    if (!product.variants) return 0;
+    const prices = Object.values(product.variants);
+    return prices.length > 0 ? Math.min(...prices) : 0;
   };
 
   const filteredProducts = productsList.filter(p => p.level === selectedLevel);
@@ -180,9 +193,13 @@ export default function Dashboard() {
                   <img src={product.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${product.id}`} alt={product.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-[13px] md:text-sm leading-snug mb-1 text-gray-900 line-clamp-2 min-h-[40px] font-semibold">{product.name}</h3>
-                <p className="font-extrabold text-[#182c4f] mb-5 text-[15px] md:text-base">Rp{product.price.toLocaleString('id-ID')}</p>
+                <p className="font-extrabold text-[#182c4f] mb-5 text-[15px] md:text-base">Mulai Rp{getMinPrice(product).toLocaleString('id-ID')}</p>
                 <div className="mt-auto">
-                  <button onClick={() => addToCart(product)} className="w-full bg-[#67a683] text-white text-xs md:text-sm py-3 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/20 flex items-center justify-center gap-2 active:scale-95">
+                  <button onClick={() => {
+                    setSelectedProductModal(product);
+                    const firstSize = Object.keys(product.variants || {})[0] || '';
+                    setSelectedModalSize(firstSize);
+                  }} className="w-full bg-[#67a683] text-white text-xs md:text-sm py-3 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/20 flex items-center justify-center gap-2 active:scale-95">
                     <Plus size={16} /> Tambah
                   </button>
                 </div>
@@ -205,6 +222,45 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+      
+      {selectedProductModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button onClick={() => setSelectedProductModal(null)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
+              X
+            </button>
+            
+            <div className="flex gap-4 items-center mb-6 border-b border-gray-100 pb-4 mt-2">
+              <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center p-2">
+                <img src={selectedProductModal.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${selectedProductModal.id}`} alt={selectedProductModal.name} className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 mb-1">{selectedProductModal.name}</h3>
+                <p className="font-black text-xl text-[#182c4f]">
+                  Rp{(selectedProductModal.variants?.[selectedModalSize] || 0).toLocaleString('id-ID')}
+                </p>
+              </div>
+            </div>
+
+            <p className="font-bold text-sm text-gray-700 mb-3">Pilih Ukuran:</p>
+            <div className="flex flex-wrap gap-2 mb-8">
+              {Object.keys(selectedProductModal.variants || {}).map(size => (
+                <button 
+                  key={size}
+                  onClick={() => setSelectedModalSize(size)}
+                  className={`py-2 px-4 rounded-xl font-bold border-2 transition-all ${selectedModalSize === size ? 'border-[#67a683] bg-[#eef7f2] text-[#67a683]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+
+            <button onClick={() => addToCart(selectedProductModal, selectedModalSize, selectedProductModal.variants?.[selectedModalSize] || 0)} className="w-full bg-[#182c4f] text-white py-4 rounded-2xl font-bold hover:bg-[#233a63] transition-colors shadow-lg flex justify-center items-center gap-2">
+              <ShoppingCart size={18} /> Masukkan Keranjang
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -242,7 +298,7 @@ export default function Dashboard() {
                     onChange={(e) => updateSize(idx, e.target.value)}
                     className="bg-gray-50 border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-sm font-bold outline-none focus:border-[#67a683]"
                   >
-                    {['S', 'M', 'L', 'XL', 'XXL'].map(s => <option key={s} value={s}>Ukuran {s}</option>)}
+                    {Object.keys(item.variants || {}).map(s => <option key={s} value={s}>Ukuran {s}</option>)}
                   </select>
 
                   {/* Quantity */}
