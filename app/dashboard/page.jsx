@@ -91,6 +91,15 @@ export default function Dashboard() {
     setCurrentScreen('products');
   };
 
+  const addToCart = (product) => {
+    const existingIndex = cart.findIndex(item => item.id === product.id);
+    if (existingIndex >= 0) {
+      updateQuantity(existingIndex, 1);
+    } else {
+      setCart([...cart, { ...product, quantity: 1, size: 'M' }]);
+    }
+  };
+
   const filteredProducts = productsList.filter(p => p.level === selectedLevel);
 
   const renderDashboard = () => (
@@ -168,15 +177,12 @@ export default function Dashboard() {
             {filteredProducts.map((product) => (
               <div key={product.id} className="bg-white p-4 rounded-3xl shadow-md flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div className="bg-gray-50 rounded-2xl h-40 md:h-48 mb-4 flex items-center justify-center overflow-hidden p-4 relative group">
-                  <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-bold text-[#182c4f] shadow-sm">
-                    {product.type}
-                  </div>
                   <img src={product.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${product.id}`} alt={product.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-[13px] md:text-sm leading-snug mb-1 text-gray-900 line-clamp-2 min-h-[40px] font-semibold">{product.name}</h3>
                 <p className="font-extrabold text-[#182c4f] mb-5 text-[15px] md:text-base">Rp{product.price.toLocaleString('id-ID')}</p>
                 <div className="mt-auto">
-                  <button className="w-full bg-[#67a683] text-white text-xs md:text-sm py-3 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/20 flex items-center justify-center gap-2">
+                  <button onClick={() => addToCart(product)} className="w-full bg-[#67a683] text-white text-xs md:text-sm py-3 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/20 flex items-center justify-center gap-2 active:scale-95">
                     <Plus size={16} /> Tambah
                   </button>
                 </div>
