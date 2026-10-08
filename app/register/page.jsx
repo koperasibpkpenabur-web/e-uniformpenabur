@@ -137,7 +137,7 @@ export default function RegisterChild() {
                 className="block w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-[#67a683] transition-colors"
               >
                 <option value="" disabled>Pilih Kelas</option>
-                {['1A', '1B', '2A', '2B', '3A', '3B'].map((g, idx) => (
+                {['KBB', 'TK-A', 'TK-B', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((g, idx) => (
                   <option key={idx} value={g}>{g}</option>
                 ))}
               </select>
