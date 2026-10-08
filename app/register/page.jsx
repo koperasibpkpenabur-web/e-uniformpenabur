@@ -80,10 +80,13 @@ export default function RegisterChild() {
                 className="block w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-[#67a683] transition-colors"
               >
                 <option value="" disabled>Pilih Jenjang</option>
-                <option value="TK">TK</option>
-                <option value="SD">SD</option>
-                <option value="SMP">SMP</option>
-                <option value="SMA">SMA</option>
+                <option value="TK">TK (Taman Kanak-Kanak)</option>
+                <option value="SD">SD (Sekolah Dasar)</option>
+                <option value="SMP">SMP (Sekolah Menengah Pertama)</option>
+                <option value="SMA">SMA (Sekolah Menengah Atas)</option>
+                <option value="Primary School">Primary School</option>
+                <option value="Lower Secondary">Lower Secondary</option>
+                <option value="Upper Secondary">Upper Secondary</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
                 <ChevronDown size={18} />
