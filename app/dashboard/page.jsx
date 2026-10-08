@@ -227,7 +227,7 @@ export default function Dashboard() {
               <div key={idx} className="flex flex-col md:flex-row md:items-center gap-4 py-4 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-4 flex-1">
                   <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center p-2 shrink-0">
-                    <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=${item.img}`} alt={item.name} className="w-full h-full mix-blend-multiply opacity-80" />
+                    <img src={item.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${item.id}`} alt={item.name} className="w-full h-full object-contain" />
                   </div>
                   <div>
                     <p className="font-bold text-[14px] text-gray-900 mb-1">{item.name}</p>
