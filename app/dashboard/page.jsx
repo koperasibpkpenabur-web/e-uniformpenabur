@@ -1,34 +1,69 @@
 'use client';
-import React, { useState } from 'react';
-import { User, Home, ShoppingCart, ChevronRight, CheckCircle, ChevronLeft, Upload, Minus, Plus, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Home, ShoppingCart, ChevronRight, CheckCircle, ChevronLeft, Upload, Minus, Plus, MapPin, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Dashboard() {
   const router = useRouter();
   const [currentScreen, setCurrentScreen] = useState('dashboard');
+  const [parentName, setParentName] = useState('Memuat...');
+  const [childrenList, setChildrenList] = useState([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  // Dummy data
-  const childrenList = [
-    { id: 1, name: 'Budi Santoso', level: 'SD', grade: '2A', seed: 'Budi' },
-    { id: 2, name: 'Siti Aminah', level: 'SMP', grade: '7B', seed: 'Siti' }
-  ];
-
-  const productsList = [
+  const [productsList, setProductsList] = useState([
     { id: 1, name: 'PAKET LENGKAP SD', price: 350000, type: 'Paket Lengkap', level: 'SD', img: 'paket' },
     { id: 2, name: 'Seragam Putih Lengan Pendek', price: 95000, type: 'Satuan', level: 'SD', img: 'seragam' },
-  ];
+  ]);
 
-  const [selectedChild, setSelectedChild] = useState(childrenList[0]);
+  const [selectedChild, setSelectedChild] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState('SD');
   const [selectedTab, setSelectedTab] = useState('Paket Lengkap');
   const [deliveryMethod, setDeliveryMethod] = useState('koperasi'); // koperasi | rumah
   const [address, setAddress] = useState('');
   const [proofFile, setProofFile] = useState(null);
+  const [cart, setCart] = useState([]);
 
-  // Cart state logic
-  const [cart, setCart] = useState([
-    { ...productsList[0], size: 'M', quantity: 1 }
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/');
+        return;
+      }
+      
+      const userId = session.user.id;
+
+      // Ambil nama orang tua
+      const { data: parentData } = await supabase
+        .from('parents')
+        .select('full_name')
+        .eq('id', userId)
+        .single();
+        
+      if (parentData) setParentName(parentData.full_name);
+
+      // Ambil data anak
+      const { data: childrenData } = await supabase
+        .from('children')
+        .select('*')
+        .eq('parent_id', userId);
+        
+      if (childrenData) {
+        setChildrenList(childrenData);
+        if (childrenData.length > 0) setSelectedChild(childrenData[0]);
+      }
+      
+      setIsLoadingData(false);
+    };
+    
+    fetchData();
+  }, [router]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
 
   const uniqueCode = 142; // Example 3 digit unique code
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -58,10 +93,10 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-20 md:pb-0">
       <div className="bg-[#182c4f] pt-12 pb-28 px-6 md:px-12 text-white rounded-b-[2.5rem] md:rounded-b-[4rem]">
         <div className="max-w-5xl mx-auto flex justify-between items-center mb-6">
-          <p className="text-sm md:text-base">Halo, Ibu Siti!</p>
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center text-[#182c4f] shadow-md">
-            <User size={24} />
-          </div>
+          <p className="text-sm md:text-base">Halo, {parentName}!</p>
+          <button onClick={handleSignOut} title="Keluar" className="w-10 h-10 md:w-12 md:h-12 bg-red-500/20 hover:bg-red-500/40 rounded-full flex items-center justify-center text-red-200 transition-colors shadow-md">
+            <LogOut size={20} />
+          </button>
         </div>
         <h1 className="max-w-5xl mx-auto text-2xl md:text-3xl font-bold">Beranda Orang Tua</h1>
       </div>
@@ -69,23 +104,28 @@ export default function Dashboard() {
       <div className="-mt-20 px-4 md:px-12 relative z-10 flex-1 w-full max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
         <div className="flex-1 overflow-hidden">
           <h3 className="mb-3 text-white md:text-gray-800 px-2 font-bold drop-shadow-md md:drop-shadow-none">Anak Saya</h3>
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 px-2 -mx-2 hide-scrollbar">
-            {childrenList.map((child) => (
-              <div key={child.id} className="snap-center shrink-0 w-[85%] md:w-72 bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center">
-                <div className="w-24 h-24 bg-blue-50 rounded-full mb-4 overflow-hidden border-4 border-white shadow-md">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.seed}`} alt={child.name} className="w-full h-full object-cover" />
+          
+          {isLoadingData ? (
+            <div className="text-center py-10 bg-white rounded-3xl shadow-xl">Memuat data anak...</div>
+          ) : (
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 px-2 -mx-2 hide-scrollbar">
+              {childrenList.map((child) => (
+                <div key={child.id} className="snap-center shrink-0 w-[85%] md:w-72 bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center">
+                  <div className="w-24 h-24 bg-blue-50 rounded-full mb-4 overflow-hidden border-4 border-white shadow-md">
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.full_name}`} alt={child.full_name} className="w-full h-full object-cover" />
+                  </div>
+                  <h2 className="text-gray-900 mb-1 font-bold">{child.full_name}</h2>
+                  <p className="text-sm text-gray-500 mb-6">{child.level} {child.grade}</p>
+                  <button
+                    onClick={() => handleOrderUniform(child)}
+                    className="w-full bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
+                  >
+                    Pesan Seragam {child.full_name.split(' ')[0]}
+                  </button>
                 </div>
-                <h2 className="text-gray-900 mb-1 font-bold">{child.name}</h2>
-                <p className="text-sm text-gray-500 mb-6">{child.level} {child.grade}</p>
-                <button
-                  onClick={() => handleOrderUniform(child)}
-                  className="w-full bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
-                >
-                  Pesan Seragam {child.name.split(' ')[0]}
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="w-full md:w-80 lg:w-96">
