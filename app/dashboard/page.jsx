@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Home, ShoppingCart, ChevronRight, CheckCircle, ChevronLeft, Upload, Minus, Plus, MapPin, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function Dashboard() {
   const router = useRouter();
