@@ -58,7 +58,7 @@ function RegisterChild() {
         ]);
         if (error) {
             console.error("Error inserting child:", error);
-            alert("Gagal menyimpan data anak. Silakan coba lagi.");
+            alert(`Gagal menyimpan data anak.\nError: ${error.message || 'Unknown'}\nDetails: ${error.details || ''}\nHint: ${error.hint || ''}`);
             setIsLoading(false);
         } else {
             router.push('/dashboard');
