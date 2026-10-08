@@ -959,6 +959,16 @@
     border-color: lab(63.1194% -27.1823 11.5074 / .3);
   }
 
+  .border-\[\#182c4f\]\/10 {
+    border-color: #182c4f1a;
+    border-color: lab(17.8407% 1.86297 -24.3871 / .1);
+  }
+
+  .border-\[\#182c4f\]\/20 {
+    border-color: #182c4f33;
+    border-color: lab(17.8407% 1.86297 -24.3871 / .2);
+  }
+
   .border-\[\#c1e6ce\] {
     border-color: #c1e6ce;
   }
@@ -1010,6 +1020,16 @@
 
   .bg-blue-50 {
     background-color: var(--color-blue-50);
+  }
+
+  .bg-blue-50\/30 {
+    background-color: #eff6ff4d;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .bg-blue-50\/30 {
+      background-color: color-mix(in oklab, var(--color-blue-50) 30%, transparent);
+    }
   }
 
   .bg-blue-50\/50 {
@@ -1661,6 +1681,10 @@
 
   .focus\:border-\[\#67a683\]:focus {
     border-color: #67a683;
+  }
+
+  .focus\:border-\[\#182c4f\]:focus {
+    border-color: #182c4f;
   }
 
   .focus\:bg-white:focus {

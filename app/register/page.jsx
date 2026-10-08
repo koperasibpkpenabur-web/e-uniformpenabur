@@ -13,14 +13,24 @@ export default function RegisterChild() {
     { name: '', level: '', school: '', grade: '' }
   ]);
   
+  const [parentName, setParentName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState(null);
   const [dbSchools, setDbSchools] = useState([]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUserId(session.user.id);
+        
+        // Fetch existing parent name
+        const { data: parentData } = await supabase
+          .from('parents')
+          .select('full_name')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (parentData) setParentName(parentData.full_name);
       } else {
         router.push('/');
       }
@@ -44,6 +54,11 @@ export default function RegisterChild() {
     e.preventDefault();
     if (!userId) return;
     
+    if (!parentName.trim()) {
+      alert("Harap isi Nama Orang Tua!");
+      return;
+    }
+
     // Validate Child 1
     const child1 = children[0];
     if (!child1.name || !child1.level || !child1.school || !child1.grade) {
@@ -55,6 +70,19 @@ export default function RegisterChild() {
     const validChildren = children.filter(c => c.name && c.level && c.school && c.grade);
     
     setIsLoading(true);
+    
+    // Update Parent Name
+    const { error: parentError } = await supabase
+      .from('parents')
+      .update({ full_name: parentName })
+      .eq('id', userId);
+
+    if (parentError) {
+      console.error("Error updating parent:", parentError);
+      alert("Gagal memperbarui nama orang tua.");
+      setIsLoading(false);
+      return;
+    }
     
     const insertPayload = validChildren.map(c => ({
       parent_id: userId,
@@ -91,6 +119,21 @@ export default function RegisterChild() {
         {/* Form */}
         <form onSubmit={handleSave} className="p-4 sm:p-8 space-y-8">
           
+          <div className="p-4 sm:p-6 rounded-2xl border-2 border-[#182c4f]/20 bg-blue-50/30">
+            <h3 className="font-bold text-[#182c4f] mb-4 border-b border-[#182c4f]/10 pb-2">Data Orang Tua / Wali</h3>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Nama Orang Tua</label>
+              <input 
+                type="text" 
+                required
+                value={parentName}
+                onChange={(e) => setParentName(e.target.value)}
+                placeholder="Nama Lengkap Orang Tua"
+                className="block w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-3 rounded-lg text-sm focus:outline-none focus:border-[#182c4f]"
+              />
+            </div>
+          </div>
+
           {[0, 1, 2].map((index) => (
             <div key={index} className={`p-4 sm:p-6 rounded-2xl border-2 ${index === 0 ? 'border-[#67a683]/30 bg-[#eef7f2]/30' : 'border-gray-100 bg-gray-50/50'}`}>
               <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">
