@@ -12,6 +12,7 @@ export default function RegisterChild() {
   const [grade, setGrade] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [dbSchools, setDbSchools] = useState([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -21,15 +22,13 @@ export default function RegisterChild() {
         router.push('/');
       }
     });
-  }, [router]);
 
-  // Mock data for schools based on level
-  const schoolsData = {
-    'TK': ['TKK 1 PENABUR', 'TKK 2 PENABUR'],
-    'SD': ['SDK 1 PENABUR', 'SDK 2 PENABUR', 'SDK 3 PENABUR'],
-    'SMP': ['SMPK 1 PENABUR', 'SMPK 2 PENABUR'],
-    'SMA': ['SMAK 1 PENABUR', 'SMAK 2 PENABUR']
-  };
+    const fetchSchools = async () => {
+      const { data, error } = await supabase.from('schools').select('*');
+      if (data) setDbSchools(data);
+    };
+    fetchSchools();
+  }, [router]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -40,9 +39,9 @@ export default function RegisterChild() {
       {
         parent_id: userId,
         full_name: name,
-        school_level: level,
-        school_name: school,
-        class_name: grade
+        school_id: school, // This now stores the UUID
+        level: level,
+        grade: grade
       }
     ]);
 
@@ -103,8 +102,8 @@ export default function RegisterChild() {
                 className="block w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-[#67a683] transition-colors disabled:opacity-50"
               >
                 <option value="" disabled>Pilih Sekolah</option>
-                {level && schoolsData[level].map((s, idx) => (
-                  <option key={idx} value={s}>{s}</option>
+                {dbSchools.filter(s => s.level === level).map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
