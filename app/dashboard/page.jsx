@@ -87,7 +87,7 @@ export default function Dashboard() {
     setCurrentScreen('products');
   };
 
-  const filteredProducts = productsList.filter(p => p.level === selectedLevel && (selectedTab === 'Semua' || p.type === selectedTab));
+  const filteredProducts = productsList.filter(p => p.level === selectedLevel);
 
   const renderDashboard = () => (
     <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-20 md:pb-0">
@@ -160,19 +160,7 @@ export default function Dashboard() {
 
       <div className="bg-[#f4f6f8] flex-1 rounded-t-[2.5rem] -mt-8 pt-8 px-4 md:px-12 w-full relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
         <div className="max-w-5xl mx-auto">
-          <div className="flex bg-gray-200/80 p-1.5 rounded-full mb-8 shadow-inner">
-            {['Paket Lengkap', 'Satuan'].map(tab => (
-              <div
-                key={tab}
-                onClick={() => setSelectedTab(tab)}
-                className={`flex-1 text-center py-3 rounded-full font-bold text-sm cursor-pointer transition-all ${selectedTab === tab ? 'bg-white text-[#182c4f] shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                {tab}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
             {filteredProducts.map((product) => (
               <div key={product.id} className="bg-white p-4 rounded-3xl shadow-md flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all">
                 <div className="bg-gray-50 rounded-2xl h-40 md:h-48 mb-4 flex items-center justify-center overflow-hidden p-4 relative group">

@@ -440,6 +440,10 @@
     pointer-events: none;
   }
 
+  .visible {
+    visibility: visible;
+  }
+
   .absolute {
     position: absolute;
   }
@@ -1858,15 +1862,6 @@
 
     .md\:text-\[15px\] {
       font-size: 15px;
-    }
-
-    .md\:text-gray-800 {
-      color: var(--color-gray-800);
-    }
-
-    .md\:drop-shadow-none {
-      --tw-drop-shadow:  ;
-      filter: var(--tw-blur, ) var(--tw-brightness, ) var(--tw-contrast, ) var(--tw-grayscale, ) var(--tw-hue-rotate, ) var(--tw-invert, ) var(--tw-saturate, ) var(--tw-sepia, ) var(--tw-drop-shadow, );
     }
   }
 
