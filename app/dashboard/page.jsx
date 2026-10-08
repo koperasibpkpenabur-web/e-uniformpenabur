@@ -11,10 +11,7 @@ export default function Dashboard() {
   const [childrenList, setChildrenList] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const [productsList, setProductsList] = useState([
-    { id: 1, name: 'PAKET LENGKAP SD', price: 350000, type: 'Paket Lengkap', level: 'SD', img: 'paket' },
-    { id: 2, name: 'Seragam Putih Lengan Pendek', price: 95000, type: 'Satuan', level: 'SD', img: 'seragam' },
-  ]);
+  const [productsList, setProductsList] = useState([]);
 
   const [selectedChild, setSelectedChild] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState('SD');
@@ -53,6 +50,13 @@ export default function Dashboard() {
         setChildrenList(childrenData);
         if (childrenData.length > 0) setSelectedChild(childrenData[0]);
       }
+      
+      // Ambil data produk dari database
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('*');
+        
+      if (productsData) setProductsList(productsData);
       
       setIsLoadingData(false);
     };
@@ -167,7 +171,7 @@ export default function Dashboard() {
                   <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-bold text-[#182c4f] shadow-sm">
                     {product.type}
                   </div>
-                  <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=${product.img}`} alt={product.name} className="w-full h-full object-contain mix-blend-multiply opacity-80 group-hover:scale-110 transition-transform" />
+                  <img src={product.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${product.id}`} alt={product.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-[13px] md:text-sm leading-snug mb-1 text-gray-900 line-clamp-2 min-h-[40px] font-semibold">{product.name}</h3>
                 <p className="font-extrabold text-[#182c4f] mb-5 text-[15px] md:text-base">Rp{product.price.toLocaleString('id-ID')}</p>
