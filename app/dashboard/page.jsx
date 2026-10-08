@@ -103,7 +103,7 @@ export default function Dashboard() {
 
       <div className="-mt-20 px-4 md:px-12 relative z-10 flex-1 w-full max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
         <div className="flex-1 overflow-hidden">
-          <h3 className="mb-3 text-white md:text-gray-800 px-2 font-bold drop-shadow-md md:drop-shadow-none">Anak Saya</h3>
+          <h3 className="mb-3 text-white px-2 font-bold drop-shadow-md">Anak Saya</h3>
           
           {isLoadingData ? (
             <div className="text-center py-10 bg-white rounded-3xl shadow-xl">Memuat data anak...</div>
@@ -129,7 +129,7 @@ export default function Dashboard() {
         </div>
 
         <div className="w-full md:w-80 lg:w-96">
-          <h3 className="mb-3 text-gray-800 px-2 font-bold md:text-gray-800 md:mt-0 mt-2">Riwayat Pesanan</h3>
+          <h3 className="mb-3 text-white px-2 font-bold md:mt-0 mt-2 drop-shadow-md">Riwayat Pesanan</h3>
           <div className="bg-white rounded-3xl p-5 shadow-xl flex justify-between items-center cursor-pointer hover:scale-[1.02] transition-transform">
             <div className="flex items-center gap-3 bg-[#eef7f2] text-[#67a683] px-4 py-3 rounded-2xl w-full border border-[#d1ebd9]">
               <CheckCircle size={20} />
@@ -389,6 +389,38 @@ export default function Dashboard() {
     </div>
   );
 
+  const renderOrders = () => (
+    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32">
+      <div className="bg-[#182c4f] pt-12 pb-14 px-4 text-white">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setCurrentScreen('dashboard')} className="p-2 hover:bg-white/10 rounded-full"><ChevronLeft size={24} /></button>
+          <h2 className="text-xl font-bold">Pesanan Saya</h2>
+        </div>
+      </div>
+      <div className="p-6 text-center text-gray-500 mt-4">Belum ada riwayat pesanan.</div>
+    </div>
+  );
+
+  const renderProfile = () => (
+    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32">
+      <div className="bg-[#182c4f] pt-12 pb-14 px-4 text-white">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setCurrentScreen('dashboard')} className="p-2 hover:bg-white/10 rounded-full"><ChevronLeft size={24} /></button>
+          <h2 className="text-xl font-bold">Profil & Pengaturan</h2>
+        </div>
+      </div>
+      <div className="p-6 bg-white mx-4 -mt-6 rounded-3xl shadow-sm">
+        <h3 className="font-bold mb-4 text-gray-800">Ubah Data Profil</h3>
+        <p className="text-sm text-gray-500 mb-6">Untuk mengubah nama orang tua, Anda dapat menghubungi admin koperasi. Saat ini fitur ubah nama dari web sedang dalam tahap pengembangan.</p>
+        
+        <h3 className="font-bold mb-4 text-gray-800 border-t pt-4">Data Anak</h3>
+        <button onClick={() => router.push('/register')} className="w-full bg-[#eef7f2] border border-[#c1e6ce] text-[#67a683] py-3.5 rounded-xl font-bold hover:bg-[#d5eedf] transition-colors flex items-center justify-center gap-2">
+          <Plus size={18} /> Tambah Data Anak Baru
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <style dangerouslySetInnerHTML={{
@@ -406,19 +438,21 @@ export default function Dashboard() {
         {currentScreen === 'products' && renderProducts()}
         {currentScreen === 'checkout' && renderCheckout()}
         {currentScreen === 'upload_proof' && renderUploadProof()}
+        {currentScreen === 'orders' && renderOrders()}
+        {currentScreen === 'profile' && renderProfile()}
 
         {/* Global Bottom Nav (Only on Dashboard) */}
         {currentScreen === 'dashboard' && (
           <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 flex justify-around py-4 pb-6 z-30 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] md:max-w-md md:mx-auto md:rounded-t-3xl md:bottom-4 md:border">
-            <div className="flex flex-col items-center text-[#182c4f] cursor-pointer group">
+            <div onClick={() => setCurrentScreen('dashboard')} className={`flex flex-col items-center cursor-pointer group transition-colors ${currentScreen === 'dashboard' ? 'text-[#182c4f]' : 'text-gray-400 hover:text-[#182c4f]'}`}>
               <Home size={24} className="group-hover:scale-110 transition-transform" />
               <span className="text-[10px] mt-1.5 font-bold">Home</span>
             </div>
-            <div className="flex flex-col items-center text-gray-400 cursor-pointer group hover:text-[#182c4f] transition-colors">
+            <div onClick={() => setCurrentScreen('orders')} className={`flex flex-col items-center cursor-pointer group transition-colors ${currentScreen === 'orders' ? 'text-[#182c4f]' : 'text-gray-400 hover:text-[#182c4f]'}`}>
               <ShoppingCart size={24} className="group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] mt-1.5 font-semibold">Pesan Saya</span>
+              <span className="text-[10px] mt-1.5 font-semibold">Pesanan Saya</span>
             </div>
-            <div className="flex flex-col items-center text-gray-400 cursor-pointer group hover:text-[#182c4f] transition-colors">
+            <div onClick={() => setCurrentScreen('profile')} className={`flex flex-col items-center cursor-pointer group transition-colors ${currentScreen === 'profile' ? 'text-[#182c4f]' : 'text-gray-400 hover:text-[#182c4f]'}`}>
               <User size={24} className="group-hover:scale-110 transition-transform" />
               <span className="text-[10px] mt-1.5 font-semibold">Profil</span>
             </div>

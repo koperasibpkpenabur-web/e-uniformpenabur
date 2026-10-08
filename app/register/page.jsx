@@ -6,10 +6,13 @@ import { supabase } from '../../lib/supabaseClient';
 
 export default function RegisterChild() {
   const router = useRouter();
-  const [level, setLevel] = useState('');
-  const [school, setSchool] = useState('');
-  const [name, setName] = useState('');
-  const [grade, setGrade] = useState('');
+  
+  const [children, setChildren] = useState([
+    { name: '', level: '', school: '', grade: '' },
+    { name: '', level: '', school: '', grade: '' },
+    { name: '', level: '', school: '', grade: '' }
+  ]);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState(null);
   const [dbSchools, setDbSchools] = useState([]);
@@ -30,20 +33,38 @@ export default function RegisterChild() {
     fetchSchools();
   }, [router]);
 
+  const updateChild = (index, field, value) => {
+    const newChildren = [...children];
+    newChildren[index][field] = value;
+    if (field === 'level') newChildren[index].school = '';
+    setChildren(newChildren);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (!userId) return;
     
+    // Validate Child 1
+    const child1 = children[0];
+    if (!child1.name || !child1.level || !child1.school || !child1.grade) {
+      alert("Harap lengkapi semua data Anak Ke-1!");
+      return;
+    }
+
+    // Filter valid children
+    const validChildren = children.filter(c => c.name && c.level && c.school && c.grade);
+    
     setIsLoading(true);
-    const { error } = await supabase.from('children').insert([
-      {
-        parent_id: userId,
-        full_name: name,
-        school_id: school, // This now stores the UUID
-        level: level,
-        grade: grade
-      }
-    ]);
+    
+    const insertPayload = validChildren.map(c => ({
+      parent_id: userId,
+      full_name: c.name,
+      school_id: c.school,
+      level: c.level,
+      grade: c.grade
+    }));
+
+    const { error } = await supabase.from('children').insert(insertPayload);
 
     if (error) {
       console.error("Error inserting child:", error);
@@ -56,7 +77,7 @@ export default function RegisterChild() {
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+      <div className="max-w-xl w-full mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
         
         {/* Header */}
         <div className="bg-[#182c4f] py-8 px-8 text-white text-center">
@@ -64,88 +85,100 @@ export default function RegisterChild() {
             <UserPlus size={32} />
           </div>
           <h2 className="text-2xl font-bold mb-2">Profil Anak</h2>
-          <p className="text-blue-200 text-sm">Lengkapi data anak Anda untuk menyesuaikan katalog seragam.</p>
+          <p className="text-blue-200 text-sm">Anda dapat mendaftarkan hingga 3 anak sekaligus.</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSave} className="p-8 space-y-6">
+        <form onSubmit={handleSave} className="p-4 sm:p-8 space-y-8">
           
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Jenjang Pendidikan</label>
-            <div className="relative">
-              <select 
-                required
-                value={level}
-                onChange={(e) => { setLevel(e.target.value); setSchool(''); }}
-                className="block w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-[#67a683] transition-colors"
-              >
-                <option value="" disabled>Pilih Jenjang</option>
-                <option value="TK">TK (Taman Kanak-Kanak)</option>
-                <option value="SD">SD (Sekolah Dasar)</option>
-                <option value="SMP">SMP (Sekolah Menengah Pertama)</option>
-                <option value="SMA">SMA (Sekolah Menengah Atas)</option>
-                <option value="Primary School">Primary School</option>
-                <option value="Lower Secondary">Lower Secondary</option>
-                <option value="Upper Secondary">Upper Secondary</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                <ChevronDown size={18} />
+          {[0, 1, 2].map((index) => (
+            <div key={index} className={`p-4 sm:p-6 rounded-2xl border-2 ${index === 0 ? 'border-[#67a683]/30 bg-[#eef7f2]/30' : 'border-gray-100 bg-gray-50/50'}`}>
+              <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">
+                Anak Ke-{index + 1} {index === 0 && <span className="text-red-500 text-xs ml-2">*Wajib Diisi</span>}
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Nama Lengkap</label>
+                  <input 
+                    type="text" 
+                    required={index === 0}
+                    value={children[index].name}
+                    onChange={(e) => updateChild(index, 'name', e.target.value)}
+                    placeholder="Nama Anak"
+                    className="block w-full bg-white border border-gray-200 text-gray-700 py-2.5 px-3 rounded-lg text-sm focus:outline-none focus:border-[#67a683]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Jenjang</label>
+                    <div className="relative">
+                      <select 
+                        required={index === 0 || children[index].name !== ''}
+                        value={children[index].level}
+                        onChange={(e) => updateChild(index, 'level', e.target.value)}
+                        className="block w-full appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 px-3 pr-8 rounded-lg text-sm focus:outline-none focus:border-[#67a683]"
+                      >
+                        <option value="" disabled>Pilih Jenjang</option>
+                        <option value="TK">TK (Taman Kanak-Kanak)</option>
+                        <option value="SD">SD (Sekolah Dasar)</option>
+                        <option value="SMP">SMP (Sekolah Menengah Pertama)</option>
+                        <option value="SMA">SMA (Sekolah Menengah Atas)</option>
+                        <option value="Primary School">Primary School</option>
+                        <option value="Lower Secondary">Lower Secondary</option>
+                        <option value="Upper Secondary">Upper Secondary</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <ChevronDown size={14} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Kelas</label>
+                    <div className="relative">
+                      <select 
+                        required={index === 0 || children[index].name !== ''}
+                        value={children[index].grade}
+                        onChange={(e) => updateChild(index, 'grade', e.target.value)}
+                        className="block w-full appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 px-3 pr-8 rounded-lg text-sm focus:outline-none focus:border-[#67a683]"
+                      >
+                        <option value="" disabled>Pilih Kelas</option>
+                        {['KBB', 'TK-A', 'TK-B', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((g, idx) => (
+                          <option key={idx} value={g}>{g}</option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <ChevronDown size={14} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Nama Sekolah</label>
+                  <div className="relative">
+                    <select 
+                      required={index === 0 || children[index].name !== ''}
+                      disabled={!children[index].level}
+                      value={children[index].school}
+                      onChange={(e) => updateChild(index, 'school', e.target.value)}
+                      className="block w-full appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 px-3 pr-8 rounded-lg text-sm focus:outline-none focus:border-[#67a683] disabled:opacity-50"
+                    >
+                      <option value="" disabled>Pilih Sekolah</option>
+                      {dbSchools.filter(s => s.level === children[index].level).map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                      <ChevronDown size={14} />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Nama Sekolah</label>
-            <div className="relative">
-              <select 
-                required
-                disabled={!level}
-                value={school}
-                onChange={(e) => setSchool(e.target.value)}
-                className="block w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-[#67a683] transition-colors disabled:opacity-50"
-              >
-                <option value="" disabled>Pilih Sekolah</option>
-                {dbSchools.filter(s => s.level === level).map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                <ChevronDown size={18} />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap Anak</label>
-            <input 
-              type="text" 
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Cth: Budi Santoso"
-              className="block w-full bg-gray-50 border border-gray-200 text-gray-700 py-3.5 px-4 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-[#67a683] transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Kelas / Rombel</label>
-            <div className="relative">
-              <select 
-                required
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                className="block w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3.5 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-[#67a683] transition-colors"
-              >
-                <option value="" disabled>Pilih Kelas</option>
-                {['KBB', 'TK-A', 'TK-B', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((g, idx) => (
-                  <option key={idx} value={g}>{g}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                <ChevronDown size={18} />
-              </div>
-            </div>
-          </div>
+          ))}
 
           <div className="pt-4">
             <button 
@@ -153,7 +186,7 @@ export default function RegisterChild() {
               disabled={isLoading}
               className="w-full bg-[#67a683] text-white py-4 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Menyimpan...' : 'Simpan & Masuk ke Dashboard'}
+              {isLoading ? 'Menyimpan...' : 'Simpan Semua Data & Masuk Dashboard'}
             </button>
           </div>
 
