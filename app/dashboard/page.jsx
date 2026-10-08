@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function Dashboard() {
   const router = useRouter();
   const [currentScreen, setCurrentScreen] = useState('dashboard');
-  
+
   // Dummy data
   const childrenList = [
     { id: 1, name: 'Budi Santoso', level: 'SD', grade: '2A', seed: 'Budi' },
@@ -73,12 +73,12 @@ export default function Dashboard() {
             {childrenList.map((child) => (
               <div key={child.id} className="snap-center shrink-0 w-[85%] md:w-72 bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center">
                 <div className="w-24 h-24 bg-blue-50 rounded-full mb-4 overflow-hidden border-4 border-white shadow-md">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.seed}`} alt={child.name} className="w-full h-full object-cover"/>
+                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.seed}`} alt={child.name} className="w-full h-full object-cover" />
                 </div>
                 <h2 className="text-gray-900 mb-1 font-bold">{child.name}</h2>
                 <p className="text-sm text-gray-500 mb-6">{child.level} {child.grade}</p>
-                <button 
-                  onClick={() => handleOrderUniform(child)} 
+                <button
+                  onClick={() => handleOrderUniform(child)}
                   className="w-full bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
                 >
                   Pesan Seragam {child.name.split(' ')[0]}
@@ -91,14 +91,14 @@ export default function Dashboard() {
         <div className="w-full md:w-80 lg:w-96">
           <h3 className="mb-3 text-gray-800 px-2 font-bold md:text-gray-800 md:mt-0 mt-2">Riwayat Pesanan</h3>
           <div className="bg-white rounded-3xl p-5 shadow-xl flex justify-between items-center cursor-pointer hover:scale-[1.02] transition-transform">
-             <div className="flex items-center gap-3 bg-[#eef7f2] text-[#67a683] px-4 py-3 rounded-2xl w-full border border-[#d1ebd9]">
-               <CheckCircle size={20} />
-               <div className="flex-1">
-                 <span className="font-bold text-[13px] block">ORD-2918 (Budi)</span>
-                 <span className="text-xs">Menunggu Verifikasi</span>
-               </div>
-               <ChevronRight size={20} className="text-[#67a683]" />
-             </div>
+            <div className="flex items-center gap-3 bg-[#eef7f2] text-[#67a683] px-4 py-3 rounded-2xl w-full border border-[#d1ebd9]">
+              <CheckCircle size={20} />
+              <div className="flex-1">
+                <span className="font-bold text-[13px] block">ORD-2918 (Budi)</span>
+                <span className="text-xs">Menunggu Verifikasi</span>
+              </div>
+              <ChevronRight size={20} className="text-[#67a683]" />
+            </div>
           </div>
         </div>
       </div>
@@ -122,7 +122,7 @@ export default function Dashboard() {
         <div className="max-w-5xl mx-auto">
           <div className="flex bg-gray-200/80 p-1.5 rounded-full mb-8 shadow-inner">
             {['Paket Lengkap', 'Satuan'].map(tab => (
-              <div 
+              <div
                 key={tab}
                 onClick={() => setSelectedTab(tab)}
                 className={`flex-1 text-center py-3 rounded-full font-bold text-sm cursor-pointer transition-all ${selectedTab === tab ? 'bg-white text-[#182c4f] shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
@@ -139,7 +139,7 @@ export default function Dashboard() {
                   <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-bold text-[#182c4f] shadow-sm">
                     {product.type}
                   </div>
-                  <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=${product.img}`} alt={product.name} className="w-full h-full object-contain mix-blend-multiply opacity-80 group-hover:scale-110 transition-transform"/>
+                  <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=${product.img}`} alt={product.name} className="w-full h-full object-contain mix-blend-multiply opacity-80 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-[13px] md:text-sm leading-snug mb-1 text-gray-900 line-clamp-2 min-h-[40px] font-semibold">{product.name}</h3>
                 <p className="font-extrabold text-[#182c4f] mb-5 text-[15px] md:text-base">Rp{product.price.toLocaleString('id-ID')}</p>
@@ -159,8 +159,8 @@ export default function Dashboard() {
           <p className="text-center md:text-left text-sm text-gray-600">
             {cart.length} Item di Keranjang | Total: <span className="font-black text-[#182c4f] text-base md:text-xl ml-1">Rp{subtotal.toLocaleString('id-ID')}</span>
           </p>
-          <button 
-            onClick={() => setCurrentScreen('checkout')} 
+          <button
+            onClick={() => setCurrentScreen('checkout')}
             className="w-full md:w-auto px-8 bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
           >
             Lanjut Checkout
@@ -182,24 +182,24 @@ export default function Dashboard() {
 
       <div className="bg-[#f4f6f8] flex-1 rounded-t-[2.5rem] -mt-8 pt-8 px-4 md:px-12 w-full relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
         <div className="max-w-3xl mx-auto">
-          
+
           <h3 className="mb-4 text-gray-800 px-1 font-bold">Daftar Seragam</h3>
           <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm mb-8 divide-y divide-gray-100 border border-gray-100">
             {cart.map((item, idx) => (
               <div key={idx} className="flex flex-col md:flex-row md:items-center gap-4 py-4 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-4 flex-1">
                   <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center p-2 shrink-0">
-                    <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=${item.img}`} alt={item.name} className="w-full h-full mix-blend-multiply opacity-80"/>
+                    <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=${item.img}`} alt={item.name} className="w-full h-full mix-blend-multiply opacity-80" />
                   </div>
                   <div>
                     <p className="font-bold text-[14px] text-gray-900 mb-1">{item.name}</p>
                     <p className="text-sm font-extrabold text-[#182c4f]">Rp{item.price.toLocaleString('id-ID')}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between md:justify-end gap-6 ml-20 md:ml-0">
                   {/* Size Selector */}
-                  <select 
+                  <select
                     value={item.size}
                     onChange={(e) => updateSize(idx, e.target.value)}
                     className="bg-gray-50 border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-sm font-bold outline-none focus:border-[#67a683]"
@@ -221,25 +221,25 @@ export default function Dashboard() {
           <h3 className="mb-4 text-gray-800 px-1 font-bold">Pilih Metode Pengambilan</h3>
           <div className="bg-white rounded-3xl p-5 shadow-sm mb-8 space-y-5 border border-gray-100">
             <label className="flex items-center gap-4 cursor-pointer group">
-               <div className="relative flex items-center justify-center">
-                 <input type="radio" checked={deliveryMethod === 'koperasi'} onChange={() => setDeliveryMethod('koperasi')} className="peer appearance-none w-6 h-6 rounded-full border-2 border-gray-300 checked:border-[#67a683] transition-colors" />
-                 <div className="absolute w-3 h-3 rounded-full bg-[#67a683] scale-0 peer-checked:scale-100 transition-transform"></div>
-               </div>
-               <span className="flex-1 text-[14px] font-semibold text-gray-800">Ambil di Koperasi Sekolah</span>
-               <span className="bg-[#eef7f2] border border-[#c1e6ce] text-[#67a683] text-[11px] px-3 py-1 rounded-full font-black uppercase tracking-wide">Gratis</span>
+              <div className="relative flex items-center justify-center">
+                <input type="radio" checked={deliveryMethod === 'koperasi'} onChange={() => setDeliveryMethod('koperasi')} className="peer appearance-none w-6 h-6 rounded-full border-2 border-gray-300 checked:border-[#67a683] transition-colors" />
+                <div className="absolute w-3 h-3 rounded-full bg-[#67a683] scale-0 peer-checked:scale-100 transition-transform"></div>
+              </div>
+              <span className="flex-1 text-[14px] font-semibold text-gray-800">Ambil di Koperasi Sekolah</span>
+              <span className="bg-[#eef7f2] border border-[#c1e6ce] text-[#67a683] text-[11px] px-3 py-1 rounded-full font-black uppercase tracking-wide">Gratis</span>
             </label>
             <label className="flex items-center gap-4 cursor-pointer group">
-               <div className="relative flex items-center justify-center">
-                 <input type="radio" checked={deliveryMethod === 'rumah'} onChange={() => setDeliveryMethod('rumah')} className="peer appearance-none w-6 h-6 rounded-full border-2 border-gray-300 checked:border-[#67a683] transition-colors" />
-                 <div className="absolute w-3 h-3 rounded-full bg-[#67a683] scale-0 peer-checked:scale-100 transition-transform"></div>
-               </div>
-               <span className="flex-1 text-[14px] font-semibold text-gray-800">Kirim ke Alamat Rumah</span>
+              <div className="relative flex items-center justify-center">
+                <input type="radio" checked={deliveryMethod === 'rumah'} onChange={() => setDeliveryMethod('rumah')} className="peer appearance-none w-6 h-6 rounded-full border-2 border-gray-300 checked:border-[#67a683] transition-colors" />
+                <div className="absolute w-3 h-3 rounded-full bg-[#67a683] scale-0 peer-checked:scale-100 transition-transform"></div>
+              </div>
+              <span className="flex-1 text-[14px] font-semibold text-gray-800">Kirim ke Alamat Rumah</span>
             </label>
 
             {deliveryMethod === 'rumah' && (
               <div className="mt-4 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
-                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2"><MapPin size={16}/> Alamat Lengkap Pengiriman</label>
-                <textarea 
+                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2"><MapPin size={16} /> Alamat Lengkap Pengiriman</label>
+                <textarea
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-[#67a683] focus:bg-white transition-colors"
                   rows="3"
                   placeholder="Nama Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Kode Pos"
@@ -259,7 +259,7 @@ export default function Dashboard() {
                 <p className="font-mono text-lg font-bold tracking-widest text-[#182c4f]">821 009 2381</p>
               </div>
             </div>
-            
+
             <div className="pt-4 border-t border-gray-100">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Subtotal Seragam</span>
@@ -280,14 +280,14 @@ export default function Dashboard() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 z-20 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
-         <div className="max-w-3xl mx-auto">
-           <button 
+        <div className="max-w-3xl mx-auto">
+          <button
             onClick={() => setCurrentScreen('upload_proof')}
             className="w-full py-4 bg-[#67a683] text-white rounded-2xl flex items-center justify-center gap-2 hover:bg-[#5b9576] transition-all shadow-lg shadow-[#67a683]/30"
-           >
-             <span className="font-black text-[14px] md:text-[15px] tracking-wide">KONFIRMASI & UPLOAD BUKTI BAYAR</span>
-           </button>
-         </div>
+          >
+            <span className="font-black text-[14px] md:text-[15px] tracking-wide">KONFIRMASI & UPLOAD BUKTI BAYAR</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -304,26 +304,26 @@ export default function Dashboard() {
 
       <div className="bg-[#f4f6f8] flex-1 rounded-t-[2.5rem] -mt-8 pt-12 px-4 md:px-12 w-full relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
         <div className="max-w-md mx-auto text-center">
-          
+
           <div className="w-20 h-20 bg-blue-100 text-[#182c4f] rounded-full flex items-center justify-center mx-auto mb-6">
             <Upload size={32} />
           </div>
-          
+
           <h3 className="text-xl font-black text-gray-900 mb-2">Konfirmasi Pembayaran</h3>
           <p className="text-sm text-gray-500 mb-8 px-4">
             Silakan unggah foto struk transfer atau screenshot m-banking Anda sejumlah <strong className="text-[#67a683]">Rp{totalAmount.toLocaleString('id-ID')}</strong>.
           </p>
 
           <div className="bg-white rounded-3xl p-8 border-2 border-dashed border-gray-300 hover:border-[#67a683] transition-colors cursor-pointer mb-8 relative">
-            <input 
-              type="file" 
-              accept="image/*" 
+            <input
+              type="file"
+              accept="image/*"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               onChange={(e) => setProofFile(e.target.files[0])}
             />
             {proofFile ? (
               <div className="text-[#67a683] font-bold flex flex-col items-center">
-                <CheckCircle size={32} className="mb-2"/>
+                <CheckCircle size={32} className="mb-2" />
                 {proofFile.name}
               </div>
             ) : (
@@ -334,7 +334,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <button 
+          <button
             disabled={!proofFile}
             onClick={() => {
               alert('Bukti berhasil diunggah! Menunggu verifikasi admin.');
@@ -351,7 +351,8 @@ export default function Dashboard() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
