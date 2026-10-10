@@ -35,6 +35,20 @@ export default function RegisterChild() {
     if (!userId) return;
 
     setIsLoading(true);
+
+    // Cek apakah anak dengan nama yang sama sudah ada untuk orang tua ini
+    const { data: existingChildren, error: checkError } = await supabase
+      .from('children')
+      .select('id')
+      .eq('parent_id', userId)
+      .ilike('full_name', name);
+
+    if (existingChildren && existingChildren.length > 0) {
+      alert(`Data anak dengan nama "${name}" sudah terdaftar. Harap masukkan nama anak yang lain.`);
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from('children').insert([
       {
         parent_id: userId,
