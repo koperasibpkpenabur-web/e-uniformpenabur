@@ -69,12 +69,17 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    await supabase.auth.signInWithOAuth({ 
+    const { error } = await supabase.auth.signInWithOAuth({ 
       provider: 'google',
       options: {
         redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/register` : undefined
       }
     });
+
+    if (error) {
+      alert("Gagal memuat login Google: " + error.message);
+      setIsLoading(false);
+    }
   };
 
   return (
