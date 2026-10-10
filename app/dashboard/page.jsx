@@ -1,8 +1,20 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Home, ShoppingCart, ChevronRight, CheckCircle, ChevronLeft, Upload, Minus, Plus, MapPin, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
+
+const SIZE_ORDER = ['SS', 'S', 'M', 'L', 'XL', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L'];
+const sortSizes = (sizes) => {
+  return sizes.sort((a, b) => {
+    const indexA = SIZE_ORDER.indexOf(a);
+    const indexB = SIZE_ORDER.indexOf(b);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+};
 
 export default function Dashboard() {
   const router = useRouter();
@@ -23,6 +35,30 @@ export default function Dashboard() {
   
   const [selectedProductModal, setSelectedProductModal] = useState(null);
   const [selectedModalSize, setSelectedModalSize] = useState('');
+  const [isClosingModal, setIsClosingModal] = useState(false);
+  const [addedItemMessage, setAddedItemMessage] = useState(null);
+  const [isExiting, setIsExiting] = useState(false);
+  const scrollContainerRef = useRef(null);
+
+  const handleGoBack = (targetScreen) => {
+    setIsExiting(true);
+    setTimeout(() => {
+      setCurrentScreen(targetScreen);
+      setIsExiting(false);
+    }, 250);
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,6 +111,7 @@ export default function Dashboard() {
   const uniqueCode = 142; // Example 3 digit unique code
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const totalAmount = subtotal + uniqueCode;
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const updateQuantity = (index, delta) => {
     const newCart = [...cart];
@@ -104,7 +141,17 @@ export default function Dashboard() {
     } else {
       setCart([...cart, { ...product, quantity: 1, size: size, price: price }]);
     }
-    setSelectedProductModal(null);
+    setAddedItemMessage(`+1 ${product.name} (Ukuran ${size})`);
+    setTimeout(() => setAddedItemMessage(null), 2000);
+  };
+
+  const closeProductModal = () => {
+    setIsClosingModal(true);
+    setTimeout(() => {
+      setSelectedProductModal(null);
+      setIsClosingModal(false);
+      setAddedItemMessage(null);
+    }, 250);
   };
 
   const getMinPrice = (product) => {
@@ -128,28 +175,46 @@ export default function Dashboard() {
       </div>
 
       <div className="-mt-20 px-4 md:px-12 relative z-10 flex-1 w-full max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-w-0 relative group">
           <h3 className="mb-3 text-white px-2 font-bold drop-shadow-md">Anak Saya</h3>
           
           {isLoadingData ? (
             <div className="text-center py-10 bg-white rounded-3xl shadow-xl">Memuat data anak...</div>
           ) : (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 px-2 -mx-2 hide-scrollbar">
-              {childrenList.map((child) => (
-                <div key={child.id} className="snap-center shrink-0 w-[85%] md:w-72 bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center">
-                  <div className="w-24 h-24 bg-blue-50 rounded-full mb-4 overflow-hidden border-4 border-white shadow-md">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.full_name}`} alt={child.full_name} className="w-full h-full object-cover" />
+            <div className="relative">
+              {childrenList.length > 1 && (
+                <button 
+                  onClick={scrollLeft}
+                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-20 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center text-gray-600 hover:text-[#182c4f] hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+              )}
+              <div ref={scrollContainerRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 px-2 -mx-2 hide-scrollbar scroll-smooth">
+                {childrenList.map((child) => (
+                  <div key={child.id} className="snap-center shrink-0 w-[85%] md:w-72 bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center">
+                    <div className="w-24 h-24 bg-blue-50 rounded-full mb-4 overflow-hidden border-4 border-white shadow-md">
+                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.full_name}`} alt={child.full_name} className="w-full h-full object-cover" />
+                    </div>
+                    <h2 className="text-gray-900 mb-1 font-bold">{child.full_name}</h2>
+                    <p className="text-sm text-gray-500 mb-6">{child.level} {child.grade}</p>
+                    <button
+                      onClick={() => handleOrderUniform(child)}
+                      className="w-full bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
+                    >
+                      Pesan Seragam {child.full_name.split(' ')[0]}
+                    </button>
                   </div>
-                  <h2 className="text-gray-900 mb-1 font-bold">{child.full_name}</h2>
-                  <p className="text-sm text-gray-500 mb-6">{child.level} {child.grade}</p>
-                  <button
-                    onClick={() => handleOrderUniform(child)}
-                    className="w-full bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
-                  >
-                    Pesan Seragam {child.full_name.split(' ')[0]}
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
+              {childrenList.length > 1 && (
+                <button 
+                  onClick={scrollRight}
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-20 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center text-gray-600 hover:text-[#182c4f] hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -172,10 +237,10 @@ export default function Dashboard() {
   );
 
   const renderProducts = () => (
-    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32">
+    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
       <div className="bg-[#182c4f] pt-12 pb-14 px-4 md:px-12 text-white">
         <div className="max-w-5xl mx-auto flex items-center gap-4">
-          <button onClick={() => setCurrentScreen('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
+          <button onClick={() => handleGoBack('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
           <div className="flex-1 text-center md:text-left">
             <h2 className="mb-1 text-lg md:text-2xl font-bold">Katalog Seragam</h2>
             <p className="text-sm md:text-base text-blue-200">{selectedChild.name} • {selectedChild.level} {selectedChild.grade}</p>
@@ -197,8 +262,8 @@ export default function Dashboard() {
                 <div className="mt-auto">
                   <button onClick={() => {
                     setSelectedProductModal(product);
-                    const firstSize = Object.keys(product.variants || {})[0] || '';
-                    setSelectedModalSize(firstSize);
+                    const sizes = sortSizes(Object.keys(product.variants || {}));
+                    setSelectedModalSize(sizes[0] || '');
                   }} className="w-full bg-[#67a683] text-white text-xs md:text-sm py-3 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/20 flex items-center justify-center gap-2 active:scale-95">
                     <Plus size={16} /> Tambah
                   </button>
@@ -212,7 +277,7 @@ export default function Dashboard() {
       <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-5 z-20 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <p className="text-center md:text-left text-sm text-gray-600">
-            {cart.length} Item di Keranjang | Total: <span className="font-black text-[#182c4f] text-base md:text-xl ml-1">Rp{subtotal.toLocaleString('id-ID')}</span>
+            {totalItems} Item di Keranjang | Total: <span className="font-black text-[#182c4f] text-base md:text-xl ml-1">Rp{subtotal.toLocaleString('id-ID')}</span>
           </p>
           <button
             onClick={() => setCurrentScreen('checkout')}
@@ -224,13 +289,13 @@ export default function Dashboard() {
       </div>
       
       {selectedProductModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <button onClick={() => setSelectedProductModal(null)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
+        <div className="fixed inset-0 bg-black/60 z-50 flex flex-col justify-end md:justify-center items-center md:p-4">
+          <div className={`bg-white rounded-t-3xl md:rounded-3xl w-full max-w-md p-6 shadow-2xl relative ${isClosingModal ? 'animate-slide-down' : 'animate-slide-up'}`}>
+            <button onClick={closeProductModal} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
               X
             </button>
             
-            <div className="flex gap-4 items-center mb-6 border-b border-gray-100 pb-4 mt-2">
+            <div className="flex gap-4 items-center mb-4 border-b border-gray-100 pb-4 mt-2">
               <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center p-2">
                 <img src={selectedProductModal.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${selectedProductModal.id}`} alt={selectedProductModal.name} className="w-full h-full object-contain" />
               </div>
@@ -242,22 +307,47 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <p className="font-bold text-sm text-gray-700 mb-3">Pilih Ukuran:</p>
-            <div className="flex flex-wrap gap-2 mb-8">
-              {Object.keys(selectedProductModal.variants || {}).map(size => (
-                <button 
-                  key={size}
-                  onClick={() => setSelectedModalSize(size)}
-                  className={`py-2 px-4 rounded-xl font-bold border-2 transition-all ${selectedModalSize === size ? 'border-[#67a683] bg-[#eef7f2] text-[#67a683]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
-                >
-                  {size}
-                </button>
-              ))}
+            <div className="mb-6">
+              <p className="font-bold text-sm text-gray-700 mb-2">Pilih Ukuran:</p>
+              <div className="flex flex-wrap gap-2">
+                {sortSizes(Object.keys(selectedProductModal.variants || {})).map(size => (
+                  <button 
+                    key={size}
+                    onClick={() => setSelectedModalSize(size)}
+                    className={`py-2 px-4 rounded-xl font-bold border-2 transition-all ${selectedModalSize === size ? 'border-[#67a683] bg-[#eef7f2] text-[#67a683]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <button onClick={() => addToCart(selectedProductModal, selectedModalSize, selectedProductModal.variants?.[selectedModalSize] || 0)} className="w-full bg-[#182c4f] text-white py-4 rounded-2xl font-bold hover:bg-[#233a63] transition-colors shadow-lg flex justify-center items-center gap-2">
-              <ShoppingCart size={18} /> Masukkan Keranjang
-            </button>
+            {/* Size Chart Slot */}
+            <div className="mb-6 p-4 bg-[#f4f6f8] rounded-2xl border border-dashed border-gray-300 flex items-center justify-center min-h-[100px]">
+              {selectedProductModal.size_chart_url ? (
+                <img src={selectedProductModal.size_chart_url} alt="Size Chart" className="max-h-32 object-contain" />
+              ) : (
+                <div className="text-center text-gray-500 text-xs px-2">
+                  <p className="font-bold mb-1">Panduan Ukuran (Size Chart)</p>
+                  <p>Tambahkan URL foto panduan ukuran ke database (kolom <code>size_chart_url</code> di tabel products) untuk menampilkannya di sini.</p>
+                </div>
+              )}
+            </div>
+
+            {addedItemMessage && (
+              <div className="mb-4 text-center text-[#67a683] bg-[#eef7f2] py-3 rounded-xl font-bold text-sm animate-in zoom-in duration-200 border border-[#c1e6ce]">
+                <CheckCircle size={16} className="inline mr-1" /> {addedItemMessage}
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-auto">
+              <button onClick={closeProductModal} className="flex-1 bg-white border-2 border-gray-200 text-gray-600 py-3 rounded-2xl font-bold hover:bg-gray-50 transition-colors flex justify-center items-center">
+                Kembali
+              </button>
+              <button onClick={() => addToCart(selectedProductModal, selectedModalSize, selectedProductModal.variants?.[selectedModalSize] || 0)} className="flex-[1.5] bg-[#182c4f] text-white py-3 rounded-2xl font-bold hover:bg-[#233a63] transition-colors shadow-lg flex justify-center items-center gap-2">
+                <ShoppingCart size={18} /> Tambah
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -265,10 +355,10 @@ export default function Dashboard() {
   );
 
   const renderCheckout = () => (
-    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32">
+    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
       <div className="bg-[#182c4f] pt-12 pb-14 px-4 md:px-12 text-white">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <button onClick={() => setCurrentScreen('products')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
+          <button onClick={() => handleGoBack('products')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
           <h2 className="flex-1 text-center md:text-left text-lg md:text-2xl font-bold">Keranjang & Checkout</h2>
           <div className="w-10"></div>
         </div>
@@ -298,7 +388,7 @@ export default function Dashboard() {
                     onChange={(e) => updateSize(idx, e.target.value)}
                     className="bg-gray-50 border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-sm font-bold outline-none focus:border-[#67a683]"
                   >
-                    {Object.keys(item.variants || {}).map(s => <option key={s} value={s}>Ukuran {s}</option>)}
+                    {sortSizes(Object.keys(item.variants || {})).map(s => <option key={s} value={s}>Ukuran {s}</option>)}
                   </select>
 
                   {/* Quantity */}
@@ -387,10 +477,10 @@ export default function Dashboard() {
   );
 
   const renderUploadProof = () => (
-    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8]">
+    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
       <div className="bg-[#182c4f] pt-12 pb-14 px-4 md:px-12 text-white">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <button onClick={() => setCurrentScreen('checkout')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
+          <button onClick={() => handleGoBack('checkout')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
           <h2 className="flex-1 text-center md:text-left text-lg md:text-2xl font-bold">Upload Bukti Bayar</h2>
           <div className="w-10"></div>
         </div>
@@ -432,7 +522,7 @@ export default function Dashboard() {
             disabled={!proofFile}
             onClick={() => {
               alert('Bukti berhasil diunggah! Menunggu verifikasi admin.');
-              setCurrentScreen('dashboard');
+              handleGoBack('dashboard');
             }}
             className="w-full py-4 bg-[#182c4f] text-white rounded-2xl font-black tracking-wide disabled:opacity-50 hover:bg-[#12213b] transition-colors shadow-lg"
           >
@@ -444,10 +534,10 @@ export default function Dashboard() {
   );
 
   const renderOrders = () => (
-    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32">
+    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
       <div className="bg-[#182c4f] pt-12 pb-14 px-4 text-white">
         <div className="flex items-center gap-4">
-          <button onClick={() => setCurrentScreen('dashboard')} className="p-2 hover:bg-white/10 rounded-full"><ChevronLeft size={24} /></button>
+          <button onClick={() => handleGoBack('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
           <h2 className="text-xl font-bold">Pesanan Saya</h2>
         </div>
       </div>
@@ -456,18 +546,35 @@ export default function Dashboard() {
   );
 
   const renderProfile = () => (
-    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32">
+    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
       <div className="bg-[#182c4f] pt-12 pb-14 px-4 text-white">
         <div className="flex items-center gap-4">
-          <button onClick={() => setCurrentScreen('dashboard')} className="p-2 hover:bg-white/10 rounded-full"><ChevronLeft size={24} /></button>
+          <button onClick={() => handleGoBack('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
           <h2 className="text-xl font-bold">Profil & Pengaturan</h2>
         </div>
       </div>
       <div className="p-6 bg-white mx-4 -mt-6 rounded-3xl shadow-sm">
-        <h3 className="font-bold mb-4 text-gray-800">Ubah Data Profil</h3>
-        <p className="text-sm text-gray-500 mb-6">Untuk mengubah nama orang tua, Anda dapat menghubungi admin koperasi. Saat ini fitur ubah nama dari web sedang dalam tahap pengembangan.</p>
+        <h3 className="font-bold mb-4 text-gray-800">Data Profil</h3>
+        <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+          <p className="text-sm text-gray-500 mb-1">Nama Lengkap</p>
+          <p className="font-bold text-gray-900">{parentName}</p>
+        </div>
         
         <h3 className="font-bold mb-4 text-gray-800 border-t pt-4">Data Anak</h3>
+        <div className="space-y-3 mb-4">
+          {childrenList.map(child => (
+            <div key={child.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4">
+               <div className="w-12 h-12 bg-blue-50 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0">
+                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.full_name}`} alt={child.full_name} className="w-full h-full object-cover" />
+               </div>
+               <div>
+                 <p className="font-bold text-gray-900">{child.full_name}</p>
+                 <p className="text-sm text-gray-500">{child.level} {child.grade}</p>
+               </div>
+            </div>
+          ))}
+        </div>
+        
         <button onClick={() => router.push('/register')} className="w-full bg-[#eef7f2] border border-[#c1e6ce] text-[#67a683] py-3.5 rounded-xl font-bold hover:bg-[#d5eedf] transition-colors flex items-center justify-center gap-2">
           <Plus size={18} /> Tambah Data Anak Baru
         </button>
@@ -485,6 +592,20 @@ export default function Dashboard() {
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        @keyframes slideUpFast {
+          from { transform: translateY(30px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+          animation: slideUpFast 0.25s ease-out forwards;
+        }
+        @keyframes slideDownFast {
+          from { transform: translateY(0); opacity: 1; }
+          to { transform: translateY(30px); opacity: 0; }
+        }
+        .animate-slide-down {
+          animation: slideDownFast 0.25s ease-in forwards;
         }
       `}} />
       <div className="w-full min-h-screen bg-[#f4f6f8] font-sans">

@@ -78,29 +78,29 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#182c4f] flex flex-col relative overflow-hidden">
-      {/* Top Section */}
-      <div className="flex-1 pt-20 px-8 flex flex-col justify-center max-w-md mx-auto w-full z-10">
-        <div className="flex items-center gap-2 mb-10 text-white opacity-90">
-          <ShieldCheck size={28} className="text-[#67a683]" />
-          <span className="font-bold text-lg tracking-widest uppercase">E-Unibook Penabur</span>
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl text-white font-black mb-4 leading-tight">
-          Selamat Datang,<br />Wali Murid
-        </h1>
-        <p className="text-blue-200 text-sm md:text-base max-w-sm mb-12">
-          Silakan masuk untuk mulai memesan seragam sekolah anak Anda dengan mudah dan aman.
-        </p>
-      </div>
-
+    <div className="h-[100dvh] bg-[#182c4f] flex flex-col md:flex-row md:items-center relative overflow-hidden">
       {/* Decorative Elements */}
       <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
       <div className="absolute top-[20%] left-[-10%] w-64 h-64 bg-[#67a683] rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
 
+      {/* Top Section */}
+      <div className="flex-[1.2] md:flex-1 pt-12 md:pt-0 px-8 flex flex-col justify-center max-w-md mx-auto md:ml-[10%] w-full z-10">
+        <div className="flex items-center gap-2 mb-6 text-white opacity-90">
+          <ShieldCheck size={28} className="text-[#67a683]" />
+          <span className="font-bold text-lg tracking-widest uppercase">E-Unibook Penabur</span>
+        </div>
+        
+        <h1 className="text-3xl md:text-5xl text-white font-black mb-3 md:mb-6 leading-tight">
+          Selamat Datang,<br />Wali Murid
+        </h1>
+        <p className="text-blue-200 text-sm md:text-lg max-w-sm mb-4 md:mb-0">
+          Silakan masuk untuk mulai memesan seragam sekolah anak Anda dengan mudah dan aman.
+        </p>
+      </div>
+
       {/* Bottom Section */}
-      <div className="bg-white rounded-t-[2.5rem] p-8 md:p-12 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] max-w-md mx-auto w-full relative z-20 flex flex-col">
-        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8"></div>
+      <div className="bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] p-8 pb-8 md:p-10 md:mr-[10%] shadow-[0_-10px_40px_rgba(0,0,0,0.2)] max-w-md mx-auto w-full relative z-20 flex flex-col justify-center">
+        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 md:hidden"></div>
         
         <button 
           onClick={handleGoogleLogin}
@@ -117,14 +117,14 @@ export default function Login() {
           )}
         </button>
         
-        <div className="mt-8 text-center text-sm text-gray-500 flex items-center justify-center gap-2">
-          <ShieldCheck size={16} className="text-gray-400" />
+        <div className="mt-6 text-center text-xs md:text-sm text-gray-500 flex items-center justify-center gap-2">
+          <ShieldCheck size={16} className="text-gray-400 shrink-0" />
           Data Anda diamankan dengan enkripsi standar perbankan
         </div>
 
-        <div className="mt-auto pt-16 text-center">
-          <a href="https://wa.me/1234567890" target="_blank" rel="noreferrer" className="text-sm font-bold text-[#67a683] hover:text-[#528a6c] transition-colors">
-            Butuh Bantuan? Hubungi Admin Sekolah via WhatsApp
+        <div className="mt-8 md:mt-10 text-center">
+          <a href="https://wa.me/1234567890" target="_blank" rel="noreferrer" className="text-xs md:text-sm font-bold text-[#67a683] hover:text-[#528a6c] transition-colors">
+            Butuh Bantuan? Hubungi Admin via WhatsApp
           </a>
         </div>
       </div>
