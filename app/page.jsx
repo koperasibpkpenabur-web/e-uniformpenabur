@@ -16,24 +16,23 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   ShoppingBag, 
-  HelpCircle,
-  School,
-  Lock,
-  AlertTriangle,
-  X,
-  UserCheck,
-  Check,
-  Server,
-  Layers
+  School, 
+  Lock, 
+  AlertTriangle, 
+  X, 
+  UserCheck, 
+  Check 
 } from 'lucide-react';
 
 export default function HomeLogin() {
   const router = useRouter();
   const videoRef = useRef(null);
 
-  // App phase: 'intro' -> 'loading' -> 'login'
+  // App Phase: 'intro' | 'loading' | 'login'
+  // Opsi 2: Cek apakah pengguna sudah pernah melihat intro pada sesi ini
   const [appPhase, setAppPhase] = useState('intro');
-  const [phaseFading, setPhaseFading] = useState(false);
+  const [isSessionChecked, setIsSessionChecked] = useState(false);
+  const [fadeTransition, setFadeTransition] = useState(false);
 
   // Loading Screen States
   const [loadingProgress, setLoadingProgress] = useState(15);
@@ -66,7 +65,25 @@ export default function HomeLogin() {
   });
   const [isRegistering, setIsRegistering] = useState(false);
 
-  // Load school list on mount
+  // 1. Inisialisasi Sesi (Opsi 2: Smart Session)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const hasSeenIntro = sessionStorage.getItem('kanvas_intro_seen');
+        if (hasSeenIntro === 'true') {
+          // Jika sudah pernah melihat intro di tab/sesi ini, langsung ke login
+          setAppPhase('login');
+        } else {
+          setAppPhase('intro');
+        }
+      } catch (e) {
+        setAppPhase('intro');
+      }
+      setIsSessionChecked(true);
+    }
+  }, []);
+
+  // 2. Load school list
   useEffect(() => {
     const loadSchools = async () => {
       const list = await getSchoolList(supabase);
@@ -82,66 +99,70 @@ export default function HomeLogin() {
     loadSchools();
   }, []);
 
-  // Handle Video Intro End -> Go to Loading
-  const handleVideoEnded = () => {
-    setPhaseFading(true);
+  // 3. Transisi Mulus dari Intro -> Loading (Tanpa Kebocoran Tampilan Login!)
+  const handleIntroComplete = () => {
+    setFadeTransition(true);
     setTimeout(() => {
       setAppPhase('loading');
-      setPhaseFading(false);
-    }, 400);
+      setFadeTransition(false);
+    }, 300);
   };
 
   const handleSkipIntro = () => {
     if (videoRef.current) {
       videoRef.current.pause();
     }
-    handleVideoEnded();
+    handleIntroComplete();
   };
 
-  // Video fallback timer in case video doesn't fire onEnded (e.g. background autoplay block)
+  // Video fallback timer: durasi video 10.03 detik, diberi batas 11.5 detik jika autoplay terhenti di beberapa HP
   useEffect(() => {
     if (appPhase === 'intro') {
       const timer = setTimeout(() => {
-        handleVideoEnded();
-      }, 4500);
+        handleIntroComplete();
+      }, 11500);
       return () => clearTimeout(timer);
     }
   }, [appPhase]);
 
-  // Loading Screen Progression
+  // 4. Loading Progression (~1.8 detik) lalu masuk ke Login
   useEffect(() => {
     if (appPhase === 'loading') {
-      // Step 1: Server connect (400ms)
       const t1 = setTimeout(() => {
-        setLoadingProgress(40);
+        setLoadingProgress(45);
         setLoadingStatusText('Sinkronisasi Katalog Seragam & Atribut...');
         setLoadingChecks((prev) => prev.map((c) => (c.id === 1 ? { ...c, done: true } : c)));
-      }, 500);
+      }, 400);
 
-      // Step 2: Catalog readiness (900ms)
       const t2 = setTimeout(() => {
-        setLoadingProgress(70);
+        setLoadingProgress(75);
         setLoadingStatusText('Memvalidasi Data Sekolah & Jenjang...');
         setLoadingChecks((prev) => prev.map((c) => (c.id === 2 ? { ...c, done: true } : c)));
-      }, 1100);
+      }, 900);
 
-      // Step 3: School Whitelist & App readiness (1400ms)
       const t3 = setTimeout(() => {
-        setLoadingProgress(95);
+        setLoadingProgress(98);
         setLoadingStatusText('Kondisi Aplikasi Prima & Siap Digunakan...');
         setLoadingChecks((prev) => prev.map((c) => (c.id === 3 ? { ...c, done: true } : c)));
-      }, 1600);
+      }, 1400);
 
-      // Step 4: Finish & Fade to Login (2000ms)
       const t4 = setTimeout(() => {
         setLoadingProgress(100);
         setLoadingChecks((prev) => prev.map((c) => (c.id === 4 ? { ...c, done: true } : c)));
-        setPhaseFading(true);
+        
+        // Tandai bahwa intro & loading sudah selesai untuk sesi browser ini (Opsi 2)
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem('kanvas_intro_seen', 'true');
+          } catch (e) {}
+        }
+
+        setFadeTransition(true);
         setTimeout(() => {
           setAppPhase('login');
-          setPhaseFading(false);
-        }, 500);
-      }, 2100);
+          setFadeTransition(false);
+        }, 350);
+      }, 1900);
 
       return () => {
         clearTimeout(t1);
@@ -152,20 +173,18 @@ export default function HomeLogin() {
     }
   }, [appPhase]);
 
-  // Check auth callback from Google redirect
+  // 5. Cek Google Auth Callback saat halaman login aktif
   useEffect(() => {
     const handleAuthRedirect = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const userEmail = session.user.email;
-          const { registered, profile } = await checkParentRegistered(supabase, userEmail, session.user.id);
+          const { registered } = await checkParentRegistered(supabase, userEmail, session.user.id);
 
           if (registered) {
-            // Sudah terdaftar -> langsung masuk ke dashboard
             router.push('/dashboard');
           } else {
-            // Belum terdaftar -> keluarkan dari sesi auth aktif & tampilkan pop-up akun belum terdaftar
             await supabase.auth.signOut();
             setUnregisteredEmail(userEmail || '');
             setRegisterForm((prev) => ({
@@ -186,7 +205,6 @@ export default function HomeLogin() {
     }
   }, [appPhase, router]);
 
-  // Google Login Trigger
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
     try {
@@ -203,12 +221,11 @@ export default function HomeLogin() {
         setIsLoadingGoogle(false);
       }
     } catch (err) {
-      alert('Terjadi kendala saat login Google. Silakan coba kembali.');
+      alert('Terjadi kendala saat login Google.');
       setIsLoadingGoogle(false);
     }
   };
 
-  // When school changes in register form -> lock jenjang automatically
   const handleRegisterSchoolChange = (schoolName) => {
     const lockedLevel = deriveSchoolLevel(schoolName);
     setRegisterForm((prev) => ({
@@ -218,7 +235,6 @@ export default function HomeLogin() {
     }));
   };
 
-  // Handle registration submit
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!registerForm.parentName.trim() || !registerForm.studentName.trim() || !registerForm.phone.trim()) {
@@ -239,27 +255,33 @@ export default function HomeLogin() {
     }
   };
 
+  // Jangan render sebelum sesi di browser terverifikasi untuk menghindari flicker
+  if (!isSessionChecked) {
+    return <div className="w-full min-h-screen bg-[#070B14]"></div>;
+  }
+
   return (
-    <div className="relative w-full min-h-screen bg-[#F8FAFC] flex flex-col justify-between overflow-x-hidden font-sans">
+    <div className="relative w-full min-h-screen flex flex-col justify-between overflow-x-hidden font-sans">
       {/* =========================================================================
-          FASE 1: VIDEO INTRO (Video Intro Kanvas.mp4)
+          FASE 1: VIDEO INTRO 10 DETIK (Video Intro Kanvas.mp4)
+          HANYA RENDER FASE INI AGAR TIDAK ADA KEDIPAN/KEBOCORAN HALAMAN LOGIN!
          ========================================================================= */}
       {appPhase === 'intro' && (
         <div
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white transition-opacity duration-500 ease-out select-none ${
-            phaseFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white select-none transition-opacity duration-300 ease-out ${
+            fadeTransition ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          {/* Skip Button */}
+          {/* Tombol Lewati */}
           <button
             onClick={handleSkipIntro}
-            className="absolute top-5 right-5 text-xs text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1 active:scale-95 z-50"
+            className="absolute top-5 right-5 text-xs text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1 active:scale-95 z-50 shadow-md"
           >
             Lewati <ArrowRight size={13} />
           </button>
 
-          {/* Video Player */}
-          <div className="w-full max-w-[400px] aspect-[9/16] md:max-h-[85vh] flex items-center justify-center relative overflow-hidden">
+          {/* Pemutar Video 10 Detik */}
+          <div className="w-full max-w-[420px] aspect-[9/16] md:max-h-[88vh] flex items-center justify-center relative overflow-hidden">
             <video
               ref={videoRef}
               src={getAssetPath('/video-intro-kanvas.mp4')}
@@ -267,7 +289,7 @@ export default function HomeLogin() {
               muted
               playsInline
               preload="auto"
-              onEnded={handleVideoEnded}
+              onEnded={handleIntroComplete}
               className="w-full h-full object-contain"
             />
           </div>
@@ -275,12 +297,13 @@ export default function HomeLogin() {
       )}
 
       {/* =========================================================================
-          FASE 2: HALAMAN LOADING SISTEM (App Initialization & Readiness Check)
+          FASE 2: HALAMAN LOADING SISTEM (Readiness Check)
+          TRANSISI GELAP KE GELAP (#070B14 -> #0B1528) SEHINGGA SANGAT MULUS
          ========================================================================= */}
       {appPhase === 'loading' && (
         <div
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B1528] text-white px-6 transition-opacity duration-500 ease-out select-none ${
-            phaseFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B1528] text-white px-6 select-none transition-opacity duration-300 ease-out ${
+            fadeTransition ? 'opacity-0' : 'opacity-100'
           }`}
         >
           <div className="w-full max-w-xs flex flex-col items-center text-center">
@@ -314,7 +337,7 @@ export default function HomeLogin() {
               <span className="font-bold text-amber-400">{loadingProgress}%</span>
             </div>
 
-            {/* Readiness Checklist */}
+            {/* Checklist Indikator Kesiapan */}
             <div className="w-full bg-slate-900/60 rounded-2xl p-3.5 border border-slate-800 space-y-2 text-left">
               {loadingChecks.map((item) => (
                 <div key={item.id} className="flex items-center justify-between text-xs">
@@ -335,124 +358,127 @@ export default function HomeLogin() {
 
       {/* =========================================================================
           FASE 3: HALAMAN LOGIN RESMI KANVAS PENABUR
+          HANYA DITAMPILKAN SETELAH LOADING SELESAI 100%!
          ========================================================================= */}
-      <div className="flex-1 flex flex-col px-6 pt-10 pb-8 animate-fade-in justify-between">
-        {/* Header Branding */}
-        <div className="flex flex-col items-center text-center">
-          <div className="relative mb-3 group">
-            <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-amber-500/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
-            <img
-              src={getAssetPath('/kanvas-logo-fix.png')}
-              alt="Kanvas PENABUR"
-              className="relative w-44 md:w-52 h-auto object-contain drop-shadow-md"
-            />
-          </div>
-
-          {/* PERUBAHAN NO. 2: Tulisan resmi Kanal Visual Atribut Sekolah BPK PENABUR */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-900 text-[10.5px] font-bold tracking-wide uppercase mt-1 mb-2">
-            <ShieldCheck size={13} className="text-blue-600" />
-            Kanal Visual Atribut Sekolah BPK PENABUR
-          </div>
-
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">
-            Pesan Seragam Sekolah
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-blue-700 to-amber-600">
-              Lebih Mudah & Praktis
-            </span>
-          </h1>
-
-          <p className="text-xs md:text-sm text-slate-500 mt-2 max-w-xs font-medium leading-relaxed">
-            Masuk untuk mengakses katalog seragam resmi sesuai cabang sekolah & jenjang anak Anda.
-          </p>
-        </div>
-
-        {/* Feature Highlights */}
-        <div className="grid grid-cols-3 gap-2 my-5">
-          <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-1.5 font-bold">
-              <School size={16} />
+      {appPhase === 'login' && (
+        <div className="flex-1 flex flex-col bg-[#F8FAFC] px-6 pt-10 pb-8 animate-fade-in justify-between min-h-screen">
+          {/* Header Branding */}
+          <div className="flex flex-col items-center text-center">
+            <div className="relative mb-3 group">
+              <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-amber-500/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
+              <img
+                src={getAssetPath('/kanvas-logo-fix.png')}
+                alt="Kanvas PENABUR"
+                className="relative w-44 md:w-52 h-auto object-contain drop-shadow-md"
+              />
             </div>
-            <span className="text-[10.5px] font-bold text-slate-800 leading-tight">80+ Sekolah</span>
-            <span className="text-[9px] text-slate-400">TK, SD, SMP, SMA</span>
-          </div>
 
-          <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center mb-1.5 font-bold">
-              <Sparkles size={16} />
+            {/* Tulisan Resmi: Kanal Visual Atribut Sekolah BPK PENABUR */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-900 text-[10.5px] font-bold tracking-wide uppercase mt-1 mb-2">
+              <ShieldCheck size={13} className="text-blue-600" />
+              Kanal Visual Atribut Sekolah BPK PENABUR
             </div>
-            <span className="text-[10.5px] font-bold text-slate-800 leading-tight">Size Akurat</span>
-            <span className="text-[9px] text-slate-400">Standar Resmi</span>
-          </div>
 
-          <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-1.5 font-bold">
-              <ShoppingBag size={16} />
-            </div>
-            <span className="text-[10.5px] font-bold text-slate-800 leading-tight">Stok Terbuka</span>
-            <span className="text-[9px] text-slate-400">Resmi Koperasi</span>
-          </div>
-        </div>
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">
+              Pesan Seragam Sekolah
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-blue-700 to-amber-600">
+                Lebih Mudah & Praktis
+              </span>
+            </h1>
 
-        {/* Card Login */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-md flex flex-col gap-3.5">
-          <span className="text-xs font-bold text-slate-700 text-center block">
-            Silakan Masuk dengan Akun Anda
-          </span>
-
-          {/* Tombol Login Google */}
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={isLoadingGoogle}
-            className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-900 text-slate-800 rounded-2xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-          >
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>{isLoadingGoogle ? 'Memverifikasi Akun...' : 'Masuk dengan Akun Google'}</span>
-          </button>
-
-          {/* PERUBAHAN NO. 3: Link Belum punya akun? Daftar disini */}
-          <div className="pt-2 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-500 font-medium">
-              Belum punya akun?{' '}
-              <button
-                type="button"
-                onClick={() => setShowRegisterModal(true)}
-                className="text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer"
-              >
-                Daftar disini
-              </button>
+            <p className="text-xs md:text-sm text-slate-500 mt-2 max-w-xs font-medium leading-relaxed">
+              Masuk untuk mengakses katalog seragam resmi sesuai cabang sekolah & jenjang anak Anda.
             </p>
           </div>
-        </div>
 
-        {/* Security Footer */}
-        <div className="pt-6 flex flex-col items-center text-center">
-          <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 font-medium">
-            <Lock size={12} className="text-slate-400" />
-            <span>Koneksi Aman Terverifikasi Koperasi BPK PENABUR</span>
+          {/* Feature Highlights */}
+          <div className="grid grid-cols-3 gap-2 my-5">
+            <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-1.5 font-bold">
+                <School size={16} />
+              </div>
+              <span className="text-[10.5px] font-bold text-slate-800 leading-tight">80+ Sekolah</span>
+              <span className="text-[9px] text-slate-400">TK, SD, SMP, SMA</span>
+            </div>
+
+            <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center mb-1.5 font-bold">
+                <Sparkles size={16} />
+              </div>
+              <span className="text-[10.5px] font-bold text-slate-800 leading-tight">Size Akurat</span>
+              <span className="text-[9px] text-slate-400">Standar Resmi</span>
+            </div>
+
+            <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-1.5 font-bold">
+                <ShoppingBag size={16} />
+              </div>
+              <span className="text-[10.5px] font-bold text-slate-800 leading-tight">Stok Terbuka</span>
+              <span className="text-[9px] text-slate-400">Resmi Koperasi</span>
+            </div>
+          </div>
+
+          {/* Card Login */}
+          <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-md flex flex-col gap-3.5">
+            <span className="text-xs font-bold text-slate-700 text-center block">
+              Silakan Masuk dengan Akun Anda
+            </span>
+
+            {/* Tombol Login Google */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isLoadingGoogle}
+              className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-900 text-slate-800 rounded-2xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>{isLoadingGoogle ? 'Memverifikasi Akun...' : 'Masuk dengan Akun Google'}</span>
+            </button>
+
+            {/* Link Belum punya akun? Daftar disini */}
+            <div className="pt-2 border-t border-slate-100 text-center">
+              <p className="text-xs text-slate-500 font-medium">
+                Belum punya akun?{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterModal(true)}
+                  className="text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer"
+                >
+                  Daftar disini
+                </button>
+              </p>
+            </div>
+          </div>
+
+          {/* Security Footer */}
+          <div className="pt-6 flex flex-col items-center text-center">
+            <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 font-medium">
+              <Lock size={12} className="text-slate-400" />
+              <span>Koneksi Aman Terverifikasi Koperasi BPK PENABUR</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* =========================================================================
-          POP-UP 1: MODAL "AKUN BELUM TERDAFTAR" (Sesuai Permintaan #1)
+          POP-UP 1: MODAL "AKUN BELUM TERDAFTAR"
          ========================================================================= */}
       {showUnregisteredModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
@@ -498,7 +524,7 @@ export default function HomeLogin() {
       )}
 
       {/* =========================================================================
-          POP-UP 2: MODAL PENDAFTARAN WALI MURID (Sesuai Permintaan #3)
+          POP-UP 2: MODAL PENDAFTARAN WALI MURID (Lock Jenjang Otomatis)
          ========================================================================= */}
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
