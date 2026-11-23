@@ -142,6 +142,20 @@ const DEFAULT_PRODUCTS = [
     ]
   },
   {
+    id: 'prod-smp-rok-biru',
+    name: 'Rok Rempel Biru SMP',
+    category: 'Nasional',
+    level: 'SMP',
+    description: 'Bahan Famatex biru tua rapi, lipit plisket presisi dan tahan cuci berulang.',
+    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'S', price: 110000, stock: 35 },
+      { size: 'M', price: 115000, stock: 50 },
+      { size: 'L', price: 120000, stock: 55 },
+      { size: 'XL', price: 126000, stock: 30 }
+    ]
+  },
+  {
     id: 'prod-batik-penabur',
     name: 'Kemeja Batik Resmi PENABUR',
     category: 'Batik',
@@ -370,11 +384,12 @@ export default function MobileStorefront() {
             const price = Number(item.price_student || item.price || 0);
 
             if (!groupedMap.has(groupKey)) {
+              const derivedLvl = (item.level || deriveSchoolLevel(item.name) || 'ALL').toUpperCase();
               groupedMap.set(groupKey, {
                 id: item.id,
                 name: item.name,
                 category: item.category || 'Nasional',
-                level: item.level || 'ALL',
+                level: derivedLvl,
                 description: item.description || 'Seragam berstandar resmi Koperasi BPK PENABUR.',
                 imageUrl: item.image_url || 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60',
                 variants: [],
@@ -540,10 +555,35 @@ export default function MobileStorefront() {
     alert('Profil wali murid berhasil diperbarui!');
   };
 
-  // Filter products by Level, Category, and Search
+  // Helper pencocokan jenjang seragam yang ketat (Strict Level Matching SSOT)
+  const isProductMatchingLevel = (product, targetLevel) => {
+    if (!targetLevel || targetLevel === 'ALL') return true;
+    const cleanTarget = targetLevel.toUpperCase().trim();
+    const prodLevel = (product.level || '').toUpperCase().trim();
+    const prodName = (product.name || '').toUpperCase().trim();
+
+    // 1. Jika level produk sama persis (misal: SMP === SMP)
+    if (prodLevel === cleanTarget) return true;
+
+    // 2. Jika level produk universal (ALL / SEMUA / Aksesoris umum)
+    if (prodLevel === 'ALL' || prodLevel === 'SEMUA') {
+      // Pastikan nama produk tidak mengandung jenjang lain secara spesifik
+      const otherLevels = ['TK', 'SD', 'SMP', 'SMA', 'SMK'].filter((l) => l !== cleanTarget);
+      const mentionsOther = otherLevels.some((l) => prodName.includes(` ${l} `) || prodName.endsWith(` ${l}`) || prodName.includes(`${l}-`));
+      return !mentionsOther;
+    }
+
+    // 3. Jika nama produk secara spesifik mengandung jenjang siswa (misal: 'Kemeja Putih Pendek SMP')
+    if (prodName.includes(cleanTarget)) return true;
+
+    return false;
+  };
+
+  // Filter products by Level Siswa Aktif (Strict Level SSOT), Kategori, dan Pencarian
   const filteredProducts = useMemo(() => {
+    const activeLevel = activeStudent?.level || selectedLevel || 'SMP';
     return products.filter((p) => {
-      const matchLevel = selectedLevel === 'ALL' || p.level === 'ALL' || p.level === selectedLevel;
+      const matchLevel = isProductMatchingLevel(p, activeLevel);
       const matchCat = selectedCategory === 'Semua' || p.category.toLowerCase() === selectedCategory.toLowerCase();
       const matchSearch =
         !searchQuery.trim() ||
@@ -551,7 +591,7 @@ export default function MobileStorefront() {
         p.category.toLowerCase().includes(searchQuery.toLowerCase());
       return matchLevel && matchCat && matchSearch;
     });
-  }, [products, selectedLevel, selectedCategory, searchQuery]);
+  }, [products, activeStudent?.level, selectedLevel, selectedCategory, searchQuery]);
 
   // Cart Calculations
   const cartSubtotal = useMemo(() => {
@@ -887,27 +927,25 @@ export default function MobileStorefront() {
             )}
           </div>
 
-          {/* Level Tabs */}
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            {[
-              { id: 'ALL', label: 'Semua Jenjang' },
-              { id: 'TK', label: 'TK' },
-              { id: 'SD', label: 'SD' },
-              { id: 'SMP', label: 'SMP' },
-              { id: 'SMA', label: 'SMA/K' },
-            ].map((lvl) => (
-              <button
-                key={lvl.id}
-                onClick={() => setSelectedLevel(lvl.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all ${
-                  selectedLevel === lvl.id
-                    ? 'bg-[#0F2C59] text-white shadow-sm'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {lvl.label}
-              </button>
-            ))}
+          {/* Banner Kunci Jenjang Otomatis Sesuai Siswa Terdaftar (SSOT) */}
+          <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-gradient-to-r from-blue-900/10 via-blue-50 to-indigo-50/50 border border-blue-200/80 text-blue-950">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-[#0F2C59] text-amber-400 flex items-center justify-center text-[11px] font-black shadow-xs">
+                {activeStudent?.level || selectedLevel || 'SMP'}
+              </span>
+              <div>
+                <span className="text-[11px] font-black block leading-none text-slate-900">
+                  Katalog Khusus Jenjang {activeStudent?.level || selectedLevel || 'SMP'}
+                </span>
+                <span className="text-[9.5px] text-slate-500 font-medium">
+                  {activeStudent?.name || 'Siswa'} • {activeStudent?.school || selectedSchool}
+                </span>
+              </div>
+            </div>
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-900 text-[9px] font-extrabold rounded-md flex items-center gap-1">
+              <Lock size={10} />
+              Terkunci Otomatis
+            </span>
           </div>
 
           {/* Category Chips */}
