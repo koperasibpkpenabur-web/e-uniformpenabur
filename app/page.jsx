@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
-import { getAssetPath } from '../lib/utils';
+import { getAssetPath, triggerHaptic } from '../lib/utils';
 import { 
   getSchoolList, 
   deriveSchoolLevel, 
@@ -232,6 +232,7 @@ export default function HomeLogin() {
   }, [appPhase, router]);
 
   const handleGoogleLogin = async () => {
+    triggerHaptic(14);
     setIsLoadingGoogle(true);
     try {
       const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}${getAssetPath('/')}` : undefined;

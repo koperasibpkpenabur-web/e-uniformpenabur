@@ -12,9 +12,14 @@
 }
 
 @layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     font-family: var(--font-sans);
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-heading);
@@ -28,6 +33,48 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* =========================================================================
+   TACTILE MICRO-SPRING PRESS & NATIVE APP INTERACTION EFFECTS
+   ========================================================================= */
+button,
+[role="button"],
+.btn-press {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), filter 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+.btn-press:active:not(:disabled) {
+  transform: scale(0.96) !important;
+  filter: brightness(0.95) !important;
+}
+
+/* Micro-press for small controls, icons, dots, and chips */
+.btn-press-subtle {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), filter 0.12s ease, opacity 0.12s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.btn-press-subtle:active:not(:disabled) {
+  transform: scale(0.92) !important;
+  filter: brightness(0.92) !important;
+}
+
+/* Tactile press on interactive cards (e.g. Product Catalog Cards) */
+.card-press {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.card-press:active {
+  transform: scale(0.975);
 }
 
 @keyframes fadeIn {

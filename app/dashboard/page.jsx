@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
-import { getAssetPath } from '../../lib/utils';
+import { getAssetPath, triggerHaptic } from '../../lib/utils';
 import { 
   DEFAULT_SCHOOL_WHITELIST, 
   getSchoolList, 
@@ -321,6 +321,7 @@ export default function MobileStorefront() {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
   const handleOpenProductModal = (product) => {
+    triggerHaptic(12);
     setActiveProductModal(product);
     setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
     setModalImageIndex(0);
@@ -394,6 +395,7 @@ export default function MobileStorefront() {
   const transferNote = `${studentFirstName} ${parentFirstName}`;
 
   const copyToClipboard = (text, fieldName) => {
+    triggerHaptic(15);
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopiedField(fieldName);
@@ -551,6 +553,7 @@ export default function MobileStorefront() {
 
   // Helper untuk switch active student
   const handleSelectStudent = (student) => {
+    triggerHaptic(10);
     setActiveStudentId(student.id);
     setSelectedSchool(student.school);
     setSelectedLevel(student.level);
@@ -755,6 +758,7 @@ export default function MobileStorefront() {
 
   // Cart actions
   const addToCart = (product, size) => {
+    triggerHaptic(20);
     const variant = product.variants.find((v) => v.size === size) || product.variants[0];
     const targetStudentName = activeStudent?.name || 'Siswa';
     const targetSchoolName = activeStudent?.school || selectedSchool;
@@ -791,6 +795,7 @@ export default function MobileStorefront() {
   };
 
   const updateCartQuantity = (cartItemId, delta) => {
+    triggerHaptic(10);
     setCart((prev) =>
       prev
         .map((item) => {
@@ -1194,7 +1199,7 @@ export default function MobileStorefront() {
                     <div
                       key={product.id}
                       onClick={() => handleOpenProductModal(product)}
-                      className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col group relative"
+                      className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col group relative card-press"
                     >
                       <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2.5 relative flex items-center justify-center p-2">
                         <img
@@ -2430,11 +2435,13 @@ export default function MobileStorefront() {
 
         const handlePrevImage = (e) => {
           e?.stopPropagation();
+          triggerHaptic(10);
           setModalImageIndex((prev) => (prev > 0 ? prev - 1 : modalImages.length - 1));
         };
 
         const handleNextImage = (e) => {
           e?.stopPropagation();
+          triggerHaptic(10);
           setModalImageIndex((prev) => (prev < modalImages.length - 1 ? prev + 1 : 0));
         };
 
