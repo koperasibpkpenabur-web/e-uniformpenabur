@@ -504,10 +504,26 @@ export default function MobileStorefront() {
                 initialImages = ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60'];
               }
 
+              // Normalisasi kategori agar sinkron dengan chip filter Kanvas
+              let normalizedCategory = item.category || 'Nasional';
+              const rawCat = (item.category || '').toLowerCase();
+              const rawName = (item.name || '').toLowerCase();
+              if (rawCat.includes('nasional') || rawName.includes('nasional')) {
+                normalizedCategory = 'Nasional';
+              } else if (rawCat.includes('batik') || rawName.includes('batik')) {
+                normalizedCategory = 'Batik';
+              } else if (rawCat.includes('pramuka') || rawName.includes('pramuka')) {
+                normalizedCategory = 'Pramuka';
+              } else if (rawCat.includes('olahraga') || rawCat.includes('sport') || rawName.includes('olahraga')) {
+                normalizedCategory = 'Olahraga';
+              } else if (rawCat.includes('aksesoris') || rawCat.includes('atribut') || rawCat.includes('topi') || rawCat.includes('dasi') || rawCat.includes('kaos kaki')) {
+                normalizedCategory = 'Aksesoris';
+              }
+
               groupedMap.set(groupKey, {
                 id: item.id,
                 name: item.name,
-                category: item.category || 'Nasional',
+                category: normalizedCategory,
                 level: derivedLvl,
                 description: item.description || 'Seragam berstandar resmi Koperasi BPK PENABUR.',
                 imageUrl: initialImages[0],
@@ -854,9 +870,16 @@ export default function MobileStorefront() {
     };
 
     try {
+      let authUserId = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        authUserId = session?.user?.id || null;
+      } catch (e) {}
+
       await supabase.from('parent_orders').insert([
         {
           id: orderNumber,
+          parent_auth_user_id: authUserId,
           school_name: schoolName,
           school_level: schoolLevel,
           student_name: studentName,
@@ -875,9 +898,10 @@ export default function MobileStorefront() {
 
       const itemsPayload = cart.map((item) => ({
         parent_order_id: orderNumber,
-        product_id: item.productId,
-        name: item.name,
-        size: item.size,
+        product_id: item.productId && !String(item.productId).startsWith('mock-') && !String(item.productId).startsWith('prod-') ? item.productId : null,
+        product_name: item.name,
+        category: item.category || 'Seragam',
+        size: item.size || 'STANDAR',
         quantity: item.quantity,
         price_student: item.price,
         subtotal: item.price * item.quantity,

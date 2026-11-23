@@ -206,12 +206,14 @@ export default function HomeLogin() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const userEmail = session.user.email;
-          const { registered } = await checkParentRegistered(supabase, userEmail, session.user.id);
+          const { registered, profile } = await checkParentRegistered(supabase, userEmail, session.user.id);
 
           if (registered) {
+            if (profile && typeof window !== 'undefined') {
+              localStorage.setItem('kanvas_parent_session', JSON.stringify(profile));
+            }
             router.push('/dashboard');
           } else {
-            await supabase.auth.signOut();
             setUnregisteredEmail(userEmail || '');
             setRegisterForm((prev) => ({
               ...prev,
@@ -274,7 +276,13 @@ export default function HomeLogin() {
 
     setIsRegistering(true);
     try {
-      await saveParentRegistration(supabase, registerForm);
+      let authUserId = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        authUserId = session?.user?.id || null;
+      } catch (e) {}
+
+      await saveParentRegistration(supabase, registerForm, authUserId);
       if (guideState === 'spotlight_form') {
         try {
           localStorage.setItem('kanvas_guide_active', 'true');
