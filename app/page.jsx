@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
 import { getAssetPath } from '../lib/utils';
+import { 
+  getSchoolList, 
+  deriveSchoolLevel, 
+  checkParentRegistered, 
+  saveParentRegistration 
+} from '../lib/schools';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -12,139 +18,325 @@ import {
   ShoppingBag, 
   HelpCircle,
   School,
-  Lock
+  Lock,
+  AlertTriangle,
+  X,
+  UserCheck,
+  Check,
+  Server,
+  Layers
 } from 'lucide-react';
 
 export default function HomeLogin() {
   const router = useRouter();
+  const videoRef = useRef(null);
 
-  // Intro states:
-  // showIntro: true means the intro DOM is present
-  // introFading: true triggers the smooth fade-out CSS opacity transition
-  const [showIntro, setShowIntro] = useState(true);
-  const [introFading, setIntroFading] = useState(false);
+  // App phase: 'intro' -> 'loading' -> 'login'
+  const [appPhase, setAppPhase] = useState('intro');
+  const [phaseFading, setPhaseFading] = useState(false);
 
+  // Loading Screen States
+  const [loadingProgress, setLoadingProgress] = useState(15);
+  const [loadingStatusText, setLoadingStatusText] = useState('Menghubungkan ke Server Koperasi...');
+  const [loadingChecks, setLoadingChecks] = useState([
+    { id: 1, label: 'Koneksi Server Supabase', done: false },
+    { id: 2, label: 'Katalog Seragam & Atribut', done: false },
+    { id: 3, label: 'Data Sekolah & Whitelist', done: false },
+    { id: 4, label: 'Kesiapan Aplikasi', done: false },
+  ]);
+
+  // School Whitelist List
+  const [schoolList, setSchoolList] = useState([]);
+
+  // Auth & Pop-up States
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
-  const [isLoadingGuest, setIsLoadingGuest] = useState(false);
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [showUnregisteredModal, setShowUnregisteredModal] = useState(false);
+  const [unregisteredEmail, setUnregisteredEmail] = useState('');
 
+  // Registration Modal State
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [registerForm, setRegisterForm] = useState({
+    parentName: '',
+    studentName: '',
+    schoolName: '',
+    schoolLevel: '',
+    studentClass: '',
+    phone: '',
+    email: '',
+  });
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // Load school list on mount
   useEffect(() => {
-    // 1. Timer Intro Kanvas.gif: tayang ~2.2 detik, lalu fade-out smooth (700ms)
-    const fadeTimer = setTimeout(() => {
-      setIntroFading(true);
-    }, 2200);
+    const loadSchools = async () => {
+      const list = await getSchoolList(supabase);
+      setSchoolList(list);
+      if (list.length > 0) {
+        setRegisterForm((prev) => ({
+          ...prev,
+          schoolName: list[0].name,
+          schoolLevel: list[0].level || deriveSchoolLevel(list[0].name),
+        }));
+      }
+    };
+    loadSchools();
+  }, []);
 
-    const endTimer = setTimeout(() => {
-      setShowIntro(false);
-    }, 3000);
+  // Handle Video Intro End -> Go to Loading
+  const handleVideoEnded = () => {
+    setPhaseFading(true);
+    setTimeout(() => {
+      setAppPhase('loading');
+      setPhaseFading(false);
+    }, 400);
+  };
 
-    // 2. Check if user already logged in via Supabase or stored session
-    const checkActiveSession = async () => {
+  const handleSkipIntro = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+    handleVideoEnded();
+  };
+
+  // Video fallback timer in case video doesn't fire onEnded (e.g. background autoplay block)
+  useEffect(() => {
+    if (appPhase === 'intro') {
+      const timer = setTimeout(() => {
+        handleVideoEnded();
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [appPhase]);
+
+  // Loading Screen Progression
+  useEffect(() => {
+    if (appPhase === 'loading') {
+      // Step 1: Server connect (400ms)
+      const t1 = setTimeout(() => {
+        setLoadingProgress(40);
+        setLoadingStatusText('Sinkronisasi Katalog Seragam & Atribut...');
+        setLoadingChecks((prev) => prev.map((c) => (c.id === 1 ? { ...c, done: true } : c)));
+      }, 500);
+
+      // Step 2: Catalog readiness (900ms)
+      const t2 = setTimeout(() => {
+        setLoadingProgress(70);
+        setLoadingStatusText('Memvalidasi Data Sekolah & Jenjang...');
+        setLoadingChecks((prev) => prev.map((c) => (c.id === 2 ? { ...c, done: true } : c)));
+      }, 1100);
+
+      // Step 3: School Whitelist & App readiness (1400ms)
+      const t3 = setTimeout(() => {
+        setLoadingProgress(95);
+        setLoadingStatusText('Kondisi Aplikasi Prima & Siap Digunakan...');
+        setLoadingChecks((prev) => prev.map((c) => (c.id === 3 ? { ...c, done: true } : c)));
+      }, 1600);
+
+      // Step 4: Finish & Fade to Login (2000ms)
+      const t4 = setTimeout(() => {
+        setLoadingProgress(100);
+        setLoadingChecks((prev) => prev.map((c) => (c.id === 4 ? { ...c, done: true } : c)));
+        setPhaseFading(true);
+        setTimeout(() => {
+          setAppPhase('login');
+          setPhaseFading(false);
+        }, 500);
+      }, 2100);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+      };
+    }
+  }, [appPhase]);
+
+  // Check auth callback from Google redirect
+  useEffect(() => {
+    const handleAuthRedirect = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          router.push('/dashboard');
+          const userEmail = session.user.email;
+          const { registered, profile } = await checkParentRegistered(supabase, userEmail, session.user.id);
+
+          if (registered) {
+            // Sudah terdaftar -> langsung masuk ke dashboard
+            router.push('/dashboard');
+          } else {
+            // Belum terdaftar -> keluarkan dari sesi auth aktif & tampilkan pop-up akun belum terdaftar
+            await supabase.auth.signOut();
+            setUnregisteredEmail(userEmail || '');
+            setRegisterForm((prev) => ({
+              ...prev,
+              email: userEmail || '',
+              parentName: session.user.user_metadata?.full_name || prev.parentName,
+            }));
+            setShowUnregisteredModal(true);
+          }
         }
       } catch (err) {
-        console.warn('Session check:', err);
+        console.warn('Auth redirect check:', err);
       }
     };
-    checkActiveSession();
 
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(endTimer);
-    };
-  }, [router]);
+    if (appPhase === 'login') {
+      handleAuthRedirect();
+    }
+  }, [appPhase, router]);
 
-  const handleSkipIntro = () => {
-    setIntroFading(true);
-    setTimeout(() => setShowIntro(false), 300);
-  };
-
+  // Google Login Trigger
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
     try {
-      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}${getAssetPath('/dashboard')}` : undefined;
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}${getAssetPath('/')}` : undefined;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
         },
       });
+
       if (error) {
-        alert('Info: ' + error.message + '\nAnda juga dapat langsung masuk menggunakan Mode Cepat Wali Murid.');
+        alert('Gagal login Google: ' + error.message);
         setIsLoadingGoogle(false);
       }
     } catch (err) {
-      alert('Gagal login Google. Silakan gunakan Mode Masuk Langsung.');
+      alert('Terjadi kendala saat login Google. Silakan coba kembali.');
       setIsLoadingGoogle(false);
     }
   };
 
-  const handleQuickAccess = (e) => {
-    e.preventDefault();
-    setIsLoadingGuest(true);
-    
-    // Simpan profil wali murid lokal untuk kemudahan pemesanan
-    const parentProfile = {
-      fullName: guestName.trim() || 'Wali Murid PENABUR',
-      phone: guestPhone.trim() || '',
-      isGuest: true,
-      createdAt: new Date().toISOString(),
-    };
+  // When school changes in register form -> lock jenjang automatically
+  const handleRegisterSchoolChange = (schoolName) => {
+    const lockedLevel = deriveSchoolLevel(schoolName);
+    setRegisterForm((prev) => ({
+      ...prev,
+      schoolName: schoolName,
+      schoolLevel: lockedLevel,
+    }));
+  };
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('kanvas_parent_session', JSON.stringify(parentProfile));
+  // Handle registration submit
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    if (!registerForm.parentName.trim() || !registerForm.studentName.trim() || !registerForm.phone.trim()) {
+      alert('Mohon lengkapi semua data pendaftaran.');
+      return;
     }
 
-    setTimeout(() => {
+    setIsRegistering(true);
+    try {
+      await saveParentRegistration(supabase, registerForm);
+      setShowRegisterModal(false);
+      alert(`Pendaftaran Berhasil!\nSelamat datang Bapak/Ibu ${registerForm.parentName}. Silakan melanjutkan pemesanan seragam.`);
       router.push('/dashboard');
-    }, 400);
+    } catch (err) {
+      alert('Gagal menyimpan pendaftaran: ' + err.message);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-[#F8FAFC] flex flex-col justify-between overflow-x-hidden">
+    <div className="relative w-full min-h-screen bg-[#F8FAFC] flex flex-col justify-between overflow-x-hidden font-sans">
       {/* =========================================================================
-          INTRO ANIMATION OVERLAY (Intro Kanvas.gif + Smooth Fade Transition)
+          FASE 1: VIDEO INTRO (Video Intro Kanvas.mp4)
          ========================================================================= */}
-      {showIntro && (
+      {appPhase === 'intro' && (
         <div
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white transition-opacity duration-700 ease-out select-none ${
-            introFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white transition-opacity duration-500 ease-out select-none ${
+            phaseFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
           {/* Skip Button */}
           <button
             onClick={handleSkipIntro}
-            className="absolute top-5 right-5 text-xs text-slate-400 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1 active:scale-95"
+            className="absolute top-5 right-5 text-xs text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1 active:scale-95 z-50"
           >
             Lewati <ArrowRight size={13} />
           </button>
 
-          {/* Intro GIF Container */}
-          <div className="w-full max-w-[340px] px-6 flex flex-col items-center justify-center">
-            <div className="relative w-full aspect-square max-w-[280px] flex items-center justify-center">
+          {/* Video Player */}
+          <div className="w-full max-w-[400px] aspect-[9/16] md:max-h-[85vh] flex items-center justify-center relative overflow-hidden">
+            <video
+              ref={videoRef}
+              src={getAssetPath('/video-intro-kanvas.mp4')}
+              autoPlay
+              muted
+              playsInline
+              preload="auto"
+              onEnded={handleVideoEnded}
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          FASE 2: HALAMAN LOADING SISTEM (App Initialization & Readiness Check)
+         ========================================================================= */}
+      {appPhase === 'loading' && (
+        <div
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B1528] text-white px-6 transition-opacity duration-500 ease-out select-none ${
+            phaseFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          <div className="w-full max-w-xs flex flex-col items-center text-center">
+            {/* Ambient Logo Glow */}
+            <div className="relative mb-6">
+              <div className="absolute -inset-4 bg-amber-500/20 rounded-full blur-2xl animate-pulse"></div>
               <img
-                src={getAssetPath('/intro-kanvas.gif')}
-                alt="Intro Kanvas PENABUR"
-                className="w-full h-full object-contain drop-shadow-[0_15px_35px_rgba(245,158,11,0.25)]"
+                src={getAssetPath('/kanvas-logo-only.png')}
+                alt="Kanvas PENABUR"
+                className="relative w-20 h-20 object-contain drop-shadow-[0_10px_25px_rgba(245,158,11,0.3)] animate-pulse-glow"
               />
             </div>
-            <div className="mt-6 flex items-center gap-2 text-xs text-amber-300 font-semibold tracking-wide">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-              <span>Memuat Kanvas PENABUR...</span>
+
+            <h2 className="text-lg font-black tracking-wide text-white mb-1">
+              KANVAS PENABUR
+            </h2>
+            <p className="text-xs text-amber-300 font-semibold mb-6">
+              Menyiapkan Pengalaman Terbaik Anda
+            </p>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-800/80 rounded-full h-2 p-0.5 border border-slate-700/80 mb-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+
+            <div className="flex justify-between w-full text-[10px] text-slate-400 font-mono mb-6">
+              <span>{loadingStatusText}</span>
+              <span className="font-bold text-amber-400">{loadingProgress}%</span>
+            </div>
+
+            {/* Readiness Checklist */}
+            <div className="w-full bg-slate-900/60 rounded-2xl p-3.5 border border-slate-800 space-y-2 text-left">
+              {loadingChecks.map((item) => (
+                <div key={item.id} className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300 text-[11px] font-medium">{item.label}</span>
+                  {item.done ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                      <Check size={12} /> Siap
+                    </span>
+                  ) : (
+                    <span className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
       {/* =========================================================================
-          HALAMAN LOGIN & PORTAL WALI MURID (Mobile-First Experience)
+          FASE 3: HALAMAN LOGIN RESMI KANVAS PENABUR
          ========================================================================= */}
-      <div className="flex-1 flex flex-col px-6 pt-10 pb-8 animate-fade-in">
+      <div className="flex-1 flex flex-col px-6 pt-10 pb-8 animate-fade-in justify-between">
         {/* Header Branding */}
         <div className="flex flex-col items-center text-center">
           <div className="relative mb-3 group">
@@ -156,9 +348,10 @@ export default function HomeLogin() {
             />
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-800 text-[11px] font-bold tracking-wide uppercase mt-1 mb-2">
+          {/* PERUBAHAN NO. 2: Tulisan resmi Kanal Visual Atribut Sekolah BPK PENABUR */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-900 text-[10.5px] font-bold tracking-wide uppercase mt-1 mb-2">
             <ShieldCheck size={13} className="text-blue-600" />
-            Layanan Resmi BPK PENABUR
+            Kanal Visual Atribut Sekolah BPK PENABUR
           </div>
 
           <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">
@@ -169,18 +362,18 @@ export default function HomeLogin() {
           </h1>
 
           <p className="text-xs md:text-sm text-slate-500 mt-2 max-w-xs font-medium leading-relaxed">
-            Pilih seragam sesuai cabang sekolah & jenjang anak Anda, cek ukuran akurat, dan konfirmasi pesanan langsung.
+            Masuk untuk mengakses katalog seragam resmi sesuai cabang sekolah & jenjang anak Anda.
           </p>
         </div>
 
-        {/* Feature Highlights Pill */}
-        <div className="grid grid-cols-3 gap-2 my-6">
+        {/* Feature Highlights */}
+        <div className="grid grid-cols-3 gap-2 my-5">
           <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
             <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-1.5 font-bold">
               <School size={16} />
             </div>
             <span className="text-[10.5px] font-bold text-slate-800 leading-tight">80+ Sekolah</span>
-            <span className="text-[9px] text-slate-400">Semua Jenjang</span>
+            <span className="text-[9px] text-slate-400">TK, SD, SMP, SMA</span>
           </div>
 
           <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
@@ -188,7 +381,7 @@ export default function HomeLogin() {
               <Sparkles size={16} />
             </div>
             <span className="text-[10.5px] font-bold text-slate-800 leading-tight">Size Akurat</span>
-            <span className="text-[9px] text-slate-400">Size Chart S-10L</span>
+            <span className="text-[9px] text-slate-400">Standar Resmi</span>
           </div>
 
           <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
@@ -200,127 +393,272 @@ export default function HomeLogin() {
           </div>
         </div>
 
-        {/* Action Card: Pilihan Akses Masuk */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-md">
-          {!showGuestForm ? (
-            <div className="flex flex-col gap-3">
-              {/* Primary: Quick Entry for Parents (Paling Cepat & Ramah Ortu) */}
-              <button
-                onClick={() => setShowGuestForm(true)}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-900/20 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
-              >
-                <ShoppingBag size={18} className="text-amber-400" />
-                <span>Mulai Pesan Seragam</span>
-                <ArrowRight size={16} className="ml-auto" />
-              </button>
+        {/* Card Login */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-md flex flex-col gap-3.5">
+          <span className="text-xs font-bold text-slate-700 text-center block">
+            Silakan Masuk dengan Akun Anda
+          </span>
 
-              {/* Divider */}
-              <div className="relative flex items-center justify-center my-1">
-                <div className="border-t border-slate-200 w-full"></div>
-                <span className="bg-white px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  atau
-                </span>
-              </div>
+          {/* Tombol Login Google */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isLoadingGoogle}
+            className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-900 text-slate-800 rounded-2xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+          >
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+            <span>{isLoadingGoogle ? 'Memverifikasi Akun...' : 'Masuk dengan Akun Google'}</span>
+          </button>
 
-              {/* Google OAuth Login */}
+          {/* PERUBAHAN NO. 3: Link Belum punya akun? Daftar disini */}
+          <div className="pt-2 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-500 font-medium">
+              Belum punya akun?{' '}
               <button
                 type="button"
-                onClick={handleGoogleLogin}
-                disabled={isLoadingGoogle}
-                className="w-full py-3 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-2xl font-semibold text-xs transition-all flex items-center justify-center gap-2.5 active:scale-[0.98]"
+                onClick={() => setShowRegisterModal(true)}
+                className="text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer"
               >
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>{isLoadingGoogle ? 'Menghubungkan...' : 'Masuk dengan Akun Google'}</span>
+                Daftar disini
+              </button>
+            </p>
+          </div>
+        </div>
+
+        {/* Security Footer */}
+        <div className="pt-6 flex flex-col items-center text-center">
+          <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 font-medium">
+            <Lock size={12} className="text-slate-400" />
+            <span>Koneksi Aman Terverifikasi Koperasi BPK PENABUR</span>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          POP-UP 1: MODAL "AKUN BELUM TERDAFTAR" (Sesuai Permintaan #1)
+         ========================================================================= */}
+      {showUnregisteredModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-sm text-center animate-fade-in relative">
+            <button
+              onClick={() => setShowUnregisteredModal(false)}
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
+            >
+              <X size={15} />
+            </button>
+
+            <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3">
+              <AlertTriangle size={28} />
+            </div>
+
+            <h3 className="text-base font-black text-slate-900 mb-1">
+              Akun Belum Terdaftar
+            </h3>
+
+            <p className="text-xs text-slate-500 leading-relaxed mb-5">
+              Akun Google <strong className="text-slate-800">{unregisteredEmail || 'Anda'}</strong> belum terdaftar pada sistem Kanvas PENABUR. Silakan melakukan pendaftaran terlebih dahulu.
+            </p>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  setShowUnregisteredModal(false);
+                  setShowRegisterModal(true);
+                }}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl text-xs font-bold shadow-md hover:brightness-105"
+              >
+                Daftar Akun Baru Sekarang
+              </button>
+              <button
+                onClick={() => setShowUnregisteredModal(false)}
+                className="w-full py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200"
+              >
+                Tutup
               </button>
             </div>
-          ) : (
-            /* Quick Access Form */
-            <form onSubmit={handleQuickAccess} className="flex flex-col gap-3 animate-fade-in">
-              <div className="flex items-center justify-between pb-1">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-emerald-600" />
-                  Isi Data Singkat Wali Murid
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowGuestForm(false)}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold"
-                >
-                  Kembali
-                </button>
-              </div>
+          </div>
+        </div>
+      )}
 
+      {/* =========================================================================
+          POP-UP 2: MODAL PENDAFTARAN WALI MURID (Sesuai Permintaan #3)
+         ========================================================================= */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-md max-h-[90vh] overflow-y-auto animate-fade-in">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-center gap-2">
+                <UserCheck size={18} className="text-blue-900" />
+                <h3 className="font-bold text-sm text-slate-900">Pendaftaran Akun Wali Murid</h3>
+              </div>
+              <button
+                onClick={() => setShowRegisterModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+              Lengkapi data di bawah ini untuk menghubungkan pemesanan seragam resmi siswa ke sekolah:
+            </p>
+
+            <form onSubmit={handleRegisterSubmit} className="space-y-3">
+              {/* Nama Lengkap Orang Tua */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Nama Lengkap Orang Tua / Wali
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nama Lengkap Orang Tua *
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="Contoh: Hendra Wijaya"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
+                  value={registerForm.parentName}
+                  onChange={(e) => setRegisterForm({ ...registerForm, parentName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
 
+              {/* Nama Lengkap Siswa */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Nomor WhatsApp Aktif
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nama Lengkap Siswa *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Jonathan Chris"
+                  value={registerForm.studentName}
+                  onChange={(e) => setRegisterForm({ ...registerForm, studentName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
+
+              {/* Nama Sekolah (Dropdown dari tabel school_whitelist) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nama Sekolah PENABUR *
+                </label>
+                <select
+                  required
+                  value={registerForm.schoolName}
+                  onChange={(e) => handleRegisterSchoolChange(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
+                >
+                  {schoolList.map((sch, idx) => (
+                    <option key={idx} value={sch.name}>
+                      {sch.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  Data diambil dari daftar resmi sekolah BPK PENABUR.
+                </span>
+              </div>
+
+              {/* Jenjang (Otomatis Lock Sesuai Sekolah yang Dipilih!) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Jenjang Sekolah *
+                  </label>
+                  <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5">
+                    <Lock size={10} /> Terkunci Otomatis
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    readOnly
+                    value={registerForm.schoolLevel}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-300 text-xs font-black text-blue-900 cursor-not-allowed uppercase tracking-wider"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-100 text-blue-800 text-[9.5px] font-extrabold rounded-md">
+                    {registerForm.schoolLevel}
+                  </div>
+                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block italic">
+                  Jenjang otomatis dikunci berdasarkan sekolah (misal: SMPK 4 PENABUR &rarr; SMP).
+                </span>
+              </div>
+
+              {/* Kelas */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Kelas Siswa *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Kelas 1A / Kelas 7B / Kelas 10"
+                  value={registerForm.studentClass}
+                  onChange={(e) => setRegisterForm({ ...registerForm, studentClass: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
+
+              {/* No. HP (WhatsApp) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nomor HP / WhatsApp Aktif *
                 </label>
                 <input
                   type="tel"
                   required
                   placeholder="Contoh: 081234567890"
-                  value={guestPhone}
-                  onChange={(e) => setGuestPhone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
+                  value={registerForm.phone}
+                  onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
-                <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  Nomor ini digunakan untuk update status pesanan seragam.
-                </span>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoadingGuest}
-                className="w-full mt-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-bold text-xs shadow-md shadow-amber-500/20 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                <span>{isLoadingGuest ? 'Membuka Katalog...' : 'Lanjut ke Katalog Seragam'}</span>
-                <ArrowRight size={14} />
-              </button>
-            </form>
-          )}
-        </div>
+              {/* Email (Optional / otomatis dari Google jika ada) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Email Akun
+                </label>
+                <input
+                  type="email"
+                  placeholder="email@gmail.com"
+                  value={registerForm.email}
+                  onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
 
-        {/* Security & Help Footer */}
-        <div className="mt-auto pt-6 flex flex-col items-center text-center">
-          <div className="flex items-center gap-2 text-[10.5px] text-slate-400 font-medium">
-            <Lock size={12} className="text-slate-400" />
-            <span>Koneksi Aman Terverifikasi Koperasi BPK PENABUR</span>
+              {/* Submit CTA */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isRegistering}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl text-xs font-bold shadow-md hover:brightness-110 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                >
+                  <CheckCircle2 size={16} className="text-amber-400" />
+                  <span>{isRegistering ? 'Mendaftarkan Akun...' : 'Daftarkan Akun & Mulai Belanja'}</span>
+                </button>
+              </div>
+            </form>
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">
-            Butuh bantuan pemesanan? Hubungi Koperasi di WhatsApp: <strong className="text-slate-600">0812-9000-xxxx</strong>
-          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 }

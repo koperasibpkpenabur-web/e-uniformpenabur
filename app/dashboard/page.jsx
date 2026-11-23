@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { getAssetPath } from '../../lib/utils';
+import { DEFAULT_SCHOOL_WHITELIST } from '../../lib/schools';
 import {
   ShoppingBag,
   User,
@@ -48,40 +49,8 @@ const sortSizes = (sizes) => {
   });
 };
 
-// Daftar referensi sekolah BPK PENABUR
-const PENABUR_SCHOOLS = [
-  { id: 'TKK-1', name: 'TKK 1 PENABUR Jakarta', level: 'TK' },
-  { id: 'TKK-2', name: 'TKK 2 PENABUR Jakarta', level: 'TK' },
-  { id: 'TKK-3', name: 'TKK 3 PENABUR Jakarta', level: 'TK' },
-  { id: 'TKK-6', name: 'TKK 6 PENABUR Jakarta', level: 'TK' },
-  { id: 'TKK-GS', name: 'TKK PENABUR Gading Serpong', level: 'TK' },
-  { id: 'SDK-1', name: 'SDK 1 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-2', name: 'SDK 2 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-3', name: 'SDK 3 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-4', name: 'SDK 4 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-6', name: 'SDK 6 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-9', name: 'SDK 9 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-10', name: 'SDK 10 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-11', name: 'SDK 11 PENABUR Jakarta', level: 'SD' },
-  { id: 'SDK-GS', name: 'SDK PENABUR Gading Serpong', level: 'SD' },
-  { id: 'SMPK-1', name: 'SMPK 1 PENABUR Jakarta', level: 'SMP' },
-  { id: 'SMPK-2', name: 'SMPK 2 PENABUR Jakarta', level: 'SMP' },
-  { id: 'SMPK-3', name: 'SMPK 3 PENABUR Jakarta', level: 'SMP' },
-  { id: 'SMPK-4', name: 'SMPK 4 PENABUR Jakarta', level: 'SMP' },
-  { id: 'SMPK-5', name: 'SMPK 5 PENABUR Jakarta', level: 'SMP' },
-  { id: 'SMPK-6', name: 'SMPK 6 PENABUR Jakarta', level: 'SMP' },
-  { id: 'SMPK-7', name: 'SMPK 7 PENABUR Jakarta', level: 'SMP' },
-  { id: 'SMPK-GS', name: 'SMPK PENABUR Gading Serpong', level: 'SMP' },
-  { id: 'SMAK-1', name: 'SMAK 1 PENABUR Jakarta', level: 'SMA' },
-  { id: 'SMAK-2', name: 'SMAK 2 PENABUR Jakarta', level: 'SMA' },
-  { id: 'SMAK-3', name: 'SMAK 3 PENABUR Jakarta', level: 'SMA' },
-  { id: 'SMAK-4', name: 'SMAK 4 PENABUR Jakarta', level: 'SMA' },
-  { id: 'SMAK-5', name: 'SMAK 5 PENABUR Jakarta', level: 'SMA' },
-  { id: 'SMAK-6', name: 'SMAK 6 PENABUR Jakarta', level: 'SMA' },
-  { id: 'SMAK-7', name: 'SMAK 7 PENABUR Jakarta', level: 'SMA' },
-  { id: 'SMAK-GS', name: 'SMAK PENABUR Gading Serpong', level: 'SMA' },
-  { id: 'SMKK-1', name: 'SMKK 1 PENABUR Jakarta', level: 'SMA' }
-];
+// Daftar referensi sekolah BPK PENABUR dari whitelist
+const PENABUR_SCHOOLS = DEFAULT_SCHOOL_WHITELIST;
 
 // Fallback Katalog Seragam Resmi BPK PENABUR (jika data Supabase belum disinkronkan)
 const DEFAULT_PRODUCTS = [
@@ -247,6 +216,20 @@ export default function MobileStorefront() {
         if (stored) {
           const parsed = JSON.parse(stored);
           setParentProfile(parsed);
+          if (parsed.studentName) {
+            setStudentForm({
+              name: parsed.studentName,
+              school: parsed.schoolName || 'SDK 1 PENABUR Jakarta',
+              level: parsed.schoolLevel || 'SD',
+              grade: parsed.studentClass || 'Kelas 1',
+            });
+          }
+          if (parsed.schoolName) {
+            setSelectedSchool(parsed.schoolName);
+          }
+          if (parsed.schoolLevel) {
+            setSelectedLevel(parsed.schoolLevel);
+          }
         }
         const storedOrders = localStorage.getItem('kanvas_my_orders');
         if (storedOrders) {

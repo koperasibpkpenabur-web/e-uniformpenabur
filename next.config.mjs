@@ -11,23 +11,11 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'fxyssksvbuxnbthfrpzy.supabase.co',
-      },
-      {
-        protocol: 'https',
-        hostname: 'oqyzkhzmvdnkknxdmhao.supabase.co',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'api.dicebear.com',
-      },
+    domains: [
+      'fxyssksvbuxnbthfrpzy.supabase.co',
+      'oqyzkhzmvdnkknxdmhao.supabase.co',
+      'api.dicebear.com',
+      'images.unsplash.com',
     ],
   },
 };
