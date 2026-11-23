@@ -8,7 +8,8 @@ import {
   DEFAULT_SCHOOL_WHITELIST, 
   getSchoolList, 
   deriveSchoolLevel, 
-  cleanSchoolName 
+  cleanSchoolName,
+  getSchoolPaymentInfo
 } from '../../lib/schools';
 import {
   ShoppingBag,
@@ -41,7 +42,10 @@ import {
   QrCode,
   Package,
   Receipt,
-  Calendar
+  Calendar,
+  Copy,
+  ExternalLink,
+  UploadCloud
 } from 'lucide-react';
 
 const SIZE_ORDER = ['SS', 'S', 'M', 'L', 'XL', '2L', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L', 'STANDAR', 'ALL SIZE'];
@@ -256,10 +260,33 @@ export default function MobileStorefront() {
   const [myOrders, setMyOrders] = useState([]);
   const [selectedOrderReceipt, setSelectedOrderReceipt] = useState(null);
 
+  // Payment & Multi-step Checkout States
+  const [copiedField, setCopiedField] = useState(null); // 'account' | 'amount' | 'note'
+  const [isProofConfirmed, setIsProofConfirmed] = useState(false);
+  const [proofDriveUrl, setProofDriveUrl] = useState('');
+  const [showFinalConfirmModal, setShowFinalConfirmModal] = useState(false);
+
   // Active student object helper
   const activeStudent = useMemo(() => {
     return students.find((s) => s.id === activeStudentId) || students[0] || null;
   }, [students, activeStudentId]);
+
+  const currentSchoolName = activeStudent?.school || selectedSchool;
+  const schoolPayment = useMemo(() => {
+    return getSchoolPaymentInfo(schoolList, currentSchoolName);
+  }, [schoolList, currentSchoolName]);
+
+  const studentFirstName = (activeStudent?.name || 'Siswa').trim().split(' ')[0] || 'Siswa';
+  const parentFirstName = (parentProfile.fullName || 'Ortu').trim().split(' ')[0] || 'Ortu';
+  const transferNote = `${studentFirstName} ${parentFirstName}`;
+
+  const copyToClipboard = (text, fieldName) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2500);
+    }
+  };
 
   // Load School List & User Session
   useEffect(() => {
@@ -590,9 +617,15 @@ export default function MobileStorefront() {
     );
   };
 
-  // Submit Order (Poin 2: Data Siswa Sudah Otomatis Terhubung Tanpa Perlu Diinput Ulang!)
-  const handleSubmitOrder = async (e) => {
+  // Lanjut dari Form Ringkasan ke Panduan Rekening Sekolah
+  const handleProceedToPayment = (e) => {
     e.preventDefault();
+    if (cart.length === 0) return;
+    setCheckoutStep('payment_instruction');
+  };
+
+  // Selesaikan Pesanan Resmi setelah konfirmasi pembayaran & upload bukti bayar
+  const handleFinalConfirmOrder = async () => {
     if (cart.length === 0) return;
 
     const studentName = activeStudent?.name || 'Siswa PENABUR';
@@ -616,6 +649,12 @@ export default function MobileStorefront() {
       total_amount: finalTotalAmount,
       delivery_method: deliveryMethod,
       delivery_address: deliveryMethod === 'rumah' ? homeAddress : 'Ambil di Koperasi Sekolah',
+      payment_method: 'transfer_sekolah',
+      payment_status: 'pending_verification',
+      payment_receipt_url: proofDriveUrl.trim() || 'Uploaded to School Google Drive',
+      transfer_note: transferNote,
+      bank_name: schoolPayment.bankName,
+      bank_account_number: schoolPayment.bankAccountNumber,
       status: 'submitted',
       academic_year: '2026/2027',
       created_at: new Date().toISOString(),
@@ -634,6 +673,9 @@ export default function MobileStorefront() {
           parent_phone: parentProfile.phone,
           parent_email: parentProfile.email || null,
           total_amount: finalTotalAmount,
+          payment_method: 'transfer_sekolah',
+          payment_status: 'pending_verification',
+          payment_receipt_url: proofDriveUrl.trim() || 'Uploaded to School Google Drive',
           status: 'submitted',
           academic_year: '2026/2027',
         },
@@ -662,6 +704,7 @@ export default function MobileStorefront() {
     setCompletedOrder(orderRecord);
     setCart([]);
     setIsSubmittingOrder(false);
+    setShowFinalConfirmModal(false);
     setCheckoutStep('success');
   };
 
@@ -1078,7 +1121,7 @@ export default function MobileStorefront() {
           POIN 2: CHECKOUT STEP (DATA SISWA TERVERIFIKASI TANPA INPUT ULANG!)
          ========================================================================= */}
       {checkoutStep === 'checkout' && (
-        <form onSubmit={handleSubmitOrder} className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
+        <form onSubmit={handleProceedToPayment} className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
             <button
               type="button"
@@ -1202,38 +1245,293 @@ export default function MobileStorefront() {
             )}
           </div>
 
-          {/* Rekening Transfer Resmi */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
-            <span className="block text-xs font-bold text-slate-900">
-              Instruksi Transfer Rekening Resmi
-            </span>
-            <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-3">
-              <div className="w-12 h-8 rounded bg-white font-black text-blue-900 flex items-center justify-center text-xs shadow-xs border border-blue-100">
-                BCA
-              </div>
-              <div className="flex-1">
-                <span className="text-[10px] text-slate-500 block leading-none">
-                  Koperasi Konsumen Karyawan BPK Penabur
-                </span>
-                <span className="text-xs font-black tracking-wider text-slate-900">
-                  0760256757
-                </span>
-              </div>
+          {/* Ringkasan Total Tagihan */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-slate-400 font-medium block">Total Pembayaran Seragam</span>
+              <span className="text-base font-black text-blue-900">
+                Rp{finalTotalAmount.toLocaleString('id-ID')}
+              </span>
             </div>
-            <p className="text-[10px] text-slate-500 italic">
-              * Verifikasi otomatis sesuai nominal tepat Rp{finalTotalAmount.toLocaleString('id-ID')}.
-            </p>
+            <span className="px-2.5 py-1 bg-blue-50 text-blue-800 rounded-lg text-[10px] font-bold">
+              Transfer Rekening Sekolah
+            </span>
           </div>
 
           <button
             type="submit"
-            disabled={isSubmittingOrder}
-            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
+            className="w-full py-3.5 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-2xl font-bold text-xs shadow-lg shadow-blue-950/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
           >
-            <CheckCircle2 size={16} />
-            <span>{isSubmittingOrder ? 'Memproses Pesanan...' : 'Konfirmasi & Kirim Pesanan'}</span>
+            <span>Lanjut ke Info Rekening Sekolah</span>
+            <ArrowRight size={16} />
           </button>
         </form>
+      )}
+
+      {/* =========================================================================
+          CHECKOUT STEP 2A: INSTRUKSI PEMBAYARAN REKENING SEKOLAH & BERITA TRANSFER
+         ========================================================================= */}
+      {checkoutStep === 'payment_instruction' && (
+        <div className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setCheckoutStep('checkout')}
+              className="p-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div>
+              <h2 className="font-black text-sm text-slate-900">Pembayaran Rekening Sekolah</h2>
+              <p className="text-[10.5px] text-slate-400">Tahap 1 dari 2: Salin Rekening & Keterangan Transfer</p>
+            </div>
+          </div>
+
+          {/* CARD REKENING SEKOLAH RESMI */}
+          <div className="bg-gradient-to-br from-blue-950 to-[#0F2C59] rounded-3xl p-5 text-white shadow-md space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-300">
+                  Rekening Resmi Sekolah
+                </span>
+                <h3 className="font-extrabold text-sm text-white mt-0.5">{currentSchoolName}</h3>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-blue-800/60 border border-blue-700 text-amber-400 font-black text-[11px]">
+                {schoolPayment.bankName || 'BCA'}
+              </span>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-xs rounded-2xl p-3.5 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-blue-200 block">Nomor Rekening Tujuan:</span>
+                  <span className="text-lg font-black tracking-wider text-amber-300 font-mono select-all">
+                    {schoolPayment.bankAccountNumber || '0760256757'}
+                  </span>
+                  <span className="text-[10.5px] text-slate-200 block font-medium">
+                    a.n. {schoolPayment.bankAccountHolder}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(schoolPayment.bankAccountNumber || '0760256757', 'account')}
+                  className="px-3 py-2 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+                >
+                  {copiedField === 'account' ? (
+                    <>
+                      <Check size={14} className="text-emerald-800" />
+                      <span>Tersalin!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={14} />
+                      <span>Salin No. Rekening</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* TOTAL NOMINAL TRANSFER */}
+            <div className="flex items-center justify-between pt-1 border-t border-white/10">
+              <div>
+                <span className="text-[10px] text-blue-200 block">Total Nominal Tepat:</span>
+                <span className="text-base font-black text-white">
+                  Rp{finalTotalAmount.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(String(finalTotalAmount), 'amount')}
+                className="px-2.5 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-blue-100 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all"
+              >
+                {copiedField === 'amount' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                <span>{copiedField === 'amount' ? 'Tersalin' : 'Salin Jumlah'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* CARD KHUSUS: KETERANGAN BERITA TRANSFER WAJIB */}
+          <div className="bg-amber-50 rounded-2xl p-4 border-2 border-amber-300 shadow-xs space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={18} className="text-amber-700 shrink-0" />
+              <span className="font-extrabold text-xs text-amber-950">
+                Wajib Ditulis di Berita / Keterangan Transfer M-Banking:
+              </span>
+            </div>
+
+            <div className="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between">
+              <div className="min-w-0 pr-2">
+                <span className="text-[10px] text-slate-400 block font-semibold">Teks Keterangan Transfer:</span>
+                <span className="text-base font-black text-slate-900 tracking-wide font-mono block select-all">
+                  {transferNote}
+                </span>
+                <span className="text-[10px] text-amber-800 italic mt-0.5 block">
+                  (Format: [Nama Depan Siswa] [Nama Depan Orang Tua])
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(transferNote, 'note')}
+                className="px-3 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 active:scale-95 transition-all shadow-xs"
+              >
+                {copiedField === 'note' ? (
+                  <>
+                    <Check size={13} className="text-amber-400" />
+                    <span>Tersalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={13} />
+                    <span>Salin Keterangan</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <p className="text-[10.5px] text-amber-900 leading-tight">
+              💡 <strong>Penting:</strong> Keterangan ini digunakan oleh PIC Sekolah untuk memverifikasi uang masuk di mutasi rekening koran sekolah.
+            </p>
+          </div>
+
+          {/* CTA LANJUT KE UPLOAD BUKTI */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setCheckoutStep('upload_proof')}
+              className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
+            >
+              <CheckCircle2 size={16} />
+              <span>Konfirmasi Pembayaran & Lanjut Upload Bukti &rarr;</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          CHECKOUT STEP 2B: UPLOAD BUKTI BAYAR KE GOOGLE DRIVE AKUN SEKOLAH
+         ========================================================================= */}
+      {checkoutStep === 'upload_proof' && (
+        <div className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setCheckoutStep('payment_instruction')}
+              className="p-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div>
+              <h2 className="font-black text-sm text-slate-900">Upload Bukti Transfer Sekolah</h2>
+              <p className="text-[10.5px] text-slate-400">Tahap 2 dari 2: Unggah ke Google Drive Sekolah</p>
+            </div>
+          </div>
+
+          {/* CARD RINGKASAN TRANSFER */}
+          <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 text-xs space-y-1.5">
+            <div className="flex justify-between">
+              <span className="text-slate-400 text-[11px]">Sekolah Tujuan:</span>
+              <span className="font-bold text-slate-800">{currentSchoolName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400 text-[11px]">Total Ditransfer:</span>
+              <span className="font-black text-blue-900">Rp{finalTotalAmount.toLocaleString('id-ID')}</span>
+            </div>
+            <div className="flex justify-between border-t border-slate-200/60 pt-1.5">
+              <span className="text-slate-400 text-[11px]">Keterangan Transfer:</span>
+              <span className="font-mono font-bold text-slate-900">{transferNote}</span>
+            </div>
+          </div>
+
+          {/* TAUTAN GOOGLE DRIVE AKUN SEKOLAH */}
+          <div className="bg-white rounded-3xl p-5 border-2 border-blue-200 shadow-sm space-y-3 text-center">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center shadow-xs">
+              <UploadCloud size={24} />
+            </div>
+            <div>
+              <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">
+                Google Drive Akun Sekolah
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
+                Silakan unggah foto / tangkapan layar struk transfer Anda ke folder Google Drive resmi {currentSchoolName}.
+              </p>
+            </div>
+
+            <a
+              href={schoolPayment.gdriveUploadLink || 'https://drive.google.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-3 bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white rounded-xl text-xs font-bold hover:brightness-110 flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
+            >
+              <ExternalLink size={15} className="text-amber-400" />
+              <span>Buka Google Drive {currentSchoolName}</span>
+            </a>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left text-[11px] text-slate-600 space-y-1">
+              <span className="font-bold text-slate-800 block text-[11px]">📋 Panduan Mengunggah File:</span>
+              <p>1. Klik tombol biru di atas untuk membuka folder Drive sekolah.</p>
+              <p>2. Unggah file struk / screenshot m-banking Anda.</p>
+              <p>3. Beri nama file: <strong className="text-blue-900 font-mono">{transferNote} - Bukti Transfer</strong></p>
+            </div>
+          </div>
+
+          {/* OPSIONAL: INPUT LINK SHARE DRIVE */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+              Tautan File Google Drive (Opsional)
+            </label>
+            <input
+              type="url"
+              placeholder="https://drive.google.com/file/d/..."
+              value={proofDriveUrl}
+              onChange={(e) => setProofDriveUrl(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+            />
+          </div>
+
+          {/* CHECKBOX KONFIRMASI WAJIB */}
+          <div
+            onClick={() => setIsProofConfirmed(!isProofConfirmed)}
+            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none ${
+              isProofConfirmed
+                ? 'border-emerald-600 bg-emerald-50/70'
+                : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                isProofConfirmed ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+              }`}
+            >
+              {isProofConfirmed && <Check size={14} />}
+            </div>
+            <div className="text-xs">
+              <span className="font-bold text-slate-900 block leading-tight">
+                Saya telah menyelesaikan pembayaran transfer dan mengunggah bukti bayar ke Google Drive sekolah.
+              </span>
+              <span className="text-[10.5px] text-slate-400 block mt-0.5">
+                PIC Sekolah akan memverifikasi mutasi bank dan file bukti Anda.
+              </span>
+            </div>
+          </div>
+
+          {/* CTA SELESAIKAN PEMESANAN */}
+          <div className="pt-2">
+            <button
+              type="button"
+              disabled={!isProofConfirmed}
+              onClick={() => setShowFinalConfirmModal(true)}
+              className={`w-full py-3.5 rounded-2xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition-all ${
+                isProofConfirmed
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-emerald-700/20 hover:brightness-110 active:scale-[0.98]'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+              }`}
+            >
+              <CheckCircle2 size={16} />
+              <span>Selesaikan Pemesanan & Notifikasi Sekolah</span>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* =========================================================================
@@ -2054,6 +2352,52 @@ export default function MobileStorefront() {
             >
               Tutup Bukti Pengambilan
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: KONFIRMASI FINAL SEBELUM NOTIFIKASI AKSARA & SIMPAN PESANAN
+         ========================================================================= */}
+      {showFinalConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-sm animate-fade-in text-center space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shadow-xs">
+              <AlertCircle size={32} />
+            </div>
+
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900">
+                Konfirmasi Pemesanan & Pembayaran
+              </h3>
+              <p className="text-xs text-slate-700 mt-2 font-semibold leading-relaxed">
+                Apakah Anda sudah menyelesaikan semua proses pemesanan dan pembayaran?
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1 leading-normal">
+                Setelah klik <strong>Ya</strong>, pesanan resmi tercatat dan notifikasi verifikasi akan dikirimkan langsung ke PIC {currentSchoolName} di sistem Aksara.
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                disabled={isSubmittingOrder}
+                onClick={handleFinalConfirmOrder}
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl text-xs font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-700/20"
+              >
+                <CheckCircle2 size={16} />
+                <span>{isSubmittingOrder ? 'Memproses Pesanan...' : 'Ya, Selesaikan Pemesanan'}</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isSubmittingOrder}
+                onClick={() => setShowFinalConfirmModal(false)}
+                className="w-full py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-all"
+              >
+                Tidak, Periksa Kembali
+              </button>
+            </div>
           </div>
         </div>
       )}
