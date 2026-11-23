@@ -1261,11 +1261,15 @@ export default function MobileStorefront() {
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 text-xs">
             <div className="flex justify-between pb-2 border-b border-slate-100">
               <span className="text-slate-500">Nama Siswa</span>
-              <span className="font-bold text-slate-800">{completedOrder.student_name}</span>
+              <span className="font-extrabold text-slate-900">{completedOrder.student_name}</span>
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-100">
-              <span className="text-slate-500">Sekolah</span>
-              <span className="font-bold text-slate-800 text-right">{completedOrder.school_name}</span>
+              <span className="text-slate-500">Orang Tua / Wali</span>
+              <span className="font-bold text-slate-800">{completedOrder.parent_name}</span>
+            </div>
+            <div className="flex justify-between pb-2 border-b border-slate-100">
+              <span className="text-slate-500">Sekolah & Kelas</span>
+              <span className="font-bold text-slate-800 text-right">{completedOrder.school_name} (Kelas {completedOrder.student_class || '-'})</span>
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-100">
               <span className="text-slate-500">Metode Pengambilan</span>
