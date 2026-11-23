@@ -4,7 +4,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { getAssetPath } from '../../lib/utils';
-import { DEFAULT_SCHOOL_WHITELIST } from '../../lib/schools';
+import { 
+  DEFAULT_SCHOOL_WHITELIST, 
+  getSchoolList, 
+  deriveSchoolLevel, 
+  cleanSchoolName 
+} from '../../lib/schools';
 import {
   ShoppingBag,
   User,
@@ -21,21 +26,20 @@ import {
   HelpCircle,
   School,
   Ruler,
-  Share2,
-  Download,
   Building,
   Phone,
   ArrowRight,
   Check,
   X,
-  CreditCard,
   Truck,
-  RotateCcw,
   Sparkles,
-  LogOut
+  LogOut,
+  UserCheck,
+  Edit3,
+  UserPlus,
+  Lock
 } from 'lucide-react';
 
-// Urutan ukuran standar seragam sekolah
 const SIZE_ORDER = ['SS', 'S', 'M', 'L', 'XL', '2L', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L', 'STANDAR', 'ALL SIZE'];
 
 const sortSizes = (sizes) => {
@@ -49,10 +53,7 @@ const sortSizes = (sizes) => {
   });
 };
 
-// Daftar referensi sekolah BPK PENABUR dari whitelist
-const PENABUR_SCHOOLS = DEFAULT_SCHOOL_WHITELIST;
-
-// Fallback Katalog Seragam Resmi BPK PENABUR (jika data Supabase belum disinkronkan)
+// Fallback Katalog Seragam Resmi BPK PENABUR
 const DEFAULT_PRODUCTS = [
   {
     id: 'prod-sd-kemeja-pendek',
@@ -104,6 +105,35 @@ const DEFAULT_PRODUCTS = [
     ]
   },
   {
+    id: 'prod-smp-kemeja-pendek',
+    name: 'Kemeja Putih Pendek SMP',
+    category: 'Nasional',
+    level: 'SMP',
+    description: 'Bahan TC Oxford kualitas prima dengan bordir emblem SMP BPK PENABUR resmi.',
+    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'S', price: 86000, stock: 50 },
+      { size: 'M', price: 90000, stock: 60 },
+      { size: 'L', price: 94000, stock: 70 },
+      { size: 'XL', price: 98000, stock: 40 },
+      { size: '3L', price: 105000, stock: 25 }
+    ]
+  },
+  {
+    id: 'prod-smp-celana-biru',
+    name: 'Celana Panjang Biru SMP',
+    category: 'Nasional',
+    level: 'SMP',
+    description: 'Bahan Famatex biru tua rapi berstandar nasional BPK PENABUR.',
+    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'S', price: 110000, stock: 40 },
+      { size: 'M', price: 115000, stock: 55 },
+      { size: 'L', price: 120000, stock: 60 },
+      { size: 'XL', price: 126000, stock: 30 }
+    ]
+  },
+  {
     id: 'prod-batik-penabur',
     name: 'Kemeja Batik Resmi PENABUR',
     category: 'Batik',
@@ -119,7 +149,7 @@ const DEFAULT_PRODUCTS = [
     ]
   },
   {
-    id: 'prod-pramuka-siaga',
+    id: 'prod-pramuka-set',
     name: 'Setelan Seragam Pramuka',
     category: 'Pramuka',
     level: 'ALL',
@@ -168,93 +198,140 @@ export default function MobileStorefront() {
   // Checkout flow state: 'browsing' | 'cart' | 'checkout' | 'success'
   const [checkoutStep, setCheckoutStep] = useState('browsing');
 
+  // School list (clean list)
+  const [schoolList, setSchoolList] = useState(DEFAULT_SCHOOL_WHITELIST);
+
+  // Multi-Student & Parent Profiles
+  const [parentProfile, setParentProfile] = useState({
+    fullName: 'Orang Tua Murid',
+    phone: '',
+    email: '',
+  });
+
+  const [students, setStudents] = useState([]);
+  const [activeStudentId, setActiveStudentId] = useState(null);
+
   // Filter States
-  const [selectedSchool, setSelectedSchool] = useState('SDK 1 PENABUR Jakarta');
+  const [selectedSchool, setSelectedSchool] = useState('SDK 1 PENABUR');
   const [selectedLevel, setSelectedLevel] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Data Products & Raw Supabase Products
+  // Products
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
-  // Cart: Array of { id, productId, name, size, price, quantity, imageUrl }
+  // Cart: Array of { id, productId, name, size, price, quantity, imageUrl, studentName, schoolName }
   const [cart, setCart] = useState([]);
   const [addedNotice, setAddedNotice] = useState(null);
 
-  // Modal Detail & Size Selector
+  // Modals
   const [activeProductModal, setActiveProductModal] = useState(null);
   const [modalSelectedSize, setModalSelectedSize] = useState('');
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
-  // User & Student Information for Order
-  const [parentProfile, setParentProfile] = useState({
-    fullName: 'Orang Tua Murid',
-    phone: '',
-  });
+  // Profile Edit & Student Add/Edit Modals
+  const [showEditParentModal, setShowEditParentModal] = useState(false);
+  const [parentEditForm, setParentEditForm] = useState({ fullName: '', phone: '' });
 
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [studentModalMode, setStudentModalMode] = useState('add'); // 'add' | 'edit'
+  const [editingStudentId, setEditingStudentId] = useState(null);
   const [studentForm, setStudentForm] = useState({
     name: '',
-    school: 'SDK 1 PENABUR Jakarta',
+    school: 'SDK 1 PENABUR',
     level: 'SD',
     grade: 'Kelas 1',
   });
 
+  // Checkout Details
   const [deliveryMethod, setDeliveryMethod] = useState('koperasi'); // 'koperasi' | 'rumah'
   const [homeAddress, setHomeAddress] = useState('');
-  const [notes, setNotes] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
   const [myOrders, setMyOrders] = useState([]);
 
-  // Load User Session & Initial Products
-  useEffect(() => {
-    // 1. Load Parent Session from localStorage or Supabase
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('kanvas_parent_session');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setParentProfile(parsed);
-          if (parsed.studentName) {
-            setStudentForm({
-              name: parsed.studentName,
-              school: parsed.schoolName || 'SDK 1 PENABUR Jakarta',
-              level: parsed.schoolLevel || 'SD',
-              grade: parsed.studentClass || 'Kelas 1',
-            });
-          }
-          if (parsed.schoolName) {
-            setSelectedSchool(parsed.schoolName);
-          }
-          if (parsed.schoolLevel) {
-            setSelectedLevel(parsed.schoolLevel);
-          }
-        }
-        const storedOrders = localStorage.getItem('kanvas_my_orders');
-        if (storedOrders) {
-          setMyOrders(JSON.parse(storedOrders));
-        }
-      } catch (e) {
-        console.warn('LocalStorage error:', e);
-      }
-    }
+  // Active student object helper
+  const activeStudent = useMemo(() => {
+    return students.find((s) => s.id === activeStudentId) || students[0] || null;
+  }, [students, activeStudentId]);
 
-    // 2. Fetch live products from Supabase
+  // Load School List & User Session
+  useEffect(() => {
+    const initData = async () => {
+      // 1. Fetch clean school list
+      const list = await getSchoolList(supabase);
+      setSchoolList(list);
+
+      // 2. Load Parent Session
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('kanvas_parent_session');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            setParentProfile({
+              fullName: parsed.fullName || 'Wali Murid PENABUR',
+              phone: parsed.phone || '',
+              email: parsed.email || '',
+            });
+
+            // Multi-student format support
+            let loadedStudents = [];
+            if (Array.isArray(parsed.students) && parsed.students.length > 0) {
+              loadedStudents = parsed.students.map((s) => ({
+                ...s,
+                school: cleanSchoolName(s.school),
+                level: s.level || deriveSchoolLevel(s.school),
+              }));
+            } else if (parsed.studentName) {
+              // Legacy single student
+              const stdId = 'std-1';
+              loadedStudents = [
+                {
+                  id: stdId,
+                  name: parsed.studentName,
+                  school: cleanSchoolName(parsed.schoolName || 'SDK 1 PENABUR'),
+                  level: parsed.schoolLevel || deriveSchoolLevel(parsed.schoolName || 'SDK 1 PENABUR'),
+                  grade: parsed.studentClass || 'Kelas 1',
+                },
+              ];
+            }
+
+            if (loadedStudents.length > 0) {
+              setStudents(loadedStudents);
+              const activeId = parsed.activeStudentId || loadedStudents[0].id;
+              setActiveStudentId(activeId);
+              const currentActive = loadedStudents.find((s) => s.id === activeId) || loadedStudents[0];
+              setSelectedSchool(currentActive.school);
+              setSelectedLevel(currentActive.level);
+            }
+          }
+
+          const storedOrders = localStorage.getItem('kanvas_my_orders');
+          if (storedOrders) {
+            setMyOrders(JSON.parse(storedOrders));
+          }
+        } catch (e) {
+          console.warn('LocalStorage load error:', e);
+        }
+      }
+    };
+
+    initData();
+
+    // 3. Fetch live products from Supabase
     const fetchSupabaseProducts = async () => {
       setIsLoadingProducts(true);
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('products')
           .select('*')
           .order('name');
 
         if (data && data.length > 0) {
-          // Kelompokkan SKU produk menjadi format produk bervarian
           const groupedMap = new Map();
 
           data.forEach((item) => {
-            // Abaikan jika ditandai non-aktif di Kanvas
             if (item.is_kanvas_active === false) return;
 
             const groupKey = item.variant_group || item.name;
@@ -295,7 +372,7 @@ export default function MobileStorefront() {
           }
         }
       } catch (err) {
-        console.warn('Menggunakan katalog bawaan:', err);
+        console.warn('Menggunakan katalog seragam bawaan:', err);
       } finally {
         setIsLoadingProducts(false);
       }
@@ -304,14 +381,131 @@ export default function MobileStorefront() {
     fetchSupabaseProducts();
   }, []);
 
-  // Update selected level when school changes
-  const handleSchoolChange = (schoolName) => {
-    setSelectedSchool(schoolName);
-    setStudentForm((prev) => ({ ...prev, school: schoolName }));
-    const found = PENABUR_SCHOOLS.find((s) => s.name === schoolName);
-    if (found && selectedLevel === 'ALL') {
-      setSelectedLevel(found.level);
+  // Helper untuk switch active student
+  const handleSelectStudent = (student) => {
+    setActiveStudentId(student.id);
+    setSelectedSchool(student.school);
+    setSelectedLevel(student.level);
+
+    // Simpan active student ke session
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kanvas_parent_session');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          parsed.activeStudentId = student.id;
+          localStorage.setItem('kanvas_parent_session', JSON.stringify(parsed));
+        }
+      } catch (e) {}
     }
+  };
+
+  // Helper sync session ke localStorage
+  const syncSessionToStorage = (updatedStudents, updatedParent) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const payload = {
+        fullName: updatedParent ? updatedParent.fullName : parentProfile.fullName,
+        phone: updatedParent ? updatedParent.phone : parentProfile.phone,
+        email: updatedParent ? updatedParent.email : parentProfile.email,
+        activeStudentId: activeStudentId,
+        students: updatedStudents || students,
+        isRegistered: true,
+      };
+      localStorage.setItem('kanvas_parent_session', JSON.stringify(payload));
+    } catch (e) {}
+  };
+
+  // Handler Buka Modal Tambah Siswa
+  const handleOpenAddStudent = () => {
+    setStudentModalMode('add');
+    setEditingStudentId(null);
+    const defaultSchool = schoolList[0]?.name || 'SDK 1 PENABUR';
+    setStudentForm({
+      name: '',
+      school: defaultSchool,
+      level: deriveSchoolLevel(defaultSchool),
+      grade: 'Kelas 1',
+    });
+    setShowStudentModal(true);
+  };
+
+  // Handler Buka Modal Edit Siswa
+  const handleOpenEditStudent = (student) => {
+    setStudentModalMode('edit');
+    setEditingStudentId(student.id);
+    setStudentForm({
+      name: student.name,
+      school: student.school,
+      level: student.level,
+      grade: student.grade,
+    });
+    setShowStudentModal(true);
+  };
+
+  // Simpan Tambah / Edit Siswa
+  const handleSaveStudentModal = (e) => {
+    e.preventDefault();
+    if (!studentForm.name.trim()) {
+      alert('Mohon isi nama lengkap siswa.');
+      return;
+    }
+
+    if (studentModalMode === 'add') {
+      const newId = `std-${Date.now()}`;
+      const newStudentObj = {
+        id: newId,
+        name: studentForm.name.trim(),
+        school: cleanSchoolName(studentForm.school),
+        level: studentForm.level || deriveSchoolLevel(studentForm.school),
+        grade: studentForm.grade.trim() || 'Kelas 1',
+      };
+      const updated = [...students, newStudentObj];
+      setStudents(updated);
+      setActiveStudentId(newId);
+      setSelectedSchool(newStudentObj.school);
+      setSelectedLevel(newStudentObj.level);
+      syncSessionToStorage(updated, null);
+      alert(`Siswa ${newStudentObj.name} berhasil ditambahkan!`);
+    } else {
+      // Edit
+      const updated = students.map((s) => {
+        if (s.id === editingStudentId) {
+          return {
+            ...s,
+            name: studentForm.name.trim(),
+            school: cleanSchoolName(studentForm.school),
+            level: studentForm.level || deriveSchoolLevel(studentForm.school),
+            grade: studentForm.grade.trim() || 'Kelas 1',
+          };
+        }
+        return s;
+      });
+      setStudents(updated);
+      syncSessionToStorage(updated, null);
+      alert('Data siswa berhasil diperbarui!');
+    }
+
+    setShowStudentModal(false);
+  };
+
+  // Simpan Edit Profil Wali Murid
+  const handleSaveParentProfile = (e) => {
+    e.preventDefault();
+    if (!parentEditForm.fullName.trim() || !parentEditForm.phone.trim()) {
+      alert('Mohon lengkapi nama dan nomor WhatsApp.');
+      return;
+    }
+
+    const updated = {
+      ...parentProfile,
+      fullName: parentEditForm.fullName.trim(),
+      phone: parentEditForm.phone.trim(),
+    };
+    setParentProfile(updated);
+    syncSessionToStorage(null, updated);
+    setShowEditParentModal(false);
+    alert('Profil wali murid berhasil diperbarui!');
   };
 
   // Filter products by Level, Category, and Search
@@ -343,7 +537,9 @@ export default function MobileStorefront() {
   // Cart actions
   const addToCart = (product, size) => {
     const variant = product.variants.find((v) => v.size === size) || product.variants[0];
-    const cartItemId = `${product.id}-${variant.size}`;
+    const targetStudentName = activeStudent?.name || 'Siswa';
+    const targetSchoolName = activeStudent?.school || selectedSchool;
+    const cartItemId = `${product.id}-${variant.size}-${targetStudentName}`;
 
     setCart((prevCart) => {
       const existingIdx = prevCart.findIndex((item) => item.id === cartItemId);
@@ -363,12 +559,14 @@ export default function MobileStorefront() {
             quantity: 1,
             imageUrl: product.imageUrl,
             category: product.category,
+            studentName: targetStudentName,
+            schoolName: targetSchoolName,
           },
         ];
       }
     });
 
-    setAddedNotice(`+1 ${product.name} (${variant.size})`);
+    setAddedNotice(`+1 ${product.name} (${variant.size}) untuk ${targetStudentName}`);
     setTimeout(() => setAddedNotice(null), 2500);
     setActiveProductModal(null);
   };
@@ -387,15 +585,15 @@ export default function MobileStorefront() {
     );
   };
 
-  // Submit Order to Supabase & Local History
+  // Submit Order (Poin 2: Data Siswa Sudah Otomatis Terhubung Tanpa Perlu Diinput Ulang!)
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
-    if (!studentForm.name.trim()) {
-      alert('Mohon isi nama lengkap siswa.');
-      return;
-    }
+    const studentName = activeStudent?.name || 'Siswa PENABUR';
+    const schoolName = activeStudent?.school || selectedSchool;
+    const schoolLevel = activeStudent?.level || selectedLevel;
+    const studentGrade = activeStudent?.grade || '-';
 
     setIsSubmittingOrder(true);
     const orderNumber = `KNP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -403,11 +601,13 @@ export default function MobileStorefront() {
     const orderRecord = {
       id: orderNumber,
       order_number: orderNumber,
-      school_name: selectedSchool,
-      student_name: studentForm.name,
-      student_class: studentForm.grade,
+      school_name: schoolName,
+      school_level: schoolLevel,
+      student_name: studentName,
+      student_class: studentGrade,
       parent_name: parentProfile.fullName || 'Wali Murid',
       parent_phone: parentProfile.phone || '-',
+      parent_email: parentProfile.email || '-',
       total_amount: finalTotalAmount,
       delivery_method: deliveryMethod,
       delivery_address: deliveryMethod === 'rumah' ? homeAddress : 'Ambil di Koperasi Sekolah',
@@ -417,23 +617,23 @@ export default function MobileStorefront() {
       items: cart,
     };
 
-    // 1. Coba simpan ke Supabase `parent_orders`
     try {
       await supabase.from('parent_orders').insert([
         {
           id: orderNumber,
-          school_name: selectedSchool,
-          student_name: studentForm.name,
-          student_class: studentForm.grade,
+          school_name: schoolName,
+          school_level: schoolLevel,
+          student_name: studentName,
+          student_class: studentGrade,
           parent_name: parentProfile.fullName,
           parent_phone: parentProfile.phone,
+          parent_email: parentProfile.email || null,
           total_amount: finalTotalAmount,
           status: 'submitted',
           academic_year: '2026/2027',
         },
       ]);
 
-      // Insert items
       const itemsPayload = cart.map((item) => ({
         parent_order_id: orderNumber,
         product_id: item.productId,
@@ -445,10 +645,9 @@ export default function MobileStorefront() {
       }));
       await supabase.from('parent_order_items').insert(itemsPayload);
     } catch (err) {
-      console.warn('Supabase insert catatan:', err);
+      console.warn('Catatan Supabase:', err);
     }
 
-    // 2. Simpan ke local state & localStorage agar selalu tampil di riwayat
     const updatedHistory = [orderRecord, ...myOrders];
     setMyOrders(updatedHistory);
     if (typeof window !== 'undefined') {
@@ -468,13 +667,14 @@ export default function MobileStorefront() {
       } catch (e) {}
       if (typeof window !== 'undefined') {
         localStorage.removeItem('kanvas_parent_session');
+        sessionStorage.removeItem('kanvas_intro_seen');
       }
       router.push('/');
     }
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-slate-800 select-none pb-20">
+    <div className="w-full min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-slate-800 select-none pb-20 font-sans">
       {/* =========================================================================
           TOP APP BAR (Mobile Header)
          ========================================================================= */}
@@ -497,7 +697,6 @@ export default function MobileStorefront() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Quick Size Guide Button */}
             <button
               onClick={() => setIsSizeGuideOpen(true)}
               className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center gap-1 transition-all"
@@ -506,7 +705,6 @@ export default function MobileStorefront() {
               <span>Ukuran</span>
             </button>
 
-            {/* Cart Icon with badge */}
             <button
               onClick={() => setCheckoutStep('cart')}
               className="relative p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 transition-all font-bold"
@@ -521,37 +719,73 @@ export default function MobileStorefront() {
           </div>
         </div>
 
-        {/* Selected School Pill & Dropdown (Hanya tampil di tab store) */}
+        {/* =========================================================================
+            POIN 6: PEMILIHAN SISWA (STUDENT SWITCHER) SEBELUM PEMESANAN SERAGAM
+           ========================================================================= */}
         {activeTab === 'store' && checkoutStep === 'browsing' && (
-          <div className="px-4 pb-3 pt-1">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/15 flex items-center gap-2">
-              <School size={16} className="text-amber-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] text-blue-200 block font-semibold leading-none">
-                  Cabang Sekolah Pilihan:
-                </span>
-                <select
-                  value={selectedSchool}
-                  onChange={(e) => handleSchoolChange(e.target.value)}
-                  className="w-full bg-transparent text-white text-xs font-bold outline-none cursor-pointer truncate mt-0.5"
+          <div className="px-4 pb-3 pt-1 border-t border-white/10">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold text-blue-200 uppercase tracking-wider flex items-center gap-1">
+                <UserCheck size={12} className="text-amber-400" />
+                Pesan Seragam Untuk Siswa:
+              </span>
+              <button
+                onClick={handleOpenAddStudent}
+                className="text-[10.5px] text-amber-300 hover:text-white font-bold flex items-center gap-1"
+              >
+                <Plus size={12} /> Tambah Anak
+              </button>
+            </div>
+
+            {/* List Siswa Terdaftar (Bisa Toggle Antara Anak 1, Anak 2, dst) */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
+              {students.map((st) => {
+                const isSelected = activeStudent?.id === st.id;
+                return (
+                  <button
+                    key={st.id}
+                    onClick={() => handleSelectStudent(st)}
+                    className={`px-3 py-1.5 rounded-xl text-left shrink-0 transition-all border ${
+                      isSelected
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-extrabold'
+                        : 'bg-white/10 text-white border-white/15 hover:bg-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 leading-none">
+                      <span className="text-xs">{st.name}</span>
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-black ${
+                        isSelected ? 'bg-slate-900 text-amber-300' : 'bg-white/20 text-blue-200'
+                      }`}>
+                        {st.level}
+                      </span>
+                    </div>
+                    <span className={`text-[9.5px] block mt-0.5 truncate max-w-[170px] ${
+                      isSelected ? 'text-slate-900 font-semibold' : 'text-blue-200'
+                    }`}>
+                      {st.school} • {st.grade}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {students.length === 0 && (
+                <div
+                  onClick={handleOpenAddStudent}
+                  className="w-full bg-white/10 rounded-xl p-2 text-center text-xs text-amber-300 cursor-pointer hover:bg-white/20 border border-dashed border-white/30"
                 >
-                  {PENABUR_SCHOOLS.map((sch) => (
-                    <option key={sch.id} value={sch.name} className="text-slate-900">
-                      {sch.name} ({sch.level})
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  + Tambahkan Data Siswa
+                </div>
+              )}
             </div>
           </div>
         )}
       </header>
 
-      {/* Floating Alert: Added to Cart Notice */}
+      {/* Floating Notice: Added to Cart */}
       {addedNotice && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold border border-amber-400/30 animate-fade-in backdrop-blur-md">
-          <CheckCircle2 size={16} className="text-amber-400" />
-          <span>{addedNotice}</span>
+        <div className="fixed top-28 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold border border-amber-400/30 animate-fade-in backdrop-blur-md max-w-[90vw] truncate">
+          <CheckCircle2 size={16} className="text-amber-400 shrink-0" />
+          <span className="truncate">{addedNotice}</span>
         </div>
       )}
 
@@ -560,6 +794,31 @@ export default function MobileStorefront() {
          ========================================================================= */}
       {activeTab === 'store' && checkoutStep === 'browsing' && (
         <div className="flex-1 flex flex-col p-4 space-y-4 animate-fade-in">
+          {/* Active Student Indicator Banner */}
+          {activeStudent && (
+            <div className="bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white p-3 rounded-2xl shadow-sm flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-sm">
+                  {activeStudent.name.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] text-amber-300 font-semibold block leading-none">
+                    Katalog Aktif:
+                  </span>
+                  <h4 className="text-xs font-bold truncate text-white mt-0.5">
+                    {activeStudent.name} ({activeStudent.grade})
+                  </h4>
+                  <span className="text-[10px] text-blue-200 truncate block">
+                    {activeStudent.school}
+                  </span>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 bg-white/10 rounded-lg text-xs font-black text-amber-300 border border-white/10 shrink-0">
+                {activeStudent.level}
+              </span>
+            </div>
+          )}
+
           {/* Search Box */}
           <div className="relative">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -580,7 +839,7 @@ export default function MobileStorefront() {
             )}
           </div>
 
-          {/* Level Tabs (TK, SD, SMP, SMA, ALL) */}
+          {/* Level Tabs */}
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             {[
               { id: 'ALL', label: 'Semua Jenjang' },
@@ -636,7 +895,7 @@ export default function MobileStorefront() {
                 <ShoppingBag size={36} className="mx-auto text-slate-300 mb-2" />
                 <h3 className="font-bold text-sm text-slate-700">Seragam Tidak Ditemukan</h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Coba ganti kata kunci atau pilih jenjang yang lain.
+                  Coba ganti kata kunci atau pilih tab jenjang lainnya.
                 </p>
               </div>
             ) : (
@@ -652,7 +911,6 @@ export default function MobileStorefront() {
                       }}
                       className="bg-white rounded-2xl p-2.5 border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col group relative"
                     >
-                      {/* Image Frame */}
                       <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center p-2">
                         <img
                           src={product.imageUrl}
@@ -664,7 +922,6 @@ export default function MobileStorefront() {
                         </span>
                       </div>
 
-                      {/* Content */}
                       <h4 className="font-bold text-xs text-slate-900 leading-snug line-clamp-2 min-h-[32px]">
                         {product.name}
                       </h4>
@@ -676,7 +933,6 @@ export default function MobileStorefront() {
                         </span>
                       </div>
 
-                      {/* Size Tags preview */}
                       <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
                         <span className="text-[10px] text-slate-400 font-medium">
                           {product.variants.length} Ukuran
@@ -702,11 +958,10 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
-          CHECKOUT STEP: CART REVIEW
+          CHECKOUT STEP 1: CART REVIEW
          ========================================================================= */}
       {checkoutStep === 'cart' && (
         <div className="flex-1 flex flex-col p-4 animate-fade-in">
-          {/* Header */}
           <div className="flex items-center gap-3 pb-3 border-b border-slate-200 mb-4">
             <button
               onClick={() => setCheckoutStep('browsing')}
@@ -738,7 +993,6 @@ export default function MobileStorefront() {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Item List */}
               <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm divide-y divide-slate-100">
                 {cart.map((item) => (
                   <div key={item.id} className="py-3 first:pt-0 last:pb-0 flex items-center gap-3">
@@ -749,6 +1003,9 @@ export default function MobileStorefront() {
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-xs text-slate-900 truncate">{item.name}</h4>
+                      <span className="text-[10px] text-blue-700 font-semibold block">
+                        Untuk: {item.studentName || 'Siswa'}
+                      </span>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-bold">
                           Size {item.size}
@@ -759,7 +1016,6 @@ export default function MobileStorefront() {
                       </div>
                     </div>
 
-                    {/* Quantity Selector */}
                     <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 shrink-0">
                       <button
                         onClick={() => updateCartQuantity(item.id, -1)}
@@ -781,7 +1037,6 @@ export default function MobileStorefront() {
                 ))}
               </div>
 
-              {/* Order Summary Box */}
               <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2 text-xs">
                 <span className="font-bold text-slate-800 block text-xs mb-1">
                   Ringkasan Belanja
@@ -796,18 +1051,17 @@ export default function MobileStorefront() {
                 </div>
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-sm">
                   <span className="font-black text-slate-900">Total Pembayaran</span>
-                  <span className="font-black text-blue-900 text-base">
+                  <span className="text-blue-900 text-base font-black">
                     Rp{finalTotalAmount.toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>
 
-              {/* Proceed Button */}
               <button
                 onClick={() => setCheckoutStep('checkout')}
                 className="w-full py-3.5 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-2xl font-bold text-xs shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
               >
-                <span>Lanjut Isi Data Siswa & Pengambilan</span>
+                <span>Lanjut ke Pengambilan & Pembayaran</span>
                 <ArrowRight size={15} />
               </button>
             </div>
@@ -816,7 +1070,7 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
-          CHECKOUT STEP: DATA SISWA & METODE PENGAMBILAN
+          POIN 2: CHECKOUT STEP (DATA SISWA TERVERIFIKASI TANPA INPUT ULANG!)
          ========================================================================= */}
       {checkoutStep === 'checkout' && (
         <form onSubmit={handleSubmitOrder} className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
@@ -828,73 +1082,54 @@ export default function MobileStorefront() {
             >
               <ChevronLeft size={18} />
             </button>
-            <h2 className="font-black text-base text-slate-900">Data Siswa & Pengambilan</h2>
+            <h2 className="font-black text-base text-slate-900">Pengambilan & Pembayaran</h2>
           </div>
 
-          {/* Form Data Siswa */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-              <User size={15} className="text-blue-700" />
-              <span>Data Siswa Pemesan</span>
+          {/* CARD DATA SISWA TERDAFTAR (LANGSUNG TERTAMPIL OTOMATIS TANPA FORM INPUT ULANG!) */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2.5">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <UserCheck size={16} className="text-blue-900" />
+                Data Siswa Pemesan
+              </span>
+              <span className="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-bold">
+                ✓ Terverifikasi Pendaftaran
+              </span>
             </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                Nama Lengkap Siswa *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Contoh: Jonathan Chris"
-                value={studentForm.name}
-                onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5 text-xs pt-1">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Kelas / Tingkat
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: 1A / Kelas 7"
-                  value={studentForm.grade}
-                  onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
-                />
+                <span className="text-[10px] text-slate-400 block font-medium">Nama Siswa:</span>
+                <span className="font-bold text-slate-900 text-sm">
+                  {activeStudent?.name || 'Siswa PENABUR'}
+                </span>
               </div>
-
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                  Sekolah PENABUR
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={selectedSchool}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600 truncate"
-                />
+                <span className="text-[10px] text-slate-400 block font-medium">Kelas / Tingkat:</span>
+                <span className="font-bold text-slate-800">
+                  {activeStudent?.grade || 'Kelas 1'}
+                </span>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                Nama Orang Tua / Wali
-              </label>
-              <input
-                type="text"
-                required
-                value={parentProfile.fullName}
-                onChange={(e) => setParentProfile({ ...parentProfile, fullName: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
-              />
+              <div className="col-span-2 bg-blue-50/70 p-2.5 rounded-xl border border-blue-100">
+                <span className="text-[10px] text-blue-700 block font-bold leading-none mb-1">
+                  Sekolah BPK PENABUR:
+                </span>
+                <span className="font-black text-xs text-blue-950 block">
+                  {activeStudent?.school || selectedSchool} ({activeStudent?.level || selectedLevel})
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block font-medium">Wali Murid:</span>
+                <span className="font-semibold text-slate-800">{parentProfile.fullName}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block font-medium">WhatsApp:</span>
+                <span className="font-semibold text-slate-800">{parentProfile.phone}</span>
+              </div>
             </div>
           </div>
 
-          {/* Metode Pengambilan */}
+          {/* Pilihan Cara Pengambilan */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
             <span className="block text-xs font-bold text-slate-900">
               Pilih Cara Pengambilan Seragam
@@ -939,7 +1174,7 @@ export default function MobileStorefront() {
                     Kirim ke Alamat Rumah
                   </span>
                   <span className="text-[10.5px] text-slate-500">
-                    Ekspedisi resmi Jabodetabek (+Rp18.000)
+                    Ekspedisi Jabodetabek (+Rp18.000)
                   </span>
                 </div>
               </div>
@@ -965,7 +1200,7 @@ export default function MobileStorefront() {
           {/* Rekening Transfer Resmi */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
             <span className="block text-xs font-bold text-slate-900">
-              Instruksi Transfer Resmi
+              Instruksi Transfer Rekening Resmi
             </span>
             <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-3">
               <div className="w-12 h-8 rounded bg-white font-black text-blue-900 flex items-center justify-center text-xs shadow-xs border border-blue-100">
@@ -997,11 +1232,10 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
-          CHECKOUT STEP: SUCCESS RECEIPT
+          CHECKOUT STEP 3: SUCCESS RECEIPT
          ========================================================================= */}
       {checkoutStep === 'success' && completedOrder && (
         <div className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
-          {/* Success Banner */}
           <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-md text-center flex flex-col items-center">
             <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2.5">
               <CheckCircle2 size={32} />
@@ -1019,7 +1253,6 @@ export default function MobileStorefront() {
             </div>
           </div>
 
-          {/* Receipt Card */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 text-xs">
             <div className="flex justify-between pb-2 border-b border-slate-100">
               <span className="text-slate-500">Nama Siswa</span>
@@ -1036,7 +1269,6 @@ export default function MobileStorefront() {
               </span>
             </div>
 
-            {/* List of items */}
             <div className="pt-1">
               <span className="font-bold text-slate-700 block mb-2">Item Seragam:</span>
               <div className="space-y-1.5">
@@ -1061,7 +1293,6 @@ export default function MobileStorefront() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="space-y-2 pt-2">
             <button
               onClick={() => {
@@ -1150,31 +1381,97 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
-          TAB 3: PROFIL & BANTUAN
+          POIN 4 & 5: TAB PROFIL WALI MURID (EDIT PROFIL & TAMBAH SISWA BARU)
          ========================================================================= */}
       {activeTab === 'profile' && (
         <div className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-            <h2 className="font-black text-base text-slate-900">Profil Wali Murid</h2>
+            <h2 className="font-black text-base text-slate-900">Profil Akun & Data Siswa</h2>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#0F2C59] to-[#1E3A8A] text-white flex items-center justify-center font-black text-xl shadow-md">
-              {parentProfile.fullName?.charAt(0) || 'P'}
+          {/* KARTU PROFIL WALI MURID */}
+          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col gap-3">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#0F2C59] to-[#1E3A8A] text-white flex items-center justify-center font-black text-xl shadow-md">
+                {parentProfile.fullName?.charAt(0) || 'P'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-sm text-slate-900 truncate">
+                  {parentProfile.fullName || 'Wali Murid PENABUR'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">{parentProfile.phone || '0812-xxxx-xxxx'}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-bold">
+                  Akun Terverifikasi Kanvas
+                </span>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-sm text-slate-900 truncate">
-                {parentProfile.fullName || 'Wali Murid PENABUR'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">{parentProfile.phone || '0812-xxxx-xxxx'}</p>
-              <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-bold">
-                Terverifikasi Kanvas
+
+            <button
+              onClick={() => {
+                setParentEditForm({
+                  fullName: parentProfile.fullName,
+                  phone: parentProfile.phone,
+                });
+                setShowEditParentModal(true);
+              }}
+              className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+            >
+              <Edit3 size={13} />
+              <span>Edit Profil Wali Murid</span>
+            </button>
+          </div>
+
+          {/* DAFTAR SISWA PENABUR TERDAFTAR (MULTI-SISWA) */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <UserCheck size={16} className="text-blue-900" />
+                Daftar Siswa Terdaftar ({students.length})
               </span>
             </div>
+
+            <div className="space-y-2.5">
+              {students.map((st) => (
+                <div
+                  key={st.id}
+                  className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-2"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-xs text-slate-900 truncate">{st.name}</h4>
+                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-900 text-[9.5px] font-black rounded-md">
+                        {st.level}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 block truncate">
+                      {st.school} • {st.grade}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenEditStudent(st)}
+                    className="p-2 text-slate-500 hover:text-blue-900 rounded-lg hover:bg-white transition-all shrink-0"
+                    title="Edit Data Siswa"
+                  >
+                    <Edit3 size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* TOMBOL POIN 5: TAMBAH SISWA BARU (ANAK KE-2 / BERIKUTNYA) */}
+            <button
+              onClick={handleOpenAddStudent}
+              className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 mt-2"
+            >
+              <UserPlus size={15} />
+              <span>+ Tambah Siswa Baru (Anak ke-2 / Berikutnya)</span>
+            </button>
           </div>
 
+          {/* Pusat Bantuan */}
           <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
-            <span className="text-xs font-bold text-slate-900 block">Informasi & Bantuan</span>
+            <span className="text-xs font-bold text-slate-900 block">Bantuan & Panduan</span>
 
             <div
               onClick={() => setIsSizeGuideOpen(true)}
@@ -1214,12 +1511,186 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
+          MODAL: EDIT PROFIL WALI MURID
+         ========================================================================= */}
+      {showEditParentModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+              <h3 className="font-bold text-sm text-slate-900">Edit Profil Wali Murid</h3>
+              <button
+                onClick={() => setShowEditParentModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveParentProfile} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nama Lengkap Orang Tua *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={parentEditForm.fullName}
+                  onChange={(e) => setParentEditForm({ ...parentEditForm, fullName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nomor WhatsApp Aktif *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={parentEditForm.phone}
+                  onChange={(e) => setParentEditForm({ ...parentEditForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditParentModal(false)}
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] py-2.5 bg-blue-900 text-white rounded-xl text-xs font-bold hover:bg-blue-800"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: TAMBAH / EDIT SISWA (LOCK JENJANG OTOMATIS)
+         ========================================================================= */}
+      {showStudentModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+              <h3 className="font-bold text-sm text-slate-900">
+                {studentModalMode === 'add' ? 'Tambah Siswa Baru' : 'Edit Data Siswa'}
+              </h3>
+              <button
+                onClick={() => setShowStudentModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStudentModal} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nama Lengkap Siswa *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Jonathan Chris"
+                  value={studentForm.name}
+                  onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Nama Sekolah PENABUR *
+                </label>
+                <select
+                  required
+                  value={studentForm.school}
+                  onChange={(e) => {
+                    const chosen = e.target.value;
+                    const autoLevel = deriveSchoolLevel(chosen);
+                    setStudentForm({ ...studentForm, school: chosen, level: autoLevel });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
+                >
+                  {schoolList.map((sch, idx) => (
+                    <option key={idx} value={sch.name}>
+                      {sch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Jenjang Otomatis Terkunci Sesuai Sekolah */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Jenjang Sekolah
+                  </label>
+                  <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5">
+                    <Lock size={10} /> Terkunci Otomatis
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    readOnly
+                    value={studentForm.level}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-300 text-xs font-black text-blue-900 cursor-not-allowed uppercase tracking-wider"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-100 text-blue-800 text-[9.5px] font-extrabold rounded-md">
+                    {studentForm.level}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Kelas Siswa *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Kelas 1A / Kelas 7B"
+                  value={studentForm.grade}
+                  onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowStudentModal(false)}
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] py-2.5 bg-blue-900 text-white rounded-xl text-xs font-bold hover:bg-blue-800"
+                >
+                  {studentModalMode === 'add' ? 'Simpan Siswa Baru' : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
           MODAL: SIZE SELECTOR & BOTTOM SHEET
          ========================================================================= */}
       {activeProductModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex flex-col justify-end">
           <div className="bg-white rounded-t-[32px] p-5 shadow-2xl border-t border-slate-200 max-h-[85vh] overflow-y-auto animate-fade-in">
-            {/* Modal Header */}
             <div className="flex items-start justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <img
@@ -1249,12 +1720,10 @@ export default function MobileStorefront() {
               </button>
             </div>
 
-            {/* Description */}
             <p className="text-xs text-slate-500 my-3 leading-relaxed">
               {activeProductModal.description}
             </p>
 
-            {/* Size Selector */}
             <div className="my-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-800">Pilih Ukuran:</span>
@@ -1283,7 +1752,6 @@ export default function MobileStorefront() {
               </div>
             </div>
 
-            {/* Add to Cart CTA */}
             <div className="pt-4 border-t border-slate-100 flex gap-2">
               <button
                 onClick={() => setActiveProductModal(null)}
@@ -1304,7 +1772,7 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
-          MODAL: SIZE GUIDE POP-UP (Panduan Ukuran BPK PENABUR)
+          MODAL: SIZE GUIDE POP-UP
          ========================================================================= */}
       {isSizeGuideOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
