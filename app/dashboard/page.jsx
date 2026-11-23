@@ -1,14 +1,46 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { User, Home, ShoppingCart, ChevronRight, CheckCircle, ChevronLeft, Upload, Minus, Plus, MapPin, LogOut } from 'lucide-react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
+import { getAssetPath } from '../../lib/utils';
+import {
+  ShoppingBag,
+  User,
+  Home,
+  Clock,
+  Search,
+  Filter,
+  ChevronRight,
+  ChevronLeft,
+  Plus,
+  Minus,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  School,
+  Ruler,
+  Share2,
+  Download,
+  Building,
+  Phone,
+  ArrowRight,
+  Check,
+  X,
+  CreditCard,
+  Truck,
+  RotateCcw,
+  Sparkles,
+  LogOut
+} from 'lucide-react';
 
-const SIZE_ORDER = ['SS', 'S', 'M', 'L', 'XL', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L'];
+// Urutan ukuran standar seragam sekolah
+const SIZE_ORDER = ['SS', 'S', 'M', 'L', 'XL', '2L', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L', 'STANDAR', 'ALL SIZE'];
+
 const sortSizes = (sizes) => {
-  return sizes.sort((a, b) => {
-    const indexA = SIZE_ORDER.indexOf(a);
-    const indexB = SIZE_ORDER.indexOf(b);
+  return [...sizes].sort((a, b) => {
+    const indexA = SIZE_ORDER.indexOf(a.toUpperCase());
+    const indexB = SIZE_ORDER.indexOf(b.toUpperCase());
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
@@ -16,624 +48,1380 @@ const sortSizes = (sizes) => {
   });
 };
 
-export default function Dashboard() {
+// Daftar referensi sekolah BPK PENABUR
+const PENABUR_SCHOOLS = [
+  { id: 'TKK-1', name: 'TKK 1 PENABUR Jakarta', level: 'TK' },
+  { id: 'TKK-2', name: 'TKK 2 PENABUR Jakarta', level: 'TK' },
+  { id: 'TKK-3', name: 'TKK 3 PENABUR Jakarta', level: 'TK' },
+  { id: 'TKK-6', name: 'TKK 6 PENABUR Jakarta', level: 'TK' },
+  { id: 'TKK-GS', name: 'TKK PENABUR Gading Serpong', level: 'TK' },
+  { id: 'SDK-1', name: 'SDK 1 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-2', name: 'SDK 2 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-3', name: 'SDK 3 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-4', name: 'SDK 4 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-6', name: 'SDK 6 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-9', name: 'SDK 9 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-10', name: 'SDK 10 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-11', name: 'SDK 11 PENABUR Jakarta', level: 'SD' },
+  { id: 'SDK-GS', name: 'SDK PENABUR Gading Serpong', level: 'SD' },
+  { id: 'SMPK-1', name: 'SMPK 1 PENABUR Jakarta', level: 'SMP' },
+  { id: 'SMPK-2', name: 'SMPK 2 PENABUR Jakarta', level: 'SMP' },
+  { id: 'SMPK-3', name: 'SMPK 3 PENABUR Jakarta', level: 'SMP' },
+  { id: 'SMPK-4', name: 'SMPK 4 PENABUR Jakarta', level: 'SMP' },
+  { id: 'SMPK-5', name: 'SMPK 5 PENABUR Jakarta', level: 'SMP' },
+  { id: 'SMPK-6', name: 'SMPK 6 PENABUR Jakarta', level: 'SMP' },
+  { id: 'SMPK-7', name: 'SMPK 7 PENABUR Jakarta', level: 'SMP' },
+  { id: 'SMPK-GS', name: 'SMPK PENABUR Gading Serpong', level: 'SMP' },
+  { id: 'SMAK-1', name: 'SMAK 1 PENABUR Jakarta', level: 'SMA' },
+  { id: 'SMAK-2', name: 'SMAK 2 PENABUR Jakarta', level: 'SMA' },
+  { id: 'SMAK-3', name: 'SMAK 3 PENABUR Jakarta', level: 'SMA' },
+  { id: 'SMAK-4', name: 'SMAK 4 PENABUR Jakarta', level: 'SMA' },
+  { id: 'SMAK-5', name: 'SMAK 5 PENABUR Jakarta', level: 'SMA' },
+  { id: 'SMAK-6', name: 'SMAK 6 PENABUR Jakarta', level: 'SMA' },
+  { id: 'SMAK-7', name: 'SMAK 7 PENABUR Jakarta', level: 'SMA' },
+  { id: 'SMAK-GS', name: 'SMAK PENABUR Gading Serpong', level: 'SMA' },
+  { id: 'SMKK-1', name: 'SMKK 1 PENABUR Jakarta', level: 'SMA' }
+];
+
+// Fallback Katalog Seragam Resmi BPK PENABUR (jika data Supabase belum disinkronkan)
+const DEFAULT_PRODUCTS = [
+  {
+    id: 'prod-sd-kemeja-pendek',
+    name: 'Kemeja Putih Pendek SD',
+    category: 'Nasional',
+    level: 'SD',
+    description: 'Bahan TC Oxford kualitas prima, adem, jahitan kuat dengan bordir logo PENABUR resmi.',
+    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'SS', price: 78000, stock: 45 },
+      { size: 'S', price: 80000, stock: 60 },
+      { size: 'M', price: 82000, stock: 75 },
+      { size: 'L', price: 85000, stock: 80 },
+      { size: 'XL', price: 88000, stock: 50 },
+      { size: '3L', price: 92000, stock: 25 },
+      { size: '4L', price: 96000, stock: 15 }
+    ]
+  },
+  {
+    id: 'prod-sd-celana-merah',
+    name: 'Celana Pendek Merah SD',
+    category: 'Nasional',
+    level: 'SD',
+    description: 'Bahan Drill premium tahan luntur, dilengkapi karet pinggang samping fleksibel.',
+    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'SS', price: 85000, stock: 35 },
+      { size: 'S', price: 88000, stock: 50 },
+      { size: 'M', price: 90000, stock: 65 },
+      { size: 'L', price: 93000, stock: 70 },
+      { size: 'XL', price: 96000, stock: 40 },
+      { size: '3L', price: 102000, stock: 20 }
+    ]
+  },
+  {
+    id: 'prod-sd-rok-merah',
+    name: 'Rok Rempel Merah SD',
+    category: 'Nasional',
+    level: 'SD',
+    description: 'Bahan Famatex awet dan rapi, lipitan plisket tahan cuci berulang.',
+    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'SS', price: 90000, stock: 30 },
+      { size: 'S', price: 92000, stock: 45 },
+      { size: 'M', price: 95000, stock: 60 },
+      { size: 'L', price: 98000, stock: 65 },
+      { size: 'XL', price: 102000, stock: 35 },
+      { size: '3L', price: 108000, stock: 15 }
+    ]
+  },
+  {
+    id: 'prod-batik-penabur',
+    name: 'Kemeja Batik Resmi PENABUR',
+    category: 'Batik',
+    level: 'ALL',
+    description: 'Batik motif khas BPK PENABUR, bahan katun primisima sejuk dan nyaman dipakai sepanjang hari.',
+    imageUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'S', price: 98000, stock: 40 },
+      { size: 'M', price: 102000, stock: 55 },
+      { size: 'L', price: 105000, stock: 60 },
+      { size: 'XL', price: 109000, stock: 30 },
+      { size: '3L', price: 115000, stock: 20 }
+    ]
+  },
+  {
+    id: 'prod-pramuka-siaga',
+    name: 'Setelan Seragam Pramuka',
+    category: 'Pramuka',
+    level: 'ALL',
+    description: 'Standar Kwartir Nasional & BPK PENABUR, bahan tebal tidak mudah sobek.',
+    imageUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'S', price: 95000, stock: 35 },
+      { size: 'M', price: 98000, stock: 45 },
+      { size: 'L', price: 102000, stock: 50 },
+      { size: 'XL', price: 106000, stock: 25 }
+    ]
+  },
+  {
+    id: 'prod-olahraga-set',
+    name: 'Setelan Kaos & Celana Olahraga',
+    category: 'Olahraga',
+    level: 'ALL',
+    description: 'Bahan dry-fit pori mikro cepat serap keringat, celana training elastis dengan kantong samping.',
+    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'S', price: 115000, stock: 30 },
+      { size: 'M', price: 120000, stock: 40 },
+      { size: 'L', price: 125000, stock: 45 },
+      { size: 'XL', price: 130000, stock: 20 }
+    ]
+  },
+  {
+    id: 'prod-aksesoris-dasi-topi',
+    name: 'Paket Aksesoris (Dasi + Topi + Kaos Kaki)',
+    category: 'Aksesoris',
+    level: 'ALL',
+    description: 'Dasi bordir logo PENABUR, topi berstandar resmi, dan 2 pasang kaos kaki putih PENABUR.',
+    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=60',
+    variants: [
+      { size: 'ALL SIZE', price: 55000, stock: 120 }
+    ]
+  }
+];
+
+export default function MobileStorefront() {
   const router = useRouter();
-  const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [parentName, setParentName] = useState('Memuat...');
-  const [childrenList, setChildrenList] = useState([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const [productsList, setProductsList] = useState([]);
+  // Navigation Tabs: 'store' | 'orders' | 'profile'
+  const [activeTab, setActiveTab] = useState('store');
 
-  const [selectedChild, setSelectedChild] = useState(null);
-  const [selectedLevel, setSelectedLevel] = useState('SD');
-  const [selectedTab, setSelectedTab] = useState('Paket Lengkap');
-  const [deliveryMethod, setDeliveryMethod] = useState('koperasi'); // koperasi | rumah
-  const [address, setAddress] = useState('');
-  const [proofFile, setProofFile] = useState(null);
+  // Checkout flow state: 'browsing' | 'cart' | 'checkout' | 'success'
+  const [checkoutStep, setCheckoutStep] = useState('browsing');
+
+  // Filter States
+  const [selectedSchool, setSelectedSchool] = useState('SDK 1 PENABUR Jakarta');
+  const [selectedLevel, setSelectedLevel] = useState('ALL');
+  const [selectedCategory, setSelectedCategory] = useState('Semua');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Data Products & Raw Supabase Products
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+
+  // Cart: Array of { id, productId, name, size, price, quantity, imageUrl }
   const [cart, setCart] = useState([]);
-  
-  const [selectedProductModal, setSelectedProductModal] = useState(null);
-  const [selectedModalSize, setSelectedModalSize] = useState('');
-  const [isClosingModal, setIsClosingModal] = useState(false);
-  const [addedItemMessage, setAddedItemMessage] = useState(null);
-  const [isExiting, setIsExiting] = useState(false);
-  const scrollContainerRef = useRef(null);
+  const [addedNotice, setAddedNotice] = useState(null);
 
-  const handleGoBack = (targetScreen) => {
-    setIsExiting(true);
-    setTimeout(() => {
-      setCurrentScreen(targetScreen);
-      setIsExiting(false);
-    }, 250);
-  };
+  // Modal Detail & Size Selector
+  const [activeProductModal, setActiveProductModal] = useState(null);
+  const [modalSelectedSize, setModalSelectedSize] = useState('');
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
-    }
-  };
+  // User & Student Information for Order
+  const [parentProfile, setParentProfile] = useState({
+    fullName: 'Orang Tua Murid',
+    phone: '',
+  });
 
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-    }
-  };
+  const [studentForm, setStudentForm] = useState({
+    name: '',
+    school: 'SDK 1 PENABUR Jakarta',
+    level: 'SD',
+    grade: 'Kelas 1',
+  });
 
+  const [deliveryMethod, setDeliveryMethod] = useState('koperasi'); // 'koperasi' | 'rumah'
+  const [homeAddress, setHomeAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState(null);
+  const [myOrders, setMyOrders] = useState([]);
+
+  // Load User Session & Initial Products
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/');
-        return;
+    // 1. Load Parent Session from localStorage or Supabase
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kanvas_parent_session');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setParentProfile(parsed);
+        }
+        const storedOrders = localStorage.getItem('kanvas_my_orders');
+        if (storedOrders) {
+          setMyOrders(JSON.parse(storedOrders));
+        }
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
       }
-      
-      const userId = session.user.id;
+    }
 
-      // Ambil nama orang tua
-      const { data: parentData } = await supabase
-        .from('parents')
-        .select('full_name')
-        .eq('id', userId)
-        .single();
-        
-      if (parentData) setParentName(parentData.full_name);
+    // 2. Fetch live products from Supabase
+    const fetchSupabaseProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('name');
 
-      // Ambil data anak
-      const { data: childrenData } = await supabase
-        .from('children')
-        .select('*')
-        .eq('parent_id', userId);
-        
-      if (childrenData) {
-        setChildrenList(childrenData);
-        if (childrenData.length > 0) setSelectedChild(childrenData[0]);
+        if (data && data.length > 0) {
+          // Kelompokkan SKU produk menjadi format produk bervarian
+          const groupedMap = new Map();
+
+          data.forEach((item) => {
+            // Abaikan jika ditandai non-aktif di Kanvas
+            if (item.is_kanvas_active === false) return;
+
+            const groupKey = item.variant_group || item.name;
+            const price = Number(item.price_student || item.price || 0);
+
+            if (!groupedMap.has(groupKey)) {
+              groupedMap.set(groupKey, {
+                id: item.id,
+                name: item.name,
+                category: item.category || 'Nasional',
+                level: item.level || 'ALL',
+                description: item.description || 'Seragam berstandar resmi Koperasi BPK PENABUR.',
+                imageUrl: item.image_url || 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60',
+                variants: [],
+              });
+            }
+
+            const current = groupedMap.get(groupKey);
+            current.variants.push({
+              size: item.size || 'STANDAR',
+              price: price,
+              stock: item.stock || 50,
+              skuId: item.id,
+            });
+          });
+
+          const formattedList = Array.from(groupedMap.values()).map((p) => ({
+            ...p,
+            variants: p.variants.sort((a, b) => {
+              const idxA = SIZE_ORDER.indexOf(a.size.toUpperCase());
+              const idxB = SIZE_ORDER.indexOf(b.size.toUpperCase());
+              return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+            }),
+          }));
+
+          if (formattedList.length > 0) {
+            setProducts(formattedList);
+          }
+        }
+      } catch (err) {
+        console.warn('Menggunakan katalog bawaan:', err);
+      } finally {
+        setIsLoadingProducts(false);
       }
-      
-      // Ambil data produk dari database
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('*');
-        
-      if (productsData) setProductsList(productsData);
-      
-      setIsLoadingData(false);
     };
-    
-    fetchData();
-  }, [router]);
+
+    fetchSupabaseProducts();
+  }, []);
+
+  // Update selected level when school changes
+  const handleSchoolChange = (schoolName) => {
+    setSelectedSchool(schoolName);
+    setStudentForm((prev) => ({ ...prev, school: schoolName }));
+    const found = PENABUR_SCHOOLS.find((s) => s.name === schoolName);
+    if (found && selectedLevel === 'ALL') {
+      setSelectedLevel(found.level);
+    }
+  };
+
+  // Filter products by Level, Category, and Search
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchLevel = selectedLevel === 'ALL' || p.level === 'ALL' || p.level === selectedLevel;
+      const matchCat = selectedCategory === 'Semua' || p.category.toLowerCase() === selectedCategory.toLowerCase();
+      const matchSearch =
+        !searchQuery.trim() ||
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchLevel && matchCat && matchSearch;
+    });
+  }, [products, selectedLevel, selectedCategory, searchQuery]);
+
+  // Cart Calculations
+  const cartSubtotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, [cart]);
+
+  const cartTotalItems = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
+
+  const uniqueVerificationCode = 142;
+  const shippingFee = deliveryMethod === 'rumah' ? 18000 : 0;
+  const finalTotalAmount = cartSubtotal + (cart.length > 0 ? uniqueVerificationCode + shippingFee : 0);
+
+  // Cart actions
+  const addToCart = (product, size) => {
+    const variant = product.variants.find((v) => v.size === size) || product.variants[0];
+    const cartItemId = `${product.id}-${variant.size}`;
+
+    setCart((prevCart) => {
+      const existingIdx = prevCart.findIndex((item) => item.id === cartItemId);
+      if (existingIdx >= 0) {
+        const updated = [...prevCart];
+        updated[existingIdx].quantity += 1;
+        return updated;
+      } else {
+        return [
+          ...prevCart,
+          {
+            id: cartItemId,
+            productId: product.id,
+            name: product.name,
+            size: variant.size,
+            price: variant.price,
+            quantity: 1,
+            imageUrl: product.imageUrl,
+            category: product.category,
+          },
+        ];
+      }
+    });
+
+    setAddedNotice(`+1 ${product.name} (${variant.size})`);
+    setTimeout(() => setAddedNotice(null), 2500);
+    setActiveProductModal(null);
+  };
+
+  const updateCartQuantity = (cartItemId, delta) => {
+    setCart((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === cartItemId) {
+            const nextQty = item.quantity + delta;
+            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean)
+    );
+  };
+
+  // Submit Order to Supabase & Local History
+  const handleSubmitOrder = async (e) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
+
+    if (!studentForm.name.trim()) {
+      alert('Mohon isi nama lengkap siswa.');
+      return;
+    }
+
+    setIsSubmittingOrder(true);
+    const orderNumber = `KNP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    const orderRecord = {
+      id: orderNumber,
+      order_number: orderNumber,
+      school_name: selectedSchool,
+      student_name: studentForm.name,
+      student_class: studentForm.grade,
+      parent_name: parentProfile.fullName || 'Wali Murid',
+      parent_phone: parentProfile.phone || '-',
+      total_amount: finalTotalAmount,
+      delivery_method: deliveryMethod,
+      delivery_address: deliveryMethod === 'rumah' ? homeAddress : 'Ambil di Koperasi Sekolah',
+      status: 'submitted',
+      academic_year: '2026/2027',
+      created_at: new Date().toISOString(),
+      items: cart,
+    };
+
+    // 1. Coba simpan ke Supabase `parent_orders`
+    try {
+      await supabase.from('parent_orders').insert([
+        {
+          id: orderNumber,
+          school_name: selectedSchool,
+          student_name: studentForm.name,
+          student_class: studentForm.grade,
+          parent_name: parentProfile.fullName,
+          parent_phone: parentProfile.phone,
+          total_amount: finalTotalAmount,
+          status: 'submitted',
+          academic_year: '2026/2027',
+        },
+      ]);
+
+      // Insert items
+      const itemsPayload = cart.map((item) => ({
+        parent_order_id: orderNumber,
+        product_id: item.productId,
+        name: item.name,
+        size: item.size,
+        quantity: item.quantity,
+        price_student: item.price,
+        subtotal: item.price * item.quantity,
+      }));
+      await supabase.from('parent_order_items').insert(itemsPayload);
+    } catch (err) {
+      console.warn('Supabase insert catatan:', err);
+    }
+
+    // 2. Simpan ke local state & localStorage agar selalu tampil di riwayat
+    const updatedHistory = [orderRecord, ...myOrders];
+    setMyOrders(updatedHistory);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kanvas_my_orders', JSON.stringify(updatedHistory));
+    }
+
+    setCompletedOrder(orderRecord);
+    setCart([]);
+    setIsSubmittingOrder(false);
+    setCheckoutStep('success');
+  };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-  };
-
-  const uniqueCode = 142; // Example 3 digit unique code
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const totalAmount = subtotal + uniqueCode;
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  const updateQuantity = (index, delta) => {
-    const newCart = [...cart];
-    newCart[index].quantity = Math.max(1, newCart[index].quantity + delta);
-    setCart(newCart);
-  };
-
-  const updateSize = (index, size) => {
-    const newCart = [...cart];
-    newCart[index].size = size;
-    if (newCart[index].variants && newCart[index].variants[size]) {
-      newCart[index].price = newCart[index].variants[size];
+    if (confirm('Keluar dari sesi pemesanan?')) {
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {}
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('kanvas_parent_session');
+      }
+      router.push('/');
     }
-    setCart(newCart);
   };
 
-  const handleOrderUniform = (child) => {
-    setSelectedChild(child);
-    setSelectedLevel(child.level);
-    setCurrentScreen('products');
-  };
+  return (
+    <div className="w-full min-h-screen bg-[#F8FAFC] flex flex-col justify-between text-slate-800 select-none pb-20">
+      {/* =========================================================================
+          TOP APP BAR (Mobile Header)
+         ========================================================================= */}
+      <header className="sticky top-0 z-40 bg-[#0F2C59] text-white shadow-md">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img
+              src={getAssetPath('/kanvas-logo-only.png')}
+              alt="Logo"
+              className="w-8 h-8 object-contain rounded-full bg-white/10 p-0.5 border border-white/20"
+            />
+            <div>
+              <span className="font-black text-sm tracking-wide block leading-none text-white">
+                KANVAS PENABUR
+              </span>
+              <span className="text-[10px] text-amber-300 font-semibold leading-tight">
+                Storefront Seragam Siswa
+              </span>
+            </div>
+          </div>
 
-  const addToCart = (product, size, price) => {
-    const existingIndex = cart.findIndex(item => item.id === product.id && item.size === size);
-    if (existingIndex >= 0) {
-      updateQuantity(existingIndex, 1);
-    } else {
-      setCart([...cart, { ...product, quantity: 1, size: size, price: price }]);
-    }
-    setAddedItemMessage(`+1 ${product.name} (Ukuran ${size})`);
-    setTimeout(() => setAddedItemMessage(null), 2000);
-  };
+          <div className="flex items-center gap-2">
+            {/* Quick Size Guide Button */}
+            <button
+              onClick={() => setIsSizeGuideOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center gap-1 transition-all"
+            >
+              <Ruler size={13} className="text-amber-400" />
+              <span>Ukuran</span>
+            </button>
 
-  const closeProductModal = () => {
-    setIsClosingModal(true);
-    setTimeout(() => {
-      setSelectedProductModal(null);
-      setIsClosingModal(false);
-      setAddedItemMessage(null);
-    }, 250);
-  };
-
-  const getMinPrice = (product) => {
-    if (!product.variants) return 0;
-    const prices = Object.values(product.variants);
-    return prices.length > 0 ? Math.min(...prices) : 0;
-  };
-
-  const filteredProducts = productsList.filter(p => p.level === selectedLevel);
-
-  const renderDashboard = () => (
-    <div className="min-h-screen flex flex-col relative bg-[#f4f6f8] pb-20 md:pb-0">
-      <div className="bg-[#182c4f] pt-12 pb-28 px-6 md:px-12 text-white rounded-b-[2.5rem] md:rounded-b-[4rem]">
-        <div className="max-w-5xl mx-auto flex justify-between items-center mb-6">
-          <p className="text-sm md:text-base">Halo, {parentName}!</p>
-          <button onClick={handleSignOut} title="Keluar" className="w-10 h-10 md:w-12 md:h-12 bg-red-500/20 hover:bg-red-500/40 rounded-full flex items-center justify-center text-red-200 transition-colors shadow-md">
-            <LogOut size={20} />
-          </button>
-        </div>
-        <h1 className="max-w-5xl mx-auto text-2xl md:text-3xl font-bold">Beranda Orang Tua</h1>
-      </div>
-
-      <div className="-mt-20 px-4 md:px-12 relative z-10 flex-1 w-full max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
-        <div className="flex-1 min-w-0 relative group">
-          <h3 className="mb-3 text-white px-2 font-bold drop-shadow-md">Anak Saya</h3>
-          
-          {isLoadingData ? (
-            <div className="text-center py-10 bg-white rounded-3xl shadow-xl">Memuat data anak...</div>
-          ) : (
-            <div className="relative">
-              {childrenList.length > 1 && (
-                <button 
-                  onClick={scrollLeft}
-                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-20 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center text-gray-600 hover:text-[#182c4f] hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
-                >
-                  <ChevronLeft size={24} />
-                </button>
+            {/* Cart Icon with badge */}
+            <button
+              onClick={() => setCheckoutStep('cart')}
+              className="relative p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 transition-all font-bold"
+            >
+              <ShoppingBag size={17} />
+              {cartTotalItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#0F2C59] animate-pulse">
+                  {cartTotalItems}
+                </span>
               )}
-              <div ref={scrollContainerRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 px-2 -mx-2 hide-scrollbar scroll-smooth">
-                {childrenList.map((child) => (
-                  <div key={child.id} className="snap-center shrink-0 w-[85%] md:w-72 bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center">
-                    <div className="w-24 h-24 bg-blue-50 rounded-full mb-4 overflow-hidden border-4 border-white shadow-md">
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.full_name}`} alt={child.full_name} className="w-full h-full object-cover" />
-                    </div>
-                    <h2 className="text-gray-900 mb-1 font-bold">{child.full_name}</h2>
-                    <p className="text-sm text-gray-500 mb-6">{child.level} {child.grade}</p>
-                    <button
-                      onClick={() => handleOrderUniform(child)}
-                      className="w-full bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
+            </button>
+          </div>
+        </div>
+
+        {/* Selected School Pill & Dropdown (Hanya tampil di tab store) */}
+        {activeTab === 'store' && checkoutStep === 'browsing' && (
+          <div className="px-4 pb-3 pt-1">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 border border-white/15 flex items-center gap-2">
+              <School size={16} className="text-amber-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] text-blue-200 block font-semibold leading-none">
+                  Cabang Sekolah Pilihan:
+                </span>
+                <select
+                  value={selectedSchool}
+                  onChange={(e) => handleSchoolChange(e.target.value)}
+                  className="w-full bg-transparent text-white text-xs font-bold outline-none cursor-pointer truncate mt-0.5"
+                >
+                  {PENABUR_SCHOOLS.map((sch) => (
+                    <option key={sch.id} value={sch.name} className="text-slate-900">
+                      {sch.name} ({sch.level})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Floating Alert: Added to Cart Notice */}
+      {addedNotice && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold border border-amber-400/30 animate-fade-in backdrop-blur-md">
+          <CheckCircle2 size={16} className="text-amber-400" />
+          <span>{addedNotice}</span>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 1: STORE / KATALOG SERAGAM
+         ========================================================================= */}
+      {activeTab === 'store' && checkoutStep === 'browsing' && (
+        <div className="flex-1 flex flex-col p-4 space-y-4 animate-fade-in">
+          {/* Search Box */}
+          <div className="relative">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari kemeja, celana, rok, batik, pramuka..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Level Tabs (TK, SD, SMP, SMA, ALL) */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {[
+              { id: 'ALL', label: 'Semua Jenjang' },
+              { id: 'TK', label: 'TK' },
+              { id: 'SD', label: 'SD' },
+              { id: 'SMP', label: 'SMP' },
+              { id: 'SMA', label: 'SMA/K' },
+            ].map((lvl) => (
+              <button
+                key={lvl.id}
+                onClick={() => setSelectedLevel(lvl.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                  selectedLevel === lvl.id
+                    ? 'bg-[#0F2C59] text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {lvl.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Category Chips */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+            {['Semua', 'Nasional', 'Batik', 'Pramuka', 'Olahraga', 'Aksesoris'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Product Grid */}
+          <div>
+            <div className="flex items-center justify-between mb-2.5 px-0.5">
+              <span className="text-xs font-bold text-slate-700">
+                Pilihan Seragam ({filteredProducts.length})
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Tahun Ajaran 2026/2027
+              </span>
+            </div>
+
+            {filteredProducts.length === 0 ? (
+              <div className="bg-white rounded-3xl p-8 text-center border border-slate-100 my-4 shadow-sm">
+                <ShoppingBag size={36} className="mx-auto text-slate-300 mb-2" />
+                <h3 className="font-bold text-sm text-slate-700">Seragam Tidak Ditemukan</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Coba ganti kata kunci atau pilih jenjang yang lain.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredProducts.map((product) => {
+                  const lowestPrice = Math.min(...product.variants.map((v) => v.price));
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => {
+                        setActiveProductModal(product);
+                        setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
+                      }}
+                      className="bg-white rounded-2xl p-2.5 border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col group relative"
                     >
-                      Pesan Seragam {child.full_name.split(' ')[0]}
-                    </button>
+                      {/* Image Frame */}
+                      <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center p-2">
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
+                        />
+                        <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-slate-900/75 backdrop-blur-sm text-[9px] font-bold text-white uppercase tracking-wider">
+                          {product.category}
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <h4 className="font-bold text-xs text-slate-900 leading-snug line-clamp-2 min-h-[32px]">
+                        {product.name}
+                      </h4>
+
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-[10px] text-slate-400">Mulai</span>
+                        <span className="text-xs font-black text-blue-900">
+                          Rp{lowestPrice.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+
+                      {/* Size Tags preview */}
+                      <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {product.variants.length} Ukuran
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveProductModal(product);
+                            setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
+                          }}
+                          className="w-6 h-6 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-sm font-bold active:scale-90 transition-all"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          CHECKOUT STEP: CART REVIEW
+         ========================================================================= */}
+      {checkoutStep === 'cart' && (
+        <div className="flex-1 flex flex-col p-4 animate-fade-in">
+          {/* Header */}
+          <div className="flex items-center gap-3 pb-3 border-b border-slate-200 mb-4">
+            <button
+              onClick={() => setCheckoutStep('browsing')}
+              className="p-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <h2 className="font-black text-base text-slate-900">Keranjang Belanja</h2>
+            <span className="text-xs text-slate-500 ml-auto font-semibold">
+              {cartTotalItems} item
+            </span>
+          </div>
+
+          {cart.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-800 flex items-center justify-center mb-3">
+                <ShoppingBag size={28} />
+              </div>
+              <h3 className="font-bold text-sm text-slate-800">Keranjang Masih Kosong</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                Pilih seragam sekolah dari katalog dan tentukan ukuran yang sesuai.
+              </p>
+              <button
+                onClick={() => setCheckoutStep('browsing')}
+                className="mt-4 px-5 py-2.5 bg-[#0F2C59] text-white rounded-xl text-xs font-bold shadow-md hover:brightness-110"
+              >
+                Kembali ke Katalog
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Item List */}
+              <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm divide-y divide-slate-100">
+                {cart.map((item) => (
+                  <div key={item.id} className="py-3 first:pt-0 last:pb-0 flex items-center gap-3">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-14 h-14 rounded-xl object-cover bg-slate-50 shrink-0 border border-slate-100"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-xs text-slate-900 truncate">{item.name}</h4>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-bold">
+                          Size {item.size}
+                        </span>
+                        <span className="text-xs font-extrabold text-slate-800">
+                          Rp{item.price.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quantity Selector */}
+                    <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1 shrink-0">
+                      <button
+                        onClick={() => updateCartQuantity(item.id, -1)}
+                        className="w-6 h-6 rounded-lg bg-white text-slate-700 flex items-center justify-center shadow-xs font-bold"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="text-xs font-bold text-slate-900 w-4 text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => updateCartQuantity(item.id, 1)}
+                        className="w-6 h-6 rounded-lg bg-white text-slate-700 flex items-center justify-center shadow-xs font-bold"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
-              {childrenList.length > 1 && (
-                <button 
-                  onClick={scrollRight}
-                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-20 w-10 h-10 bg-white rounded-full shadow-lg items-center justify-center text-gray-600 hover:text-[#182c4f] hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
-                >
-                  <ChevronRight size={24} />
-                </button>
-              )}
+
+              {/* Order Summary Box */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2 text-xs">
+                <span className="font-bold text-slate-800 block text-xs mb-1">
+                  Ringkasan Belanja
+                </span>
+                <div className="flex justify-between text-slate-600">
+                  <span>Subtotal Seragam</span>
+                  <span className="font-semibold">Rp{cartSubtotal.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Kode Verifikasi Unik</span>
+                  <span className="font-bold text-amber-600">+{uniqueVerificationCode}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-sm">
+                  <span className="font-black text-slate-900">Total Pembayaran</span>
+                  <span className="font-black text-blue-900 text-base">
+                    Rp{finalTotalAmount.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Proceed Button */}
+              <button
+                onClick={() => setCheckoutStep('checkout')}
+                className="w-full py-3.5 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-2xl font-bold text-xs shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
+              >
+                <span>Lanjut Isi Data Siswa & Pengambilan</span>
+                <ArrowRight size={15} />
+              </button>
             </div>
           )}
         </div>
+      )}
 
-        <div className="w-full md:w-80 lg:w-96">
-          <h3 className="mb-3 text-white px-2 font-bold md:mt-0 mt-2 drop-shadow-md">Riwayat Pesanan</h3>
-          <div className="bg-white rounded-3xl p-5 shadow-xl flex justify-between items-center cursor-pointer hover:scale-[1.02] transition-transform">
-            <div className="flex items-center gap-3 bg-[#eef7f2] text-[#67a683] px-4 py-3 rounded-2xl w-full border border-[#d1ebd9]">
-              <CheckCircle size={20} />
-              <div className="flex-1">
-                <span className="font-bold text-[13px] block">ORD-2918 (Budi)</span>
-                <span className="text-xs">Menunggu Verifikasi</span>
+      {/* =========================================================================
+          CHECKOUT STEP: DATA SISWA & METODE PENGAMBILAN
+         ========================================================================= */}
+      {checkoutStep === 'checkout' && (
+        <form onSubmit={handleSubmitOrder} className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
+          <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setCheckoutStep('cart')}
+              className="p-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <h2 className="font-black text-base text-slate-900">Data Siswa & Pengambilan</h2>
+          </div>
+
+          {/* Form Data Siswa */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+              <User size={15} className="text-blue-700" />
+              <span>Data Siswa Pemesan</span>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                Nama Lengkap Siswa *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Contoh: Jonathan Chris"
+                value={studentForm.name}
+                onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Kelas / Tingkat
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: 1A / Kelas 7"
+                  value={studentForm.grade}
+                  onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
               </div>
-              <ChevronRight size={20} className="text-[#67a683]" />
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Sekolah PENABUR
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={selectedSchool}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600 truncate"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                Nama Orang Tua / Wali
+              </label>
+              <input
+                type="text"
+                required
+                value={parentProfile.fullName}
+                onChange={(e) => setParentProfile({ ...parentProfile, fullName: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+              />
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
 
-  const renderProducts = () => (
-    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
-      <div className="bg-[#182c4f] pt-12 pb-14 px-4 md:px-12 text-white">
-        <div className="max-w-5xl mx-auto flex items-center gap-4">
-          <button onClick={() => handleGoBack('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
-          <div className="flex-1 text-center md:text-left">
-            <h2 className="mb-1 text-lg md:text-2xl font-bold">Katalog Seragam</h2>
-            <p className="text-sm md:text-base text-blue-200">{selectedChild.name} • {selectedChild.level} {selectedChild.grade}</p>
-          </div>
-          <div className="w-10"></div>
-        </div>
-      </div>
+          {/* Metode Pengambilan */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <span className="block text-xs font-bold text-slate-900">
+              Pilih Cara Pengambilan Seragam
+            </span>
 
-      <div className="bg-[#f4f6f8] flex-1 rounded-t-[2.5rem] -mt-8 pt-8 px-4 md:px-12 w-full relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="bg-white p-4 rounded-3xl shadow-md flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all">
-                <div className="bg-gray-50 rounded-2xl h-40 md:h-48 mb-4 flex items-center justify-center overflow-hidden p-4 relative group">
-                  <img src={product.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${product.id}`} alt={product.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
-                </div>
-                <h3 className="text-[13px] md:text-sm leading-snug mb-1 text-gray-900 line-clamp-2 min-h-[40px] font-semibold">{product.name}</h3>
-                <p className="font-extrabold text-[#182c4f] mb-5 text-[15px] md:text-base">Mulai Rp{getMinPrice(product).toLocaleString('id-ID')}</p>
-                <div className="mt-auto">
-                  <button onClick={() => {
-                    setSelectedProductModal(product);
-                    const sizes = sortSizes(Object.keys(product.variants || {}));
-                    setSelectedModalSize(sizes[0] || '');
-                  }} className="w-full bg-[#67a683] text-white text-xs md:text-sm py-3 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/20 flex items-center justify-center gap-2 active:scale-95">
-                    <Plus size={16} /> Tambah
-                  </button>
+            <div
+              onClick={() => setDeliveryMethod('koperasi')}
+              className={`p-3 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
+                deliveryMethod === 'koperasi'
+                  ? 'border-blue-700 bg-blue-50/50'
+                  : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Building size={18} className="text-blue-700" />
+                <div>
+                  <span className="text-xs font-bold text-slate-900 block">
+                    Ambil di Koperasi Sekolah
+                  </span>
+                  <span className="text-[10.5px] text-slate-500">
+                    Diambil saat pembagian seragam tahun ajaran baru
+                  </span>
                 </div>
               </div>
-            ))}
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-[10px]">
+                GRATIS
+              </span>
+            </div>
+
+            <div
+              onClick={() => setDeliveryMethod('rumah')}
+              className={`p-3 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
+                deliveryMethod === 'rumah'
+                  ? 'border-blue-700 bg-blue-50/50'
+                  : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Truck size={18} className="text-blue-700" />
+                <div>
+                  <span className="text-xs font-bold text-slate-900 block">
+                    Kirim ke Alamat Rumah
+                  </span>
+                  <span className="text-[10.5px] text-slate-500">
+                    Ekspedisi resmi Jabodetabek (+Rp18.000)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {deliveryMethod === 'rumah' && (
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                  Alamat Lengkap Pengiriman
+                </label>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kode pos"
+                  value={homeAddress}
+                  onChange={(e) => setHomeAddress(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Rekening Transfer Resmi */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
+            <span className="block text-xs font-bold text-slate-900">
+              Instruksi Transfer Resmi
+            </span>
+            <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-3">
+              <div className="w-12 h-8 rounded bg-white font-black text-blue-900 flex items-center justify-center text-xs shadow-xs border border-blue-100">
+                BCA
+              </div>
+              <div className="flex-1">
+                <span className="text-[10px] text-slate-500 block leading-none">
+                  Koperasi Konsumen Karyawan BPK Penabur
+                </span>
+                <span className="text-xs font-black tracking-wider text-slate-900">
+                  0760256757
+                </span>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500 italic">
+              * Verifikasi otomatis sesuai nominal tepat Rp{finalTotalAmount.toLocaleString('id-ID')}.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmittingOrder}
+            className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
+          >
+            <CheckCircle2 size={16} />
+            <span>{isSubmittingOrder ? 'Memproses Pesanan...' : 'Konfirmasi & Kirim Pesanan'}</span>
+          </button>
+        </form>
+      )}
+
+      {/* =========================================================================
+          CHECKOUT STEP: SUCCESS RECEIPT
+         ========================================================================= */}
+      {checkoutStep === 'success' && completedOrder && (
+        <div className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
+          {/* Success Banner */}
+          <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-md text-center flex flex-col items-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2.5">
+              <CheckCircle2 size={32} />
+            </div>
+            <h2 className="text-lg font-black text-slate-900">Pesanan Berhasil Masuk!</h2>
+            <p className="text-xs text-slate-500 mt-1 max-w-xs">
+              Terima kasih. Pesanan seragam siswa telah tercatat di sistem Koperasi BPK PENABUR.
+            </p>
+
+            <div className="mt-4 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 inline-flex items-center gap-2">
+              <span className="text-[11px] text-slate-500">Nomor Pesanan:</span>
+              <span className="text-xs font-black text-blue-900 tracking-wider">
+                {completedOrder.id}
+              </span>
+            </div>
+          </div>
+
+          {/* Receipt Card */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 text-xs">
+            <div className="flex justify-between pb-2 border-b border-slate-100">
+              <span className="text-slate-500">Nama Siswa</span>
+              <span className="font-bold text-slate-800">{completedOrder.student_name}</span>
+            </div>
+            <div className="flex justify-between pb-2 border-b border-slate-100">
+              <span className="text-slate-500">Sekolah</span>
+              <span className="font-bold text-slate-800 text-right">{completedOrder.school_name}</span>
+            </div>
+            <div className="flex justify-between pb-2 border-b border-slate-100">
+              <span className="text-slate-500">Metode Pengambilan</span>
+              <span className="font-bold text-slate-800 capitalize">
+                {completedOrder.delivery_method === 'koperasi' ? 'Koperasi Sekolah' : 'Kirim Rumah'}
+              </span>
+            </div>
+
+            {/* List of items */}
+            <div className="pt-1">
+              <span className="font-bold text-slate-700 block mb-2">Item Seragam:</span>
+              <div className="space-y-1.5">
+                {completedOrder.items.map((it, idx) => (
+                  <div key={idx} className="flex justify-between text-slate-600 text-[11px]">
+                    <span>
+                      {it.quantity}x {it.name} ({it.size})
+                    </span>
+                    <span className="font-semibold">
+                      Rp{(it.price * it.quantity).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-between items-center text-sm font-black text-slate-900">
+              <span>Total Pembayaran</span>
+              <span className="text-blue-900 text-base">
+                Rp{completedOrder.total_amount.toLocaleString('id-ID')}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => {
+                alert(`Kwitansi pesanan ${completedOrder.id} tersimpan di menu Pesanan Saya.`);
+                setCheckoutStep('browsing');
+              }}
+              className="w-full py-3 bg-[#0F2C59] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-md"
+            >
+              Kembali Belanja Seragam Lain
+            </button>
+            <button
+              onClick={() => {
+                const message = encodeURIComponent(
+                  `Halo Admin Koperasi BPK PENABUR, saya ingin konfirmasi pesanan seragam Kanvas nomor: ${completedOrder.id} untuk siswa ${completedOrder.student_name} (${completedOrder.school_name}).`
+                );
+                window.open(`https://wa.me/6281290001234?text=${message}`, '_blank');
+              }}
+              className="w-full py-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100 flex items-center justify-center gap-1.5"
+            >
+              <Phone size={14} />
+              <span>Konfirmasi via WhatsApp Koperasi</span>
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 p-5 z-20 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <p className="text-center md:text-left text-sm text-gray-600">
-            {totalItems} Item di Keranjang | Total: <span className="font-black text-[#182c4f] text-base md:text-xl ml-1">Rp{subtotal.toLocaleString('id-ID')}</span>
-          </p>
+      {/* =========================================================================
+          TAB 2: ORDERS / RIWAYAT PESANAN SAYA
+         ========================================================================= */}
+      {activeTab === 'orders' && (
+        <div className="flex-1 flex flex-col p-4 animate-fade-in">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+            <h2 className="font-black text-base text-slate-900">Riwayat Pesanan Seragam</h2>
+            <span className="text-xs text-slate-400 font-semibold">{myOrders.length} Pesanan</span>
+          </div>
+
+          {myOrders.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <Clock size={36} className="text-slate-300 mb-2" />
+              <h3 className="font-bold text-sm text-slate-700">Belum Ada Riwayat Pesanan</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                Pesanan yang Anda buat akan tersimpan di sini dan dapat dipantau statusnya.
+              </p>
+              <button
+                onClick={() => {
+                  setActiveTab('store');
+                  setCheckoutStep('browsing');
+                }}
+                className="mt-4 px-5 py-2.5 bg-[#0F2C59] text-white rounded-xl text-xs font-bold"
+              >
+                Mulai Pesan Seragam
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {myOrders.map((ord, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-blue-900 tracking-wide">
+                      {ord.id || ord.order_number}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px] uppercase">
+                      Menunggu Verifikasi
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-slate-600">
+                    <span className="font-bold text-slate-800 block">{ord.student_name}</span>
+                    <span className="text-[11px] text-slate-400">{ord.school_name}</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-xs text-slate-500 font-medium">Total Tagihan</span>
+                    <span className="text-xs font-black text-slate-900">
+                      Rp{ord.total_amount?.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 3: PROFIL & BANTUAN
+         ========================================================================= */}
+      {activeTab === 'profile' && (
+        <div className="flex-1 flex flex-col p-4 animate-fade-in space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <h2 className="font-black text-base text-slate-900">Profil Wali Murid</h2>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#0F2C59] to-[#1E3A8A] text-white flex items-center justify-center font-black text-xl shadow-md">
+              {parentProfile.fullName?.charAt(0) || 'P'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-sm text-slate-900 truncate">
+                {parentProfile.fullName || 'Wali Murid PENABUR'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">{parentProfile.phone || '0812-xxxx-xxxx'}</p>
+              <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-bold">
+                Terverifikasi Kanvas
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <span className="text-xs font-bold text-slate-900 block">Informasi & Bantuan</span>
+
+            <div
+              onClick={() => setIsSizeGuideOpen(true)}
+              className="flex items-center justify-between py-2 border-b border-slate-100 cursor-pointer hover:text-blue-900 text-xs font-semibold"
+            >
+              <div className="flex items-center gap-2 text-slate-700">
+                <Ruler size={16} className="text-blue-700" />
+                <span>Panduan Ukuran Standar PENABUR</span>
+              </div>
+              <ChevronRight size={16} className="text-slate-400" />
+            </div>
+
+            <div
+              onClick={() => {
+                alert(
+                  'Koperasi Konsumen Karyawan BPK PENABUR Jakarta\nLayanan Seragam Resmi Siswa\nTelp/WA: 0812-9000-xxxx'
+                );
+              }}
+              className="flex items-center justify-between py-2 border-b border-slate-100 cursor-pointer hover:text-blue-900 text-xs font-semibold"
+            >
+              <div className="flex items-center gap-2 text-slate-700">
+                <HelpCircle size={16} className="text-blue-700" />
+                <span>Pusat Bantuan & Kontak Koperasi</span>
+              </div>
+              <ChevronRight size={16} className="text-slate-400" />
+            </div>
+          </div>
+
           <button
-            onClick={() => setCurrentScreen('checkout')}
-            className="w-full md:w-auto px-8 bg-[#67a683] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b9576] transition-colors shadow-lg shadow-[#67a683]/30"
+            onClick={handleSignOut}
+            className="w-full py-3 bg-red-50 text-red-700 border border-red-200 rounded-2xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
           >
-            Lanjut Checkout
+            <LogOut size={16} />
+            <span>Keluar dari Aplikasi</span>
           </button>
         </div>
-      </div>
-      
-      {selectedProductModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex flex-col justify-end md:justify-center items-center md:p-4">
-          <div className={`bg-white rounded-t-3xl md:rounded-3xl w-full max-w-md p-6 shadow-2xl relative ${isClosingModal ? 'animate-slide-down' : 'animate-slide-up'}`}>
-            <button onClick={closeProductModal} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
-              X
-            </button>
-            
-            <div className="flex gap-4 items-center mb-4 border-b border-gray-100 pb-4 mt-2">
-              <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center p-2">
-                <img src={selectedProductModal.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${selectedProductModal.id}`} alt={selectedProductModal.name} className="w-full h-full object-contain" />
+      )}
+
+      {/* =========================================================================
+          MODAL: SIZE SELECTOR & BOTTOM SHEET
+         ========================================================================= */}
+      {activeProductModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex flex-col justify-end">
+          <div className="bg-white rounded-t-[32px] p-5 shadow-2xl border-t border-slate-200 max-h-[85vh] overflow-y-auto animate-fade-in">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <img
+                  src={activeProductModal.imageUrl}
+                  alt={activeProductModal.name}
+                  className="w-16 h-16 rounded-2xl object-cover bg-slate-50 border border-slate-100"
+                />
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 leading-snug">
+                    {activeProductModal.name}
+                  </h3>
+                  <span className="text-sm font-black text-blue-900 mt-1 block">
+                    Rp
+                    {(
+                      activeProductModal.variants.find((v) => v.size === modalSelectedSize)?.price ||
+                      activeProductModal.variants[0]?.price ||
+                      0
+                    ).toLocaleString('id-ID')}
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900 mb-1">{selectedProductModal.name}</h3>
-                <p className="font-black text-xl text-[#182c4f]">
-                  Rp{(selectedProductModal.variants?.[selectedModalSize] || 0).toLocaleString('id-ID')}
-                </p>
-              </div>
+              <button
+                onClick={() => setActiveProductModal(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
+              >
+                <X size={15} />
+              </button>
             </div>
 
-            <div className="mb-6">
-              <p className="font-bold text-sm text-gray-700 mb-2">Pilih Ukuran:</p>
+            {/* Description */}
+            <p className="text-xs text-slate-500 my-3 leading-relaxed">
+              {activeProductModal.description}
+            </p>
+
+            {/* Size Selector */}
+            <div className="my-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-800">Pilih Ukuran:</span>
+                <button
+                  onClick={() => setIsSizeGuideOpen(true)}
+                  className="text-[11px] text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
+                >
+                  <Ruler size={13} /> Panduan Ukuran
+                </button>
+              </div>
+
               <div className="flex flex-wrap gap-2">
-                {sortSizes(Object.keys(selectedProductModal.variants || {})).map(size => (
-                  <button 
-                    key={size}
-                    onClick={() => setSelectedModalSize(size)}
-                    className={`py-2 px-4 rounded-xl font-bold border-2 transition-all ${selectedModalSize === size ? 'border-[#67a683] bg-[#eef7f2] text-[#67a683]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                {activeProductModal.variants.map((v) => (
+                  <button
+                    key={v.size}
+                    onClick={() => setModalSelectedSize(v.size)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                      modalSelectedSize === v.size
+                        ? 'border-blue-900 bg-blue-900 text-white shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
                   >
-                    {size}
+                    {v.size}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Size Chart Slot */}
-            <div className="mb-6 p-4 bg-[#f4f6f8] rounded-2xl border border-dashed border-gray-300 flex items-center justify-center min-h-[100px]">
-              {selectedProductModal.size_chart_url ? (
-                <img src={selectedProductModal.size_chart_url} alt="Size Chart" className="max-h-32 object-contain" />
-              ) : (
-                <div className="text-center text-gray-500 text-xs px-2">
-                  <p className="font-bold mb-1">Panduan Ukuran (Size Chart)</p>
-                  <p>Tambahkan URL foto panduan ukuran ke database (kolom <code>size_chart_url</code> di tabel products) untuk menampilkannya di sini.</p>
-                </div>
-              )}
-            </div>
-
-            {addedItemMessage && (
-              <div className="mb-4 text-center text-[#67a683] bg-[#eef7f2] py-3 rounded-xl font-bold text-sm animate-in zoom-in duration-200 border border-[#c1e6ce]">
-                <CheckCircle size={16} className="inline mr-1" /> {addedItemMessage}
-              </div>
-            )}
-
-            <div className="flex gap-3 mt-auto">
-              <button onClick={closeProductModal} className="flex-1 bg-white border-2 border-gray-200 text-gray-600 py-3 rounded-2xl font-bold hover:bg-gray-50 transition-colors flex justify-center items-center">
-                Kembali
+            {/* Add to Cart CTA */}
+            <div className="pt-4 border-t border-slate-100 flex gap-2">
+              <button
+                onClick={() => setActiveProductModal(null)}
+                className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200"
+              >
+                Batal
               </button>
-              <button onClick={() => addToCart(selectedProductModal, selectedModalSize, selectedProductModal.variants?.[selectedModalSize] || 0)} className="flex-[1.5] bg-[#182c4f] text-white py-3 rounded-2xl font-bold hover:bg-[#233a63] transition-colors shadow-lg flex justify-center items-center gap-2">
-                <ShoppingCart size={18} /> Tambah
+              <button
+                onClick={() => addToCart(activeProductModal, modalSelectedSize)}
+                className="flex-[2] py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:brightness-105 flex items-center justify-center gap-2"
+              >
+                <ShoppingBag size={15} />
+                <span>Tambah ke Keranjang</span>
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
 
-  const renderCheckout = () => (
-    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
-      <div className="bg-[#182c4f] pt-12 pb-14 px-4 md:px-12 text-white">
-        <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <button onClick={() => handleGoBack('products')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
-          <h2 className="flex-1 text-center md:text-left text-lg md:text-2xl font-bold">Keranjang & Checkout</h2>
-          <div className="w-10"></div>
-        </div>
-      </div>
-
-      <div className="bg-[#f4f6f8] flex-1 rounded-t-[2.5rem] -mt-8 pt-8 px-4 md:px-12 w-full relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-        <div className="max-w-3xl mx-auto">
-
-          <h3 className="mb-4 text-gray-800 px-1 font-bold">Daftar Seragam</h3>
-          <div className="bg-white rounded-3xl p-4 md:p-6 shadow-sm mb-8 divide-y divide-gray-100 border border-gray-100">
-            {cart.map((item, idx) => (
-              <div key={idx} className="flex flex-col md:flex-row md:items-center gap-4 py-4 first:pt-0 last:pb-0">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center p-2 shrink-0">
-                    <img src={item.image_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${item.id}`} alt={item.name} className="w-full h-full object-contain" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-[14px] text-gray-900 mb-1">{item.name}</p>
-                    <p className="text-sm font-extrabold text-[#182c4f]">Rp{item.price.toLocaleString('id-ID')}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between md:justify-end gap-6 ml-20 md:ml-0">
-                  {/* Size Selector */}
-                  <select
-                    value={item.size}
-                    onChange={(e) => updateSize(idx, e.target.value)}
-                    className="bg-gray-50 border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg text-sm font-bold outline-none focus:border-[#67a683]"
-                  >
-                    {sortSizes(Object.keys(item.variants || {})).map(s => <option key={s} value={s}>Ukuran {s}</option>)}
-                  </select>
-
-                  {/* Quantity */}
-                  <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-1">
-                    <button onClick={() => updateQuantity(idx, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md text-gray-600 shadow-sm border border-gray-100 hover:text-red-500"><Minus size={14} /></button>
-                    <span className="font-bold text-sm w-4 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(idx, 1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md text-gray-600 shadow-sm border border-gray-100 hover:text-[#67a683]"><Plus size={14} /></button>
-                  </div>
-                </div>
+      {/* =========================================================================
+          MODAL: SIZE GUIDE POP-UP (Panduan Ukuran BPK PENABUR)
+         ========================================================================= */}
+      {isSizeGuideOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm max-h-[85vh] overflow-y-auto animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="flex items-center gap-2">
+                <Ruler size={18} className="text-amber-500" />
+                <h3 className="font-bold text-sm text-slate-900">Panduan Ukuran Resmi</h3>
               </div>
-            ))}
-          </div>
-
-          <h3 className="mb-4 text-gray-800 px-1 font-bold">Pilih Metode Pengambilan</h3>
-          <div className="bg-white rounded-3xl p-5 shadow-sm mb-8 space-y-5 border border-gray-100">
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <div className="relative flex items-center justify-center">
-                <input type="radio" checked={deliveryMethod === 'koperasi'} onChange={() => setDeliveryMethod('koperasi')} className="peer appearance-none w-6 h-6 rounded-full border-2 border-gray-300 checked:border-[#67a683] transition-colors" />
-                <div className="absolute w-3 h-3 rounded-full bg-[#67a683] scale-0 peer-checked:scale-100 transition-transform"></div>
-              </div>
-              <span className="flex-1 text-[14px] font-semibold text-gray-800">Ambil di Koperasi Sekolah</span>
-              <span className="bg-[#eef7f2] border border-[#c1e6ce] text-[#67a683] text-[11px] px-3 py-1 rounded-full font-black uppercase tracking-wide">Gratis</span>
-            </label>
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <div className="relative flex items-center justify-center">
-                <input type="radio" checked={deliveryMethod === 'rumah'} onChange={() => setDeliveryMethod('rumah')} className="peer appearance-none w-6 h-6 rounded-full border-2 border-gray-300 checked:border-[#67a683] transition-colors" />
-                <div className="absolute w-3 h-3 rounded-full bg-[#67a683] scale-0 peer-checked:scale-100 transition-transform"></div>
-              </div>
-              <span className="flex-1 text-[14px] font-semibold text-gray-800">Kirim ke Alamat Rumah</span>
-            </label>
-
-            {deliveryMethod === 'rumah' && (
-              <div className="mt-4 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
-                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2"><MapPin size={16} /> Alamat Lengkap Pengiriman</label>
-                <textarea
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-[#67a683] focus:bg-white transition-colors"
-                  rows="3"
-                  placeholder="Nama Jalan, RT/RW, Kelurahan, Kecamatan, Kota, Kode Pos"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                ></textarea>
-              </div>
-            )}
-          </div>
-
-          <h3 className="mb-4 text-gray-800 px-1 font-bold">Metode Pembayaran (Transfer Bank)</h3>
-          <div className="bg-white rounded-3xl p-6 shadow-sm mb-8 border border-gray-100 flex flex-col gap-4">
-            <div className="flex items-center gap-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
-              <div className="w-16 h-10 bg-white rounded flex items-center justify-center font-black text-blue-800 italic border border-gray-200">BCA</div>
-              <div>
-                <p className="text-sm text-gray-500 mb-1">BCA a.n Koperasi BPK PENABUR</p>
-                <p className="font-mono text-lg font-bold tracking-widest text-[#182c4f]">821 009 2381</p>
-              </div>
+              <button
+                onClick={() => setIsSizeGuideOpen(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
+              >
+                <X size={15} />
+              </button>
             </div>
 
-            <div className="pt-4 border-t border-gray-100">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Subtotal Seragam</span>
-                <span>Rp{subtotal.toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between text-sm text-gray-600 mb-4">
-                <span>Kode Unik (Verifikasi Otomatis)</span>
-                <span className="text-orange-500 font-bold">+{uniqueCode}</span>
-              </div>
-              <div className="flex justify-between items-center bg-[#f4f6f8] p-4 rounded-xl">
-                <span className="font-bold text-gray-800">Total Harus Dibayar</span>
-                <span className="font-black text-2xl text-[#67a683]">Rp{totalAmount.toLocaleString('id-ID')}</span>
-              </div>
-              <p className="text-xs text-center text-gray-500 mt-3 font-medium">Mohon transfer tepat sampai 3 digit terakhir agar pesanan terverifikasi otomatis.</p>
+            <p className="text-xs text-slate-500 mb-3">
+              Standar konveksi seragam BPK PENABUR (dalam centimeter):
+            </p>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200 text-xs mb-3">
+              <table className="w-full text-left">
+                <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="p-2">Size</th>
+                    <th className="p-2">Lingkar Dada</th>
+                    <th className="p-2">Panjang</th>
+                    <th className="p-2">Estimasi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
+                  <tr><td className="p-2 font-bold text-blue-900">SS</td><td className="p-2">80 cm</td><td className="p-2">56 cm</td><td className="p-2">TK - SD 1</td></tr>
+                  <tr><td className="p-2 font-bold text-blue-900">S</td><td className="p-2">86 cm</td><td className="p-2">60 cm</td><td className="p-2">SD 1 - 2</td></tr>
+                  <tr><td className="p-2 font-bold text-blue-900">M</td><td className="p-2">92 cm</td><td className="p-2">64 cm</td><td className="p-2">SD 3 - 4</td></tr>
+                  <tr><td className="p-2 font-bold text-blue-900">L</td><td className="p-2">98 cm</td><td className="p-2">68 cm</td><td className="p-2">SD 5 - SMP</td></tr>
+                  <tr><td className="p-2 font-bold text-blue-900">XL</td><td className="p-2">104 cm</td><td className="p-2">72 cm</td><td className="p-2">SMP - SMA</td></tr>
+                  <tr><td className="p-2 font-bold text-blue-900">3L</td><td className="p-2">110 cm</td><td className="p-2">76 cm</td><td className="p-2">Jumbo</td></tr>
+                  <tr><td className="p-2 font-bold text-blue-900">4L-6L</td><td className="p-2">116-128 cm</td><td className="p-2">80 cm</td><td className="p-2">Ekstra Jumbo</td></tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 z-20 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
-        <div className="max-w-3xl mx-auto">
-          <button
-            onClick={() => setCurrentScreen('upload_proof')}
-            className="w-full py-4 bg-[#67a683] text-white rounded-2xl flex items-center justify-center gap-2 hover:bg-[#5b9576] transition-all shadow-lg shadow-[#67a683]/30"
-          >
-            <span className="font-black text-[14px] md:text-[15px] tracking-wide">KONFIRMASI & UPLOAD BUKTI BAYAR</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderUploadProof = () => (
-    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
-      <div className="bg-[#182c4f] pt-12 pb-14 px-4 md:px-12 text-white">
-        <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <button onClick={() => handleGoBack('checkout')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
-          <h2 className="flex-1 text-center md:text-left text-lg md:text-2xl font-bold">Upload Bukti Bayar</h2>
-          <div className="w-10"></div>
-        </div>
-      </div>
-
-      <div className="bg-[#f4f6f8] flex-1 rounded-t-[2.5rem] -mt-8 pt-12 px-4 md:px-12 w-full relative z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-        <div className="max-w-md mx-auto text-center">
-
-          <div className="w-20 h-20 bg-blue-100 text-[#182c4f] rounded-full flex items-center justify-center mx-auto mb-6">
-            <Upload size={32} />
-          </div>
-
-          <h3 className="text-xl font-black text-gray-900 mb-2">Konfirmasi Pembayaran</h3>
-          <p className="text-sm text-gray-500 mb-8 px-4">
-            Silakan unggah foto struk transfer atau screenshot m-banking Anda sejumlah <strong className="text-[#67a683]">Rp{totalAmount.toLocaleString('id-ID')}</strong>.
-          </p>
-
-          <div className="bg-white rounded-3xl p-8 border-2 border-dashed border-gray-300 hover:border-[#67a683] transition-colors cursor-pointer mb-8 relative">
-            <input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              onChange={(e) => setProofFile(e.target.files[0])}
-            />
-            {proofFile ? (
-              <div className="text-[#67a683] font-bold flex flex-col items-center">
-                <CheckCircle size={32} className="mb-2" />
-                {proofFile.name}
-              </div>
-            ) : (
-              <div className="text-gray-400 font-medium">
-                <p>Ketuk untuk memilih foto</p>
-                <p className="text-xs mt-1">Maks 5MB (JPG, PNG)</p>
-              </div>
-            )}
-          </div>
-
-          <button
-            disabled={!proofFile}
-            onClick={() => {
-              alert('Bukti berhasil diunggah! Menunggu verifikasi admin.');
-              handleGoBack('dashboard');
-            }}
-            className="w-full py-4 bg-[#182c4f] text-white rounded-2xl font-black tracking-wide disabled:opacity-50 hover:bg-[#12213b] transition-colors shadow-lg"
-          >
-            KIRIM BUKTI PEMBAYARAN
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderOrders = () => (
-    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
-      <div className="bg-[#182c4f] pt-12 pb-14 px-4 text-white">
-        <div className="flex items-center gap-4">
-          <button onClick={() => handleGoBack('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
-          <h2 className="text-xl font-bold">Pesanan Saya</h2>
-        </div>
-      </div>
-      <div className="p-6 text-center text-gray-500 mt-4">Belum ada riwayat pesanan.</div>
-    </div>
-  );
-
-  const renderProfile = () => (
-    <div className={`min-h-screen flex flex-col relative bg-[#f4f6f8] pb-32 ${isExiting ? 'animate-slide-down' : 'animate-slide-up'}`}>
-      <div className="bg-[#182c4f] pt-12 pb-14 px-4 text-white">
-        <div className="flex items-center gap-4">
-          <button onClick={() => handleGoBack('dashboard')} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft size={24} /></button>
-          <h2 className="text-xl font-bold">Profil & Pengaturan</h2>
-        </div>
-      </div>
-      <div className="p-6 bg-white mx-4 -mt-6 rounded-3xl shadow-sm">
-        <h3 className="font-bold mb-4 text-gray-800">Data Profil</h3>
-        <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-          <p className="text-sm text-gray-500 mb-1">Nama Lengkap</p>
-          <p className="font-bold text-gray-900">{parentName}</p>
-        </div>
-        
-        <h3 className="font-bold mb-4 text-gray-800 border-t pt-4">Data Anak</h3>
-        <div className="space-y-3 mb-4">
-          {childrenList.map(child => (
-            <div key={child.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4">
-               <div className="w-12 h-12 bg-blue-50 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0">
-                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${child.full_name}`} alt={child.full_name} className="w-full h-full object-cover" />
-               </div>
-               <div>
-                 <p className="font-bold text-gray-900">{child.full_name}</p>
-                 <p className="text-sm text-gray-500">{child.level} {child.grade}</p>
-               </div>
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 font-medium">
+              💡 <strong>Tips Memilih:</strong> Jika ragu di antara dua ukuran, disarankan memilih <strong>1 ukuran lebih besar</strong> untuk mengantisipasi pertumbuhan anak selama 1 tahun ajaran.
             </div>
-          ))}
+
+            <button
+              onClick={() => setIsSizeGuideOpen(false)}
+              className="w-full mt-4 py-2.5 bg-[#0F2C59] text-white rounded-xl text-xs font-bold"
+            >
+              Tutup Panduan
+            </button>
+          </div>
         </div>
-        
-        <button onClick={() => router.push('/register')} className="w-full bg-[#eef7f2] border border-[#c1e6ce] text-[#67a683] py-3.5 rounded-xl font-bold hover:bg-[#d5eedf] transition-colors flex items-center justify-center gap-2">
-          <Plus size={18} /> Tambah Data Anak Baru
+      )}
+
+      {/* =========================================================================
+          GLOBAL BOTTOM NAVIGATION BAR (Mobile Bottom Bar)
+         ========================================================================= */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around py-2.5 shadow-lg max-w-[440px] mx-auto md:rounded-b-[32px]">
+        <button
+          onClick={() => {
+            setActiveTab('store');
+            setCheckoutStep('browsing');
+          }}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === 'store' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
+          }`}
+        >
+          <Home size={20} />
+          <span className="text-[10px]">Katalog</span>
         </button>
-      </div>
+
+        <button
+          onClick={() => {
+            setActiveTab('orders');
+            setCheckoutStep('browsing');
+          }}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === 'orders' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
+          }`}
+        >
+          <Clock size={20} />
+          <span className="text-[10px]">Pesanan Saya</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('profile');
+            setCheckoutStep('browsing');
+          }}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            activeTab === 'profile' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
+          }`}
+        >
+          <User size={20} />
+          <span className="text-[10px]">Profil</span>
+        </button>
+      </nav>
     </div>
-  );
-
-  return (
-    <>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        @keyframes slideUpFast {
-          from { transform: translateY(30px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-slide-up {
-          animation: slideUpFast 0.25s ease-out forwards;
-        }
-        @keyframes slideDownFast {
-          from { transform: translateY(0); opacity: 1; }
-          to { transform: translateY(30px); opacity: 0; }
-        }
-        .animate-slide-down {
-          animation: slideDownFast 0.25s ease-in forwards;
-        }
-      `}} />
-      <div className="w-full min-h-screen bg-[#f4f6f8] font-sans">
-        {currentScreen === 'dashboard' && renderDashboard()}
-        {currentScreen === 'products' && renderProducts()}
-        {currentScreen === 'checkout' && renderCheckout()}
-        {currentScreen === 'upload_proof' && renderUploadProof()}
-        {currentScreen === 'orders' && renderOrders()}
-        {currentScreen === 'profile' && renderProfile()}
-
-        {/* Global Bottom Nav (Only on Dashboard) */}
-        {currentScreen === 'dashboard' && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 flex justify-around py-4 pb-6 z-30 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] md:max-w-md md:mx-auto md:rounded-t-3xl md:bottom-4 md:border">
-            <div onClick={() => setCurrentScreen('dashboard')} className={`flex flex-col items-center cursor-pointer group transition-colors ${currentScreen === 'dashboard' ? 'text-[#182c4f]' : 'text-gray-400 hover:text-[#182c4f]'}`}>
-              <Home size={24} className="group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] mt-1.5 font-bold">Home</span>
-            </div>
-            <div onClick={() => setCurrentScreen('orders')} className={`flex flex-col items-center cursor-pointer group transition-colors ${currentScreen === 'orders' ? 'text-[#182c4f]' : 'text-gray-400 hover:text-[#182c4f]'}`}>
-              <ShoppingCart size={24} className="group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] mt-1.5 font-semibold">Pesanan Saya</span>
-            </div>
-            <div onClick={() => setCurrentScreen('profile')} className={`flex flex-col items-center cursor-pointer group transition-colors ${currentScreen === 'profile' ? 'text-[#182c4f]' : 'text-gray-400 hover:text-[#182c4f]'}`}>
-              <User size={24} className="group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] mt-1.5 font-semibold">Profil</span>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
   );
 }
