@@ -8,6 +8,8 @@ import {
   getSchoolList, 
   deriveSchoolLevel, 
   getNextSchoolLevel,
+  getAvailableGrades,
+  cleanSchoolName,
   checkParentRegistered, 
   saveParentRegistration 
 } from '../lib/schools';
@@ -91,10 +93,14 @@ export default function HomeLogin() {
       const list = await getSchoolList(supabase);
       setSchoolList(list);
       if (list.length > 0) {
+        const firstSchool = list[0].name;
+        const firstLevel = list[0].level || deriveSchoolLevel(firstSchool);
+        const grades = getAvailableGrades(firstLevel);
         setRegisterForm((prev) => ({
           ...prev,
-          schoolName: list[0].name,
-          schoolLevel: list[0].level || deriveSchoolLevel(list[0].name),
+          schoolName: firstSchool,
+          schoolLevel: firstLevel,
+          studentClass: grades.length > 0 ? grades[0] : '-',
         }));
       }
     };
@@ -229,11 +235,14 @@ export default function HomeLogin() {
   };
 
   const handleRegisterSchoolChange = (schoolName) => {
-    const lockedLevel = deriveSchoolLevel(schoolName);
+    const found = schoolList.find((s) => cleanSchoolName(s.name) === cleanSchoolName(schoolName));
+    const lockedLevel = found?.level || deriveSchoolLevel(schoolName);
+    const grades = getAvailableGrades(lockedLevel);
     setRegisterForm((prev) => ({
       ...prev,
       schoolName: schoolName,
       schoolLevel: lockedLevel,
+      studentClass: grades.length > 0 ? (grades.includes(prev.studentClass) ? prev.studentClass : grades[0]) : '-',
     }));
   };
 
@@ -673,19 +682,37 @@ export default function HomeLogin() {
                 </div>
               )}
 
-              {/* Kelas */}
+              {/* Kelas Siswa (Dropdown Dinamis: SD: 1-6, SMP: 7-9, SMA: 10-12, TK: Tidak Perlu Isi) */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Kelas Siswa *
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Kelas 1A / Kelas 7B / Kelas 10"
-                  value={registerForm.studentClass}
-                  onChange={(e) => setRegisterForm({ ...registerForm, studentClass: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
-                />
+                {getAvailableGrades(registerForm.schoolLevel).length > 0 ? (
+                  <select
+                    required
+                    value={registerForm.studentClass}
+                    onChange={(e) => setRegisterForm({ ...registerForm, studentClass: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
+                  >
+                    {getAvailableGrades(registerForm.schoolLevel).map((grade) => (
+                      <option key={grade} value={grade}>
+                        {grade}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-500 flex items-center justify-between">
+                    <span>Jenjang TK</span>
+                    <span className="text-[10px] text-amber-700 font-extrabold bg-amber-100/80 px-2 py-0.5 rounded-md">
+                      Tidak perlu mengisi kelas
+                    </span>
+                  </div>
+                )}
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  {getAvailableGrades(registerForm.schoolLevel).length > 0
+                    ? `Pilihan kelas otomatis disesuaikan untuk jenjang ${registerForm.schoolLevel}.`
+                    : 'Untuk jenjang TK (TKK), siswa tidak memerlukan pengisian kelas.'}
+                </span>
               </div>
 
               {/* No. HP (WhatsApp) */}

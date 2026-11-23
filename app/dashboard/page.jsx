@@ -10,7 +10,8 @@ import {
   deriveSchoolLevel, 
   cleanSchoolName,
   getSchoolPaymentInfo,
-  getNextSchoolLevel
+  getNextSchoolLevel,
+  getAvailableGrades
 } from '../../lib/schools';
 import {
   ShoppingBag,
@@ -477,12 +478,14 @@ export default function MobileStorefront() {
     setStudentModalMode('add');
     setEditingStudentId(null);
     const defaultSchool = schoolList[0]?.name || 'SDK 1 PENABUR';
+    const autoLevel = deriveSchoolLevel(defaultSchool);
+    const grades = getAvailableGrades(autoLevel);
     setStudentForm({
       name: '',
       studentType: 'luar',
       school: defaultSchool,
-      level: deriveSchoolLevel(defaultSchool),
-      grade: 'Kelas 1',
+      level: autoLevel,
+      grade: grades.length > 0 ? grades[0] : '-',
     });
     setShowStudentModal(true);
   };
@@ -491,12 +494,13 @@ export default function MobileStorefront() {
   const handleOpenEditStudent = (student) => {
     setStudentModalMode('edit');
     setEditingStudentId(student.id);
+    const grades = getAvailableGrades(student.level);
     setStudentForm({
       name: student.name,
       studentType: student.studentType || 'luar',
       school: student.school,
       level: student.level,
-      grade: student.grade,
+      grade: grades.length > 0 ? (student.grade && student.grade !== '-' ? student.grade : grades[0]) : '-',
     });
     setShowStudentModal(true);
   };
@@ -512,6 +516,10 @@ export default function MobileStorefront() {
     const currentLevel = studentForm.level || deriveSchoolLevel(studentForm.school);
     const nextLvl = studentForm.studentType === 'dalam' ? getNextSchoolLevel(currentLevel) : null;
     const allowed = nextLvl ? [currentLevel, nextLvl] : [currentLevel];
+    const availableGrades = getAvailableGrades(currentLevel);
+    const resolvedGrade = availableGrades.length > 0
+      ? (studentForm.grade && studentForm.grade !== '-' ? studentForm.grade : availableGrades[0])
+      : '-';
 
     if (studentModalMode === 'add') {
       const newId = `std-${Date.now()}`;
@@ -523,7 +531,7 @@ export default function MobileStorefront() {
         level: currentLevel,
         nextLevel: nextLvl,
         allowedLevels: allowed,
-        grade: studentForm.grade.trim() || 'Kelas 1',
+        grade: resolvedGrade,
       };
       const updated = [...students, newStudentObj];
       setStudents(updated);
@@ -545,7 +553,7 @@ export default function MobileStorefront() {
             level: currentLevel,
             nextLevel: nextLvl,
             allowedLevels: allowed,
-            grade: studentForm.grade.trim() || 'Kelas 1',
+            grade: resolvedGrade,
           };
         }
         return s;
@@ -2196,8 +2204,15 @@ export default function MobileStorefront() {
                   value={studentForm.school}
                   onChange={(e) => {
                     const chosen = e.target.value;
-                    const autoLevel = deriveSchoolLevel(chosen);
-                    setStudentForm({ ...studentForm, school: chosen, level: autoLevel });
+                    const found = schoolList.find((s) => cleanSchoolName(s.name) === cleanSchoolName(chosen));
+                    const autoLevel = found?.level || deriveSchoolLevel(chosen);
+                    const grades = getAvailableGrades(autoLevel);
+                    setStudentForm({ 
+                      ...studentForm, 
+                      school: chosen, 
+                      level: autoLevel,
+                      grade: grades.length > 0 ? (grades.includes(studentForm.grade) ? studentForm.grade : grades[0]) : '-'
+                    });
                   }}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
                 >
@@ -2232,18 +2247,37 @@ export default function MobileStorefront() {
                 </div>
               </div>
 
+              {/* Kelas Siswa: Dropdown Dinamis (SD: 1-6, SMP: 7-9, SMA: 10-12, TK: Tidak perlu isi) */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Kelas Siswa *
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Kelas 1A / Kelas 7B"
-                  value={studentForm.grade}
-                  onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
-                />
+                {getAvailableGrades(studentForm.level).length > 0 ? (
+                  <select
+                    required
+                    value={studentForm.grade}
+                    onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
+                  >
+                    {getAvailableGrades(studentForm.level).map((grade) => (
+                      <option key={grade} value={grade}>
+                        {grade}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-500 flex items-center justify-between">
+                    <span>Jenjang TK</span>
+                    <span className="text-[10px] text-amber-700 font-extrabold bg-amber-100/80 px-2 py-0.5 rounded-md">
+                      Tidak perlu mengisi kelas
+                    </span>
+                  </div>
+                )}
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  {getAvailableGrades(studentForm.level).length > 0
+                    ? `Pilihan kelas otomatis disesuaikan untuk jenjang ${studentForm.level}.`
+                    : 'Untuk jenjang TK (TKK), siswa tidak memerlukan pengisian kelas.'}
+                </span>
               </div>
 
               <div className="pt-2 flex gap-2">
