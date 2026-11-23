@@ -37,7 +37,11 @@ import {
   UserCheck,
   Edit3,
   UserPlus,
-  Lock
+  Lock,
+  QrCode,
+  Package,
+  Receipt,
+  Calendar
 } from 'lucide-react';
 
 const SIZE_ORDER = ['SS', 'S', 'M', 'L', 'XL', '2L', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L', 'STANDAR', 'ALL SIZE'];
@@ -250,6 +254,7 @@ export default function MobileStorefront() {
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
   const [myOrders, setMyOrders] = useState([]);
+  const [selectedOrderReceipt, setSelectedOrderReceipt] = useState(null);
 
   // Active student object helper
   const activeStudent = useMemo(() => {
@@ -1296,10 +1301,19 @@ export default function MobileStorefront() {
           <div className="space-y-2 pt-2">
             <button
               onClick={() => {
-                alert(`Kwitansi pesanan ${completedOrder.id} tersimpan di menu Pesanan Saya.`);
+                setActiveTab('orders');
                 setCheckoutStep('browsing');
               }}
-              className="w-full py-3 bg-[#0F2C59] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-md"
+              className="w-full py-3 bg-[#0F2C59] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-md flex items-center justify-center gap-2"
+            >
+              <Receipt size={15} className="text-amber-400" />
+              <span>Lihat Bukti Pengambilan di "Pesanan Saya"</span>
+            </button>
+            <button
+              onClick={() => {
+                setCheckoutStep('browsing');
+              }}
+              className="w-full py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold"
             >
               Kembali Belanja Seragam Lain
             </button>
@@ -1325,8 +1339,13 @@ export default function MobileStorefront() {
       {activeTab === 'orders' && (
         <div className="flex-1 flex flex-col p-4 animate-fade-in">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
-            <h2 className="font-black text-base text-slate-900">Riwayat Pesanan Seragam</h2>
-            <span className="text-xs text-slate-400 font-semibold">{myOrders.length} Pesanan</span>
+            <div>
+              <h2 className="font-black text-base text-slate-900">Riwayat Pesanan Seragam</h2>
+              <p className="text-[11px] text-slate-400">Bukti resmi pengambilan seragam untuk PIC sekolah</p>
+            </div>
+            <span className="text-xs text-blue-900 font-bold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+              {myOrders.length} Pesanan
+            </span>
           </div>
 
           {myOrders.length === 0 ? (
@@ -1334,7 +1353,7 @@ export default function MobileStorefront() {
               <Clock size={36} className="text-slate-300 mb-2" />
               <h3 className="font-bold text-sm text-slate-700">Belum Ada Riwayat Pesanan</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                Pesanan yang Anda buat akan tersimpan di sini dan dapat dipantau statusnya.
+                Pesanan seragam yang Anda buat akan tersimpan di sini dan kode pesanannya dapat ditunjukkan ke PIC sekolah saat pengambilan.
               </p>
               <button
                 onClick={() => {
@@ -1347,34 +1366,119 @@ export default function MobileStorefront() {
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {myOrders.map((ord, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-blue-900 tracking-wide">
-                      {ord.id || ord.order_number}
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px] uppercase">
-                      Menunggu Verifikasi
-                    </span>
-                  </div>
+            <div className="space-y-4">
+              {myOrders.map((ord, idx) => {
+                const orderCode = ord.id || ord.order_number || `ORD-${idx + 1}`;
+                const itemsList = Array.isArray(ord.items) ? ord.items : [];
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-3 transition-all hover:border-blue-200"
+                  >
+                    {/* Header: Kode Pesanan & Status */}
+                    <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-100">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <Receipt size={14} className="text-blue-900" />
+                          <span className="text-xs font-black text-blue-950 tracking-wider">
+                            {orderCode}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-0.5 block flex items-center gap-1">
+                          <Calendar size={10} />
+                          {ord.created_at ? new Date(ord.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Hari ini'}
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px] flex items-center gap-1">
+                        <CheckCircle2 size={11} className="text-emerald-600" />
+                        Siap Diambil di Sekolah
+                      </span>
+                    </div>
 
-                  <div className="text-xs text-slate-600">
-                    <span className="font-bold text-slate-800 block">{ord.student_name}</span>
-                    <span className="text-[11px] text-slate-400">{ord.school_name}</span>
-                  </div>
+                    {/* Identitas Siswa & Sekolah */}
+                    <div className="bg-slate-50/80 rounded-2xl p-3 border border-slate-100 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-900 text-[13px]">{ord.student_name}</span>
+                        <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-900 font-bold text-[10px]">
+                          Kelas {ord.student_class || '-'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                        <School size={12} className="text-slate-400" />
+                        <span>{ord.school_name}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                        <User size={12} className="text-slate-400" />
+                        <span>Wali: {ord.parent_name || '-'} ({ord.parent_phone || '-'})</span>
+                      </div>
+                    </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs text-slate-500 font-medium">Total Tagihan</span>
-                    <span className="text-xs font-black text-slate-900">
-                      Rp{ord.total_amount?.toLocaleString('id-ID')}
-                    </span>
+                    {/* Rincian Jenis Pesanan (Item Seragam, Ukuran, Qty) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                        <span className="flex items-center gap-1">
+                          <Package size={12} className="text-blue-900" />
+                          Rincian Seragam Dipesan ({itemsList.length} jenis):
+                        </span>
+                      </div>
+                      <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden bg-white">
+                        {itemsList.map((item, itemIdx) => (
+                          <div key={itemIdx} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-50/50">
+                            <div className="min-w-0 pr-2">
+                              <p className="font-bold text-slate-800 text-[11px] truncate">{item.name}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                                  Size: {item.size}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-semibold">
+                                  Qty: {item.quantity} pcs
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-slate-900 whitespace-nowrap">
+                              Rp{(item.price * item.quantity).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Total Tagihan */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] text-slate-400 block font-medium">Metode Pengambilan</span>
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                          <Building size={12} className="text-blue-900" />
+                          {ord.delivery_method === 'rumah' ? 'Kirim ke Rumah' : 'Koperasi Sekolah'}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[11px] text-slate-400 block font-medium">Total Pesanan</span>
+                        <span className="text-sm font-black text-blue-900">
+                          Rp{ord.total_amount?.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Pesan Instruksi Pengambilan untuk PIC Seragam */}
+                    <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-2">
+                      <QrCode size={16} className="text-blue-900 shrink-0" />
+                      <p className="text-[10px] text-blue-900 leading-tight">
+                        <strong>Untuk Pengambilan:</strong> Tunjukkan kode pesanan ini kepada Petugas / PIC Seragam di sekolah saat serah terima barang.
+                      </p>
+                    </div>
+
+                    {/* Tombol Tampilkan Tiket Pengambilan (Untuk PIC) */}
+                    <button
+                      onClick={() => setSelectedOrderReceipt(ord)}
+                      className="w-full py-2.5 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                    >
+                      <Receipt size={14} className="text-amber-400" />
+                      <span>Buka Bukti Pengambilan Seragam (Untuk PIC)</span>
+                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1825,6 +1929,126 @@ export default function MobileStorefront() {
               className="w-full mt-4 py-2.5 bg-[#0F2C59] text-white rounded-xl text-xs font-bold"
             >
               Tutup Panduan
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: TIKET PENGAMBILAN SERAGAM RESMI (UNTUK PIC SERAGAM SEKOLAH)
+         ========================================================================= */}
+      {selectedOrderReceipt && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm max-h-[90vh] overflow-y-auto animate-fade-in space-y-4">
+            {/* Header Tiket */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#0F2C59] text-white flex items-center justify-center shadow-xs">
+                  <Receipt size={18} className="text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">
+                    Bukti Pengambilan Seragam
+                  </h3>
+                  <p className="text-[10px] text-slate-400">Kanvas PENABUR • Koperasi Sekolah</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedOrderReceipt(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Kode Pesanan Utama (Besar & Kontras untuk PIC) */}
+            <div className="bg-gradient-to-br from-blue-950 to-blue-900 rounded-2xl p-4 text-white text-center shadow-md space-y-1">
+              <span className="text-[10px] font-bold tracking-widest text-blue-200 uppercase">
+                Kode Pesanan Verifikasi PIC
+              </span>
+              <div className="text-xl font-black tracking-wider text-amber-400 font-mono py-1 select-all">
+                {selectedOrderReceipt.id || selectedOrderReceipt.order_number}
+              </div>
+              <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold">
+                ✓ Pesanan Sah Terverifikasi
+              </span>
+            </div>
+
+            {/* Identitas Siswa & Wali Murid */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                <span className="text-slate-400 text-[11px]">Nama Siswa:</span>
+                <span className="font-extrabold text-slate-900">{selectedOrderReceipt.student_name}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                <span className="text-slate-400 text-[11px]">Sekolah:</span>
+                <span className="font-bold text-slate-800 text-right max-w-[200px] truncate">
+                  {selectedOrderReceipt.school_name}
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                <span className="text-slate-400 text-[11px]">Kelas:</span>
+                <span className="font-bold text-slate-800">{selectedOrderReceipt.student_class || '-'}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                <span className="text-slate-400 text-[11px]">Wali Murid:</span>
+                <span className="font-bold text-slate-800">{selectedOrderReceipt.parent_name || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 text-[11px]">No. WhatsApp:</span>
+                <span className="font-bold text-slate-800">{selectedOrderReceipt.parent_phone || '-'}</span>
+              </div>
+            </div>
+
+            {/* Tabel Rincian Jenis Seragam & Ukuran */}
+            <div>
+              <h4 className="text-[11px] font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+                <Package size={13} className="text-blue-900" />
+                Daftar Seragam yang Diterima Siswa:
+              </h4>
+              <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs">
+                {(selectedOrderReceipt.items || []).map((it, idx) => (
+                  <div key={idx} className="p-2.5 flex items-center justify-between bg-white hover:bg-slate-50">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-bold text-slate-800 text-[11px] block">{it.name}</span>
+                      <span className="inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 text-[9px] font-bold mr-1.5">
+                        Size: {it.size}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        Qty: {it.quantity} potong
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-900">
+                      Rp{(it.price * it.quantity).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center pt-2 px-1 text-xs font-black text-slate-900">
+                <span>Total Nilai Pesanan:</span>
+                <span className="text-blue-900 text-sm">
+                  Rp{selectedOrderReceipt.total_amount?.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+
+            {/* Petunjuk Resmi PIC Seragam */}
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 space-y-1">
+              <p className="font-bold flex items-center gap-1 text-[11px]">
+                <AlertCircle size={13} className="text-amber-700" />
+                Catatan Petugas / PIC Seragam Sekolah:
+              </p>
+              <p className="text-[10px] leading-relaxed text-amber-800">
+                Harap memeriksa kode pesanan di atas dan mencocokkan nama siswa serta jenis & ukuran seragam sebelum menyerahkan paket kepada orang tua siswa.
+              </p>
+            </div>
+
+            {/* Tombol Tutup */}
+            <button
+              onClick={() => setSelectedOrderReceipt(null)}
+              className="w-full py-3 bg-[#0F2C59] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-md"
+            >
+              Tutup Bukti Pengambilan
             </button>
           </div>
         </div>

@@ -678,7 +678,7 @@ export default function HomeLogin() {
                   className="w-full py-3.5 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl text-xs font-bold shadow-md hover:brightness-110 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
                 >
                   <CheckCircle2 size={16} className="text-amber-400" />
-                  <span>{isRegistering ? 'Mendaftarkan Akun...' : 'Daftarkan Akun & Mulai Belanja'}</span>
+                  <span>{isRegistering ? 'Mendaftarkan Akun...' : 'Daftar Akun'}</span>
                 </button>
               </div>
             </form>
