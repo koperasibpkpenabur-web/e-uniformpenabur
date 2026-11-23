@@ -69,6 +69,24 @@ export default function HomeLogin() {
   });
   const [isRegistering, setIsRegistering] = useState(false);
 
+  // Onboarding Guided Tour (Opsi A Spotlight)
+  // null | 'welcome' | 'ask' | 'spotlight_register' | 'spotlight_form'
+  const [guideState, setGuideState] = useState(null);
+
+  useEffect(() => {
+    if (appPhase === 'login') {
+      try {
+        const dismissed = localStorage.getItem('kanvas_tour_dismissed');
+        if (!dismissed) {
+          const timer = setTimeout(() => {
+            setGuideState('welcome');
+          }, 450);
+          return () => clearTimeout(timer);
+        }
+      } catch (e) {}
+    }
+  }, [appPhase]);
+
   // 1. Inisialisasi Sesi (Opsi 2: Smart Session)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -256,6 +274,12 @@ export default function HomeLogin() {
     setIsRegistering(true);
     try {
       await saveParentRegistration(supabase, registerForm);
+      if (guideState === 'spotlight_form') {
+        try {
+          localStorage.setItem('kanvas_guide_active', 'true');
+          localStorage.setItem('kanvas_guide_step', '3');
+        } catch (e) {}
+      }
       setShowRegisterModal(false);
       alert(`Pendaftaran Berhasil!\nSelamat datang Bapak/Ibu ${registerForm.parentName}. Silakan melanjutkan pemesanan seragam.`);
       router.push('/dashboard');
@@ -372,10 +396,19 @@ export default function HomeLogin() {
           HANYA DITAMPILKAN SETELAH LOADING SELESAI 100%!
          ========================================================================= */}
       {appPhase === 'login' && (
-        <div className="flex-1 flex flex-col bg-[#F8FAFC] px-6 pt-10 pb-8 animate-fade-in justify-between min-h-screen">
+        <div className="flex-1 flex flex-col bg-[#F8FAFC] px-6 pt-6 pb-6 animate-fade-in justify-between min-h-screen max-w-md mx-auto relative">
           {/* Header Branding */}
-          <div className="flex flex-col items-center text-center">
-            <div className="relative mb-3 group">
+          <div className="flex flex-col items-center text-center relative pt-2">
+            {/* Tombol Panduan Cepat (Bisa dibuka kapan saja) */}
+            <button
+              type="button"
+              onClick={() => setGuideState('welcome')}
+              className="absolute right-0 top-0 text-[10.5px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1 transition-all shadow-2xs"
+            >
+              <span>💡 Panduan</span>
+            </button>
+
+            <div className="relative mb-3 group mt-2">
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-amber-500/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
               <img
                 src={getAssetPath('/kanvas-logo-fix.png')}
@@ -385,7 +418,7 @@ export default function HomeLogin() {
             </div>
 
             {/* Tulisan Resmi: Kanal Visual Atribut Sekolah BPK PENABUR */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-900 text-[10.5px] font-bold tracking-wide uppercase mt-1 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-900 text-[10.5px] font-bold tracking-wide uppercase mb-2">
               <ShieldCheck size={13} className="text-blue-600" />
               Kanal Visual Atribut Sekolah BPK PENABUR
             </div>
@@ -402,35 +435,8 @@ export default function HomeLogin() {
             </p>
           </div>
 
-          {/* Feature Highlights */}
-          <div className="grid grid-cols-3 gap-2 my-5">
-            <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-1.5 font-bold">
-                <School size={16} />
-              </div>
-              <span className="text-[10.5px] font-bold text-slate-800 leading-tight">80+ Sekolah</span>
-              <span className="text-[9px] text-slate-400">TK, SD, SMP, SMA</span>
-            </div>
-
-            <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center mb-1.5 font-bold">
-                <Sparkles size={16} />
-              </div>
-              <span className="text-[10.5px] font-bold text-slate-800 leading-tight">Size Akurat</span>
-              <span className="text-[9px] text-slate-400">Standar Resmi</span>
-            </div>
-
-            <div className="bg-white p-2.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-1.5 font-bold">
-                <ShoppingBag size={16} />
-              </div>
-              <span className="text-[10.5px] font-bold text-slate-800 leading-tight">Stok Terbuka</span>
-              <span className="text-[9px] text-slate-400">Resmi Koperasi</span>
-            </div>
-          </div>
-
-          {/* Card Login */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-md flex flex-col gap-3.5">
+          {/* Card Login (Posisi Naik & Center - 3 Highlights Dihilangkan) */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-md flex flex-col gap-4 my-auto relative z-40">
             <span className="text-xs font-bold text-slate-700 text-center block">
               Silakan Masuk dengan Akun Anda
             </span>
@@ -464,13 +470,36 @@ export default function HomeLogin() {
             </button>
 
             {/* Link Belum punya akun? Daftar disini */}
-            <div className="pt-2 border-t border-slate-100 text-center">
+            <div className="pt-2 border-t border-slate-100 text-center relative">
+              {/* Tooltip Spotlight Step 1: Di atas tulisan "Daftar disini" */}
+              {guideState === 'spotlight_register' && (
+                <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-64 bg-slate-900 text-white rounded-xl p-2.5 shadow-2xl border border-amber-400 z-50 text-center animate-bounce-subtle">
+                  <p className="text-[11px] font-black text-amber-300">
+                    👉 Klik ini untuk memulai
+                  </p>
+                  <p className="text-[9.5px] text-slate-200 mt-0.5 leading-tight">
+                    Pendaftaran akun wali murid & data siswa baru
+                  </p>
+                  {/* Panah bawah */}
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 rotate-45 border-r border-b border-amber-400"></div>
+                </div>
+              )}
+
               <p className="text-xs text-slate-500 font-medium">
                 Belum punya akun?{' '}
                 <button
                   type="button"
-                  onClick={() => setShowRegisterModal(true)}
-                  className="text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer"
+                  onClick={() => {
+                    if (guideState === 'spotlight_register') {
+                      setGuideState('spotlight_form');
+                    }
+                    setShowRegisterModal(true);
+                  }}
+                  className={`text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer transition-all ${
+                    guideState === 'spotlight_register'
+                      ? 'bg-amber-400 text-slate-950 px-2.5 py-1 rounded-md ring-4 ring-amber-400/50 shadow-md font-black animate-pulse'
+                      : ''
+                  }`}
                 >
                   Daftar disini
                 </button>
@@ -478,11 +507,99 @@ export default function HomeLogin() {
             </div>
           </div>
 
-          {/* Security Footer */}
-          <div className="pt-6 flex flex-col items-center text-center">
+          {/* Security Footer (Posisi Lebih Dekat Tanpa Scroll) */}
+          <div className="pt-4 flex flex-col items-center text-center">
             <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 font-medium">
               <Lock size={12} className="text-slate-400" />
               <span>Koneksi Aman Terverifikasi Koperasi BPK PENABUR</span>
+            </div>
+          </div>
+
+          {/* Dark Overlay untuk Spotlight Opsi A */}
+          {guideState === 'spotlight_register' && (
+            <div
+              onClick={() => {
+                setGuideState(null);
+                try {
+                  localStorage.setItem('kanvas_guide_active', 'false');
+                } catch (e) {}
+              }}
+              className="fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-2xs transition-opacity"
+            ></div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================================
+          PANDUAN PEMESANAN: POP-UP 1 (SELAMAT DATANG)
+         ========================================================================= */}
+      {guideState === 'welcome' && (
+        <div className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-sm text-center animate-scale-up">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-900 to-amber-500 p-0.5 mx-auto mb-3 shadow-md flex items-center justify-center">
+              <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center">
+                <img src={getAssetPath('/kanvas-logo-only.png')} alt="Kanvas" className="w-9 h-9 object-contain" />
+              </div>
+            </div>
+            <h3 className="text-base font-black text-slate-900 mb-1.5">
+              Selamat Datang di Kanvas PENABUR
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-6">
+              Platform digital pemesanan seragam untuk sekolah BPK PENABUR.
+            </p>
+            <button
+              type="button"
+              onClick={() => setGuideState('ask')}
+              className="w-full py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 active:scale-98"
+            >
+              <span>Lanjut</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PANDUAN PEMESANAN: POP-UP 2 (APAKAH MEMBUTUHKAN PANDUAN?)
+         ========================================================================= */}
+      {guideState === 'ask' && (
+        <div className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-sm text-center animate-scale-up">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-3 font-bold text-xl shadow-xs">
+              💡
+            </div>
+            <h3 className="text-base font-black text-slate-900 mb-1.5">
+              Apakah Anda Membutuhkan Panduan?
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              Kami dapat memandu Anda langkah demi langkah dalam memesan seragam sekolah putra-putri Anda.
+            </p>
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setGuideState(null);
+                  try {
+                    localStorage.setItem('kanvas_tour_dismissed', 'true');
+                    localStorage.setItem('kanvas_guide_active', 'false');
+                  } catch (e) {}
+                }}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all active:scale-98"
+              >
+                Tidak
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setGuideState('spotlight_register');
+                  try {
+                    localStorage.setItem('kanvas_guide_active', 'true');
+                  } catch (e) {}
+                }}
+                className="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-98"
+              >
+                Ya, Mulai
+              </button>
             </div>
           </div>
         </div>
@@ -557,6 +674,20 @@ export default function HomeLogin() {
             <p className="text-xs text-slate-500 mb-4 leading-relaxed">
               Lengkapi data di bawah ini untuk menghubungkan pemesanan seragam resmi siswa ke sekolah:
             </p>
+
+            {guideState === 'spotlight_form' && (
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-blue-900 to-blue-800 text-white border border-blue-700 shadow-sm text-xs mb-3 space-y-1 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold flex items-center gap-1.5 text-amber-300 text-[11px]">
+                    <Sparkles size={13} /> Langkah 1: Pengisian Formulir
+                  </span>
+                  <span className="text-[10px] text-blue-200">Panduan Aktif</span>
+                </div>
+                <p className="text-[10.5px] text-blue-100 leading-snug">
+                  Lengkapi data orang tua, nama siswa, kategori (Siswa Baru / Siswa Dalam), sekolah & kelas, lalu klik <b>Daftar Akun</b>.
+                </p>
+              </div>
+            )}
 
             <form onSubmit={handleRegisterSubmit} className="space-y-3">
               {/* Nama Lengkap Orang Tua */}
