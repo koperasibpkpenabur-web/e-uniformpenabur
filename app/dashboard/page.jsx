@@ -71,7 +71,12 @@ const DEFAULT_PRODUCTS = [
     category: 'Nasional',
     level: 'SD',
     description: 'Bahan TC Oxford kualitas prima, adem, jahitan kuat dengan bordir logo PENABUR resmi.',
-    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'SS', price: 78000, stock: 45 },
       { size: 'S', price: 80000, stock: 60 },
@@ -88,7 +93,11 @@ const DEFAULT_PRODUCTS = [
     category: 'Nasional',
     level: 'SD',
     description: 'Bahan Drill premium tahan luntur, dilengkapi karet pinggang samping fleksibel.',
-    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'SS', price: 85000, stock: 35 },
       { size: 'S', price: 88000, stock: 50 },
@@ -104,7 +113,11 @@ const DEFAULT_PRODUCTS = [
     category: 'Nasional',
     level: 'SD',
     description: 'Bahan Famatex awet dan rapi, lipitan plisket tahan cuci berulang.',
-    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'SS', price: 90000, stock: 30 },
       { size: 'S', price: 92000, stock: 45 },
@@ -120,7 +133,12 @@ const DEFAULT_PRODUCTS = [
     category: 'Nasional',
     level: 'SMP',
     description: 'Bahan TC Oxford kualitas prima dengan bordir emblem SMP BPK PENABUR resmi.',
-    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'S', price: 86000, stock: 50 },
       { size: 'M', price: 90000, stock: 60 },
@@ -135,7 +153,11 @@ const DEFAULT_PRODUCTS = [
     category: 'Nasional',
     level: 'SMP',
     description: 'Bahan Famatex biru tua rapi berstandar nasional BPK PENABUR.',
-    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'S', price: 110000, stock: 40 },
       { size: 'M', price: 115000, stock: 55 },
@@ -149,11 +171,15 @@ const DEFAULT_PRODUCTS = [
     category: 'Nasional',
     level: 'SMP',
     description: 'Bahan Famatex biru tua rapi, lipit plisket presisi dan tahan cuci berulang.',
-    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'S', price: 110000, stock: 35 },
       { size: 'M', price: 115000, stock: 50 },
-      { size: 'L', price: 120000, stock: 55 },
+      { size: 'L', border: 'border-slate-200', price: 120000, stock: 55 },
       { size: 'XL', price: 126000, stock: 30 }
     ]
   },
@@ -163,7 +189,11 @@ const DEFAULT_PRODUCTS = [
     category: 'Batik',
     level: 'ALL',
     description: 'Batik motif khas BPK PENABUR, bahan katun primisima sejuk dan nyaman dipakai sepanjang hari.',
-    imageUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'S', price: 98000, stock: 40 },
       { size: 'M', price: 102000, stock: 55 },
@@ -178,7 +208,11 @@ const DEFAULT_PRODUCTS = [
     category: 'Pramuka',
     level: 'ALL',
     description: 'Standar Kwartir Nasional & BPK PENABUR, bahan tebal tidak mudah sobek.',
-    imageUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'S', price: 95000, stock: 35 },
       { size: 'M', price: 98000, stock: 45 },
@@ -192,7 +226,11 @@ const DEFAULT_PRODUCTS = [
     category: 'Olahraga',
     level: 'ALL',
     description: 'Bahan dry-fit pori mikro cepat serap keringat, celana training elastis dengan kantong samping.',
-    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'S', price: 115000, stock: 30 },
       { size: 'M', price: 120000, stock: 40 },
@@ -206,12 +244,39 @@ const DEFAULT_PRODUCTS = [
     category: 'Aksesoris',
     level: 'ALL',
     description: 'Dasi bordir logo PENABUR, topi berstandar resmi, dan 2 pasang kaos kaki putih PENABUR.',
-    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=60',
+    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80'
+    ],
     variants: [
       { size: 'ALL SIZE', price: 55000, stock: 120 }
     ]
   }
 ];
+
+// Helper to extract product images array (supports multi-angle slide preview)
+const getProductImages = (product) => {
+  if (!product) return [];
+  if (Array.isArray(product.images) && product.images.length > 0) {
+    return product.images.filter(Boolean);
+  }
+  if (Array.isArray(product.image_urls) && product.image_urls.length > 0) {
+    return product.image_urls.filter(Boolean);
+  }
+  if (typeof product.images === 'string') {
+    try {
+      const parsed = JSON.parse(product.images);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.filter(Boolean);
+    } catch {
+      if (product.images.includes(',')) {
+        return product.images.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+  }
+  const fallback = product.imageUrl || product.image_url;
+  return fallback ? [fallback] : ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60'];
+};
 
 export default function MobileStorefront() {
   const router = useRouter();
@@ -252,7 +317,14 @@ export default function MobileStorefront() {
   // Modals
   const [activeProductModal, setActiveProductModal] = useState(null);
   const [modalSelectedSize, setModalSelectedSize] = useState('');
+  const [modalImageIndex, setModalImageIndex] = useState(0);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+
+  const handleOpenProductModal = (product) => {
+    setActiveProductModal(product);
+    setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
+    setModalImageIndex(0);
+  };
 
   // Profile Edit & Student Add/Edit Modals
   const [showEditParentModal, setShowEditParentModal] = useState(false);
@@ -412,18 +484,40 @@ export default function MobileStorefront() {
 
             if (!groupedMap.has(groupKey)) {
               const derivedLvl = (item.level || deriveSchoolLevel(item.name) || 'ALL').toUpperCase();
+              let initialImages = [];
+              if (Array.isArray(item.images) && item.images.length > 0) {
+                initialImages = item.images;
+              } else if (item.image_urls) {
+                try {
+                  const parsed = typeof item.image_urls === 'string' ? JSON.parse(item.image_urls) : item.image_urls;
+                  if (Array.isArray(parsed)) initialImages = parsed;
+                } catch {
+                  if (typeof item.image_urls === 'string') initialImages = item.image_urls.split(',').map((s) => s.trim());
+                }
+              }
+              if (initialImages.length === 0 && item.image_url) {
+                initialImages = [item.image_url];
+              }
+              if (initialImages.length === 0) {
+                initialImages = ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60'];
+              }
+
               groupedMap.set(groupKey, {
                 id: item.id,
                 name: item.name,
                 category: item.category || 'Nasional',
                 level: derivedLvl,
                 description: item.description || 'Seragam berstandar resmi Koperasi BPK PENABUR.',
-                imageUrl: item.image_url || 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60',
+                imageUrl: initialImages[0],
+                images: initialImages,
                 variants: [],
               });
             }
 
             const current = groupedMap.get(groupKey);
+            if (item.image_url && !current.images.includes(item.image_url)) {
+              current.images.push(item.image_url);
+            }
             current.variants.push({
               size: item.size || 'STANDAR',
               price: price,
@@ -828,10 +922,10 @@ export default function MobileStorefront() {
               className="w-8 h-8 object-contain rounded-full bg-white/10 p-0.5 border border-white/20"
             />
             <div>
-              <span className="font-black text-sm tracking-wide block leading-none text-white">
+              <span className="font-black text-base tracking-wide block leading-none text-white">
                 KANVAS PENABUR
               </span>
-              <span className="text-[10px] text-amber-300 font-semibold leading-tight">
+              <span className="text-xs text-amber-300 font-semibold leading-tight">
                 Storefront Seragam Siswa
               </span>
             </div>
@@ -840,7 +934,7 @@ export default function MobileStorefront() {
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setDashboardGuideStep(3)}
-              className="px-2 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-[10.5px] font-bold flex items-center gap-1 transition-all border border-amber-400/30"
+              className="px-2.5 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-xs font-bold flex items-center gap-1 transition-all border border-amber-400/30"
               title="Buka Panduan Pemesanan"
             >
               <span>💡 Panduan</span>
@@ -848,9 +942,9 @@ export default function MobileStorefront() {
 
             <button
               onClick={() => setIsSizeGuideOpen(true)}
-              className="px-2 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10.5px] font-bold flex items-center gap-1 transition-all"
+              className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1 transition-all"
             >
-              <Ruler size={13} className="text-amber-400" />
+              <Ruler size={14} className="text-amber-400" />
               <span>Ukuran</span>
             </button>
 
@@ -858,9 +952,9 @@ export default function MobileStorefront() {
               onClick={() => setCheckoutStep('cart')}
               className="relative p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 transition-all font-bold"
             >
-              <ShoppingBag size={17} />
+              <ShoppingBag size={18} />
               {cartTotalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#0F2C59] animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#0F2C59] animate-pulse">
                   {cartTotalItems}
                 </span>
               )}
@@ -874,15 +968,15 @@ export default function MobileStorefront() {
         {activeTab === 'store' && checkoutStep === 'browsing' && (
           <div className="px-4 pb-3 pt-1 border-t border-white/10">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-bold text-blue-200 uppercase tracking-wider flex items-center gap-1">
-                <UserCheck size={12} className="text-amber-400" />
+              <span className="text-xs font-bold text-blue-200 uppercase tracking-wider flex items-center gap-1">
+                <UserCheck size={14} className="text-amber-400" />
                 Pesan Seragam Untuk Siswa:
               </span>
               <button
                 onClick={handleOpenAddStudent}
-                className="text-[10.5px] text-amber-300 hover:text-white font-bold flex items-center gap-1"
+                className="text-xs text-amber-300 hover:text-white font-bold flex items-center gap-1"
               >
-                <Plus size={12} /> Tambah Anak
+                <Plus size={14} /> Tambah Anak
               </button>
             </div>
 
@@ -901,14 +995,14 @@ export default function MobileStorefront() {
                     }`}
                   >
                     <div className="flex items-center gap-1.5 leading-none">
-                      <span className="text-xs">{st.name}</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-black ${
+                      <span className="text-sm font-bold">{st.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-black ${
                         isSelected ? 'bg-slate-900 text-amber-300' : 'bg-white/20 text-blue-200'
                       }`}>
                         {st.level}
                       </span>
                     </div>
-                    <span className={`text-[9.5px] block mt-0.5 truncate max-w-[170px] ${
+                    <span className={`text-xs block mt-0.5 truncate max-w-[200px] ${
                       isSelected ? 'text-slate-900 font-semibold' : 'text-blue-200'
                     }`}>
                       {st.school} • {st.grade}
@@ -920,7 +1014,7 @@ export default function MobileStorefront() {
               {students.length === 0 && (
                 <div
                   onClick={handleOpenAddStudent}
-                  className="w-full bg-white/10 rounded-xl p-2 text-center text-xs text-amber-300 cursor-pointer hover:bg-white/20 border border-dashed border-white/30"
+                  className="w-full bg-white/10 rounded-xl p-2.5 text-center text-xs sm:text-sm text-amber-300 cursor-pointer hover:bg-white/20 border border-dashed border-white/30"
                 >
                   + Tambahkan Data Siswa
                 </div>
@@ -945,24 +1039,24 @@ export default function MobileStorefront() {
         <div className="flex-1 flex flex-col p-4 space-y-4 animate-fade-in">
           {/* Active Student Indicator Banner */}
           {activeStudent && (
-            <div className="bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white p-3 rounded-2xl shadow-sm flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white p-3.5 rounded-2xl shadow-sm flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-sm">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center shrink-0 text-base">
                   {activeStudent.name.charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-[10px] text-amber-300 font-semibold block leading-none">
+                  <span className="text-xs text-amber-300 font-semibold block leading-none">
                     Katalog Aktif:
                   </span>
-                  <h4 className="text-xs font-bold truncate text-white mt-0.5">
+                  <h4 className="text-sm font-bold truncate text-white mt-0.5">
                     {activeStudent.name} ({activeStudent.grade})
                   </h4>
-                  <span className="text-[10px] text-blue-200 truncate block">
+                  <span className="text-xs text-blue-200 truncate block">
                     {activeStudent.school}
                   </span>
                 </div>
               </div>
-              <span className="px-2.5 py-1 bg-white/10 rounded-lg text-xs font-black text-amber-300 border border-white/10 shrink-0">
+              <span className="px-3 py-1 bg-white/10 rounded-lg text-xs font-black text-amber-300 border border-white/10 shrink-0">
                 {activeStudent.level}
               </span>
             </div>
@@ -970,33 +1064,33 @@ export default function MobileStorefront() {
 
           {/* Search Box */}
           <div className="relative">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Cari kemeja, celana, rok, batik, pramuka..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-slate-200 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
-                <X size={14} />
+                <X size={16} />
               </button>
             )}
           </div>
 
           {/* Multi-Level Switcher Khusus Siswa Dalam PENABUR (Naik Jenjang / Lulusan) */}
           {activeStudent?.studentType === 'dalam' && (activeStudent?.nextLevel || getNextSchoolLevel(activeStudent?.level)) ? (
-            <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-2.5 space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
+            <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-3 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
                 <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-amber-600" />
+                  <Sparkles size={14} className="text-amber-600" />
                   Pilihan Jenjang Pesanan Siswa Internal:
                 </span>
-                <span className="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-md">
+                <span className="text-xs text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-md">
                   {activeStudent.name} • {activeStudent.grade}
                 </span>
               </div>
@@ -1005,65 +1099,65 @@ export default function MobileStorefront() {
                 <button
                   type="button"
                   onClick={() => setActiveCatalogLevel(activeStudent.level)}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
                     (activeCatalogLevel || activeStudent.level) === activeStudent.level
                       ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
                       : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
                   }`}
                 >
-                  <School size={13} />
+                  <School size={14} />
                   <span>Jenjang {activeStudent.level} (Saat Ini)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveCatalogLevel(activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level))}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
                     (activeCatalogLevel || activeStudent.level) === (activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level))
                       ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
                       : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
                   }`}
                 >
-                  <Sparkles size={13} className="text-amber-400" />
+                  <Sparkles size={14} className="text-amber-400" />
                   <span>Jenjang {activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level)} (Lanjutan)</span>
                 </button>
               </div>
-              <p className="text-[10px] text-amber-800 italic text-center">
+              <p className="text-xs text-amber-800 italic text-center">
                 * Anda dapat memesan seragam jenjang {activeStudent.level} dan {activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level)} ke keranjang yang sama.
               </p>
             </div>
           ) : (
             /* Banner Kunci Jenjang Khusus Siswa Baru dari Luar */
-            <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-gradient-to-r from-blue-900/10 via-blue-50 to-indigo-50/50 border border-blue-200/80 text-blue-950">
+            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-900/10 via-blue-50 to-indigo-50/50 border border-blue-200/80 text-blue-950">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-[#0F2C59] text-amber-400 flex items-center justify-center text-[11px] font-black shadow-xs">
+                <span className="w-7 h-7 rounded-lg bg-[#0F2C59] text-amber-400 flex items-center justify-center text-xs font-black shadow-xs">
                   {activeStudent?.level || selectedLevel || 'SMP'}
                 </span>
                 <div>
-                  <span className="text-[11px] font-black block leading-none text-slate-900">
+                  <span className="text-xs font-black block leading-none text-slate-900">
                     Katalog Khusus Jenjang {activeStudent?.level || selectedLevel || 'SMP'}
                   </span>
-                  <span className="text-[9.5px] text-slate-500 font-medium">
+                  <span className="text-xs text-slate-500 font-medium mt-0.5 block">
                     {activeStudent?.name || 'Siswa'} • {activeStudent?.school || selectedSchool}
                   </span>
                 </div>
               </div>
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-900 text-[9px] font-extrabold rounded-md flex items-center gap-1">
-                <Lock size={10} />
+              <span className="px-2.5 py-1 bg-blue-100 text-blue-900 text-xs font-extrabold rounded-md flex items-center gap-1">
+                <Lock size={12} />
                 Siswa Baru (Terkunci)
               </span>
             </div>
           )}
 
           {/* Category Chips */}
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
             {['Semua', 'Nasional', 'Batik', 'Pramuka', 'Olahraga', 'Aksesoris'].map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
                   selectedCategory === cat
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -1092,53 +1186,55 @@ export default function MobileStorefront() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 {filteredProducts.map((product) => {
                   const lowestPrice = Math.min(...product.variants.map((v) => v.price));
+                  const productImages = getProductImages(product);
                   return (
                     <div
                       key={product.id}
-                      onClick={() => {
-                        setActiveProductModal(product);
-                        setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
-                      }}
-                      className="bg-white rounded-2xl p-2.5 border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col group relative"
+                      onClick={() => handleOpenProductModal(product)}
+                      className="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col group relative"
                     >
-                      <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center p-2">
+                      <div className="w-full aspect-square rounded-xl bg-slate-50 overflow-hidden mb-2.5 relative flex items-center justify-center p-2">
                         <img
                           src={product.imageUrl}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
                         />
-                        <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-slate-900/75 backdrop-blur-sm text-[9px] font-bold text-white uppercase tracking-wider">
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider">
                           {product.category}
                         </span>
+                        {productImages.length > 1 && (
+                          <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-sm text-[10px] font-bold text-amber-300 flex items-center gap-1 shadow-sm">
+                            📷 {productImages.length} Foto
+                          </span>
+                        )}
                       </div>
 
-                      <h4 className="font-bold text-xs text-slate-900 leading-snug line-clamp-2 min-h-[32px]">
+                      <h4 className="font-bold text-sm text-slate-900 leading-snug line-clamp-2 min-h-[38px]">
                         {product.name}
                       </h4>
 
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-[10px] text-slate-400">Mulai</span>
-                        <span className="text-xs font-black text-blue-900">
+                      <div className="mt-1.5 flex items-baseline gap-1">
+                        <span className="text-xs text-slate-400">Mulai</span>
+                        <span className="text-sm sm:text-base font-black text-blue-900">
                           Rp{lowestPrice.toLocaleString('id-ID')}
                         </span>
                       </div>
 
-                      <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-400 font-medium">
+                      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-xs text-slate-500 font-medium">
                           {product.variants.length} Ukuran
                         </span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveProductModal(product);
-                            setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
+                            handleOpenProductModal(product);
                           }}
-                          className="w-6 h-6 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-sm font-bold active:scale-90 transition-all"
+                          className="w-7 h-7 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-sm font-bold active:scale-90 transition-all"
                         >
-                          <Plus size={14} />
+                          <Plus size={16} />
                         </button>
                       </div>
                     </div>
@@ -2075,20 +2171,20 @@ export default function MobileStorefront() {
          ========================================================================= */}
       {showEditParentModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 w-full max-w-md sm:max-w-lg animate-fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <h3 className="font-bold text-sm text-slate-900">Edit Profil Wali Murid</h3>
+              <h3 className="font-bold text-base text-slate-900">Edit Profil Wali Murid</h3>
               <button
                 onClick={() => setShowEditParentModal(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveParentProfile} className="space-y-3">
+            <form onSubmit={handleSaveParentProfile} className="space-y-3.5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Nama Lengkap Orang Tua *
                 </label>
                 <input
@@ -2096,12 +2192,12 @@ export default function MobileStorefront() {
                   required
                   value={parentEditForm.fullName}
                   onChange={(e) => setParentEditForm({ ...parentEditForm, fullName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Nomor WhatsApp Aktif *
                 </label>
                 <input
@@ -2109,7 +2205,7 @@ export default function MobileStorefront() {
                   required
                   value={parentEditForm.phone}
                   onChange={(e) => setParentEditForm({ ...parentEditForm, phone: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
 
@@ -2117,13 +2213,13 @@ export default function MobileStorefront() {
                 <button
                   type="button"
                   onClick={() => setShowEditParentModal(false)}
-                  className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200"
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-[2] py-2.5 bg-blue-900 text-white rounded-xl text-xs font-bold hover:bg-blue-800"
+                  className="flex-[2] py-3 bg-blue-900 text-white rounded-xl text-sm font-bold hover:bg-blue-800 shadow-sm"
                 >
                   Simpan Perubahan
                 </button>
@@ -2138,16 +2234,16 @@ export default function MobileStorefront() {
          ========================================================================= */}
       {showStudentModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 w-full max-w-md sm:max-w-lg animate-fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <h3 className="font-bold text-sm text-slate-900">
+              <h3 className="font-bold text-base text-slate-900">
                 {studentModalMode === 'add' ? 'Tambah Siswa Baru' : 'Edit Data Siswa'}
               </h3>
               <button
                 onClick={() => setShowStudentModal(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
 
@@ -2326,143 +2422,259 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
-          MODAL: SIZE SELECTOR & BOTTOM SHEET
+          MODAL: SIZE SELECTOR & ENLARGED PRODUCT PREVIEW (WITH MULTI-PHOTO SLIDER)
          ========================================================================= */}
-      {activeProductModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex flex-col justify-end">
-          <div className="bg-white rounded-t-[32px] p-5 shadow-2xl border-t border-slate-200 max-h-[85vh] overflow-y-auto animate-fade-in">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <img
-                  src={activeProductModal.imageUrl}
-                  alt={activeProductModal.name}
-                  className="w-16 h-16 rounded-2xl object-cover bg-slate-50 border border-slate-100"
-                />
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 leading-snug">
+      {activeProductModal && (() => {
+        const modalImages = getProductImages(activeProductModal);
+        const activeImageUrl = modalImages[modalImageIndex] || modalImages[0] || activeProductModal.imageUrl;
+
+        const handlePrevImage = (e) => {
+          e?.stopPropagation();
+          setModalImageIndex((prev) => (prev > 0 ? prev - 1 : modalImages.length - 1));
+        };
+
+        const handleNextImage = (e) => {
+          e?.stopPropagation();
+          setModalImageIndex((prev) => (prev < modalImages.length - 1 ? prev + 1 : 0));
+        };
+
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-xs flex flex-col justify-end sm:justify-center sm:p-4 animate-fade-in">
+            <div className="bg-white rounded-t-[32px] sm:rounded-3xl p-5 sm:p-6 shadow-2xl border-t sm:border border-slate-200 max-h-[92vh] overflow-y-auto w-full sm:max-w-lg md:max-w-xl mx-auto">
+              {/* Header: Title & Close Button */}
+              <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                <div className="pr-4">
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-xs font-bold uppercase tracking-wider inline-block mb-1">
+                    {activeProductModal.category} • Jenjang {activeProductModal.level}
+                  </span>
+                  <h3 className="font-extrabold text-base sm:text-lg text-slate-900 leading-snug">
                     {activeProductModal.name}
                   </h3>
-                  <span className="text-sm font-black text-blue-900 mt-1 block">
-                    Rp
-                    {(
-                      activeProductModal.variants.find((v) => v.size === modalSelectedSize)?.price ||
-                      activeProductModal.variants[0]?.price ||
-                      0
-                    ).toLocaleString('id-ID')}
-                  </span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-lg sm:text-xl font-black text-blue-900">
+                      Rp
+                      {(
+                        activeProductModal.variants.find((v) => v.size === modalSelectedSize)?.price ||
+                        activeProductModal.variants[0]?.price ||
+                        0
+                      ).toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      (Ukuran {modalSelectedSize || activeProductModal.variants[0]?.size})
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() => setActiveProductModal(null)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 my-3 leading-relaxed">
-              {activeProductModal.description}
-            </p>
-
-            <div className="my-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-800">Pilih Ukuran:</span>
                 <button
-                  onClick={() => setIsSizeGuideOpen(true)}
-                  className="text-[11px] text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
+                  onClick={() => setActiveProductModal(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center shrink-0 transition-colors"
+                  aria-label="Tutup"
                 >
-                  <Ruler size={13} /> Panduan Ukuran
+                  <X size={18} />
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {activeProductModal.variants.map((v) => (
+              {/* Enlarged Photo Preview with Slider / Carousel */}
+              <div className="my-3.5">
+                <div className="relative w-full aspect-[4/3] max-h-72 sm:max-h-80 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner group flex items-center justify-center">
+                  <img
+                    src={activeImageUrl}
+                    alt={`${activeProductModal.name} - Foto ${modalImageIndex + 1}`}
+                    className="w-full h-full object-cover transition-all duration-300 select-none"
+                  />
+
+                  {/* Badges on top */}
+                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold shadow-sm">
+                    {modalImageIndex === 0
+                      ? 'Tampak Depan'
+                      : modalImageIndex === 1
+                      ? 'Detail Bahan & Kerah'
+                      : 'Tampak Belakang / Lipatan'}
+                  </div>
+
+                  {modalImages.length > 1 && (
+                    <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-md text-amber-300 text-xs font-black shadow-sm">
+                      {modalImageIndex + 1} / {modalImages.length}
+                    </div>
+                  )}
+
+                  {/* Left / Right Slide Buttons if 2 or more images */}
+                  {modalImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={handlePrevImage}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-lg flex items-center justify-center active:scale-90 transition-all border border-slate-200"
+                        title="Foto Sebelumnya"
+                        aria-label="Foto Sebelumnya"
+                      >
+                        <ChevronLeft size={22} />
+                      </button>
+                      <button
+                        onClick={handleNextImage}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-lg flex items-center justify-center active:scale-90 transition-all border border-slate-200"
+                        title="Foto Selanjutnya"
+                        aria-label="Foto Selanjutnya"
+                      >
+                        <ChevronRight size={22} />
+                      </button>
+
+                      {/* Dots indicator */}
+                      <div className="absolute bottom-2.5 left-0 right-0 flex justify-center items-center gap-1.5">
+                        {modalImages.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setModalImageIndex(idx)}
+                            className={`h-2 rounded-full transition-all ${
+                              modalImageIndex === idx
+                                ? 'w-6 bg-amber-400 shadow-sm'
+                                : 'w-2 bg-white/70 hover:bg-white'
+                            }`}
+                            aria-label={`Lihat foto ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Thumbnail Strip if multiple images */}
+                {modalImages.length > 1 && (
+                  <div className="flex items-center gap-2 mt-2.5 overflow-x-auto pb-1">
+                    {modalImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setModalImageIndex(idx)}
+                        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
+                          modalImageIndex === idx
+                            ? 'border-blue-900 shadow-md scale-105'
+                            : 'border-slate-200 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={`Thumbnail ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs text-slate-500 italic shrink-0 ml-1">
+                      (Geser foto untuk melihat sudut lain)
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 mb-3.5">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Deskripsi Produk
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {activeProductModal.description}
+                </p>
+              </div>
+
+              {/* Size Selector */}
+              <div className="my-3.5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs sm:text-sm font-bold text-slate-800">Pilih Ukuran Seragam:</span>
                   <button
-                    key={v.size}
-                    onClick={() => setModalSelectedSize(v.size)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
-                      modalSelectedSize === v.size
-                        ? 'border-blue-900 bg-blue-900 text-white shadow-sm'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
+                    onClick={() => setIsSizeGuideOpen(true)}
+                    className="text-xs text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
                   >
-                    {v.size}
+                    <Ruler size={14} /> Panduan Ukuran
                   </button>
-                ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {activeProductModal.variants.map((v) => (
+                    <button
+                      key={v.size}
+                      onClick={() => setModalSelectedSize(v.size)}
+                      className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all border ${
+                        modalSelectedSize === v.size
+                          ? 'border-blue-900 bg-blue-900 text-white shadow-md scale-105'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      {v.size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-4 border-t border-slate-100 flex gap-2.5">
+                <button
+                  onClick={() => setActiveProductModal(null)}
+                  className="flex-1 py-3 sm:py-3.5 bg-slate-100 text-slate-700 rounded-xl text-xs sm:text-sm font-bold hover:bg-slate-200 transition-colors"
+                >
+                  Tutup
+                </button>
+                <button
+                  onClick={() => addToCart(activeProductModal, modalSelectedSize)}
+                  className="flex-[2] py-3 sm:py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 hover:brightness-105 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                >
+                  <ShoppingBag size={17} />
+                  <span>Tambah ke Keranjang</span>
+                </button>
               </div>
             </div>
-
-            <div className="pt-4 border-t border-slate-100 flex gap-2">
-              <button
-                onClick={() => setActiveProductModal(null)}
-                className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => addToCart(activeProductModal, modalSelectedSize)}
-                className="flex-[2] py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:brightness-105 flex items-center justify-center gap-2"
-              >
-                <ShoppingBag size={15} />
-                <span>Tambah ke Keranjang</span>
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* =========================================================================
           MODAL: SIZE GUIDE POP-UP
          ========================================================================= */}
       {isSizeGuideOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm max-h-[85vh] overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 w-full max-w-md sm:max-w-lg max-h-[85vh] overflow-y-auto animate-fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
               <div className="flex items-center gap-2">
-                <Ruler size={18} className="text-amber-500" />
-                <h3 className="font-bold text-sm text-slate-900">Panduan Ukuran Resmi</h3>
+                <Ruler size={20} className="text-amber-500" />
+                <h3 className="font-bold text-base text-slate-900">Panduan Ukuran Resmi</h3>
               </div>
               <button
                 onClick={() => setIsSizeGuideOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 mb-3">
+            <p className="text-xs sm:text-sm text-slate-600 mb-3">
               Standar konveksi seragam BPK PENABUR (dalam centimeter):
             </p>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200 text-xs mb-3">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 text-xs sm:text-sm mb-3">
               <table className="w-full text-left">
                 <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                   <tr>
-                    <th className="p-2">Size</th>
-                    <th className="p-2">Lingkar Dada</th>
-                    <th className="p-2">Panjang</th>
-                    <th className="p-2">Estimasi</th>
+                    <th className="p-2.5">Size</th>
+                    <th className="p-2.5">Lingkar Dada</th>
+                    <th className="p-2.5">Panjang</th>
+                    <th className="p-2.5">Estimasi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
-                  <tr><td className="p-2 font-bold text-blue-900">SS</td><td className="p-2">80 cm</td><td className="p-2">56 cm</td><td className="p-2">TK - SD 1</td></tr>
-                  <tr><td className="p-2 font-bold text-blue-900">S</td><td className="p-2">86 cm</td><td className="p-2">60 cm</td><td className="p-2">SD 1 - 2</td></tr>
-                  <tr><td className="p-2 font-bold text-blue-900">M</td><td className="p-2">92 cm</td><td className="p-2">64 cm</td><td className="p-2">SD 3 - 4</td></tr>
-                  <tr><td className="p-2 font-bold text-blue-900">L</td><td className="p-2">98 cm</td><td className="p-2">68 cm</td><td className="p-2">SD 5 - SMP</td></tr>
-                  <tr><td className="p-2 font-bold text-blue-900">XL</td><td className="p-2">104 cm</td><td className="p-2">72 cm</td><td className="p-2">SMP - SMA</td></tr>
-                  <tr><td className="p-2 font-bold text-blue-900">3L</td><td className="p-2">110 cm</td><td className="p-2">76 cm</td><td className="p-2">Jumbo</td></tr>
-                  <tr><td className="p-2 font-bold text-blue-900">4L-6L</td><td className="p-2">116-128 cm</td><td className="p-2">80 cm</td><td className="p-2">Ekstra Jumbo</td></tr>
+                  <tr><td className="p-2.5 font-bold text-blue-900">SS</td><td className="p-2.5">80 cm</td><td className="p-2.5">56 cm</td><td className="p-2.5">TK - SD 1</td></tr>
+                  <tr><td className="p-2.5 font-bold text-blue-900">S</td><td className="p-2.5">86 cm</td><td className="p-2.5">60 cm</td><td className="p-2.5">SD 1 - 2</td></tr>
+                  <tr><td className="p-2.5 font-bold text-blue-900">M</td><td className="p-2.5">92 cm</td><td className="p-2.5">64 cm</td><td className="p-2.5">SD 3 - 4</td></tr>
+                  <tr><td className="p-2.5 font-bold text-blue-900">L</td><td className="p-2.5">98 cm</td><td className="p-2.5">68 cm</td><td className="p-2.5">SD 5 - SMP</td></tr>
+                  <tr><td className="p-2.5 font-bold text-blue-900">XL</td><td className="p-2.5">104 cm</td><td className="p-2.5">72 cm</td><td className="p-2.5">SMP - SMA</td></tr>
+                  <tr><td className="p-2.5 font-bold text-blue-900">3L</td><td className="p-2.5">110 cm</td><td className="p-2.5">76 cm</td><td className="p-2.5">Jumbo</td></tr>
+                  <tr><td className="p-2.5 font-bold text-blue-900">4L-6L</td><td className="p-2.5">116-128 cm</td><td className="p-2.5">80 cm</td><td className="p-2.5">Ekstra Jumbo</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 font-medium">
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs sm:text-sm text-amber-900 font-medium">
               💡 <strong>Tips Memilih:</strong> Jika ragu di antara dua ukuran, disarankan memilih <strong>1 ukuran lebih besar</strong> untuk mengantisipasi pertumbuhan anak selama 1 tahun ajaran.
             </div>
 
             <button
               onClick={() => setIsSizeGuideOpen(false)}
-              className="w-full mt-4 py-2.5 bg-[#0F2C59] text-white rounded-xl text-xs font-bold"
+              className="w-full mt-4 py-3 bg-[#0F2C59] text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:brightness-110 transition-all"
             >
               Tutup Panduan
             </button>
@@ -2475,18 +2687,18 @@ export default function MobileStorefront() {
          ========================================================================= */}
       {selectedOrderReceipt && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-sm max-h-[90vh] overflow-y-auto animate-fade-in space-y-4">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 w-full max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in space-y-4">
             {/* Header Tiket */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#0F2C59] text-white flex items-center justify-center shadow-xs">
-                  <Receipt size={18} className="text-amber-400" />
+                <div className="w-10 h-10 rounded-xl bg-[#0F2C59] text-white flex items-center justify-center shadow-xs">
+                  <Receipt size={20} className="text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">
+                  <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider">
                     Bukti Pengambilan Seragam
                   </h3>
-                  <p className="text-[10px] text-slate-400">Kanvas PENABUR • Koperasi Sekolah</p>
+                  <p className="text-xs text-slate-500">Kanvas PENABUR • Koperasi Sekolah</p>
                 </div>
               </div>
               <button
@@ -2499,22 +2711,22 @@ export default function MobileStorefront() {
 
             {/* Kode Pesanan Utama (Besar & Kontras untuk PIC) */}
             <div className="bg-gradient-to-br from-blue-950 to-blue-900 rounded-2xl p-4 text-white text-center shadow-md space-y-1">
-              <span className="text-[10px] font-bold tracking-widest text-blue-200 uppercase">
+              <span className="text-xs font-bold tracking-widest text-blue-200 uppercase">
                 Kode Pesanan Verifikasi PIC
               </span>
-              <div className="text-xl font-black tracking-wider text-amber-400 font-mono py-1 select-all">
+              <div className="text-2xl font-black tracking-wider text-amber-400 font-mono py-1 select-all">
                 {selectedOrderReceipt.id || selectedOrderReceipt.order_number}
               </div>
-              <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold">
+              <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold">
                 ✓ Pesanan Sah Terverifikasi
               </span>
             </div>
 
             {/* Identitas Siswa & Wali Murid */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm space-y-2">
               <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                <span className="text-slate-400 text-[11px]">Nama Siswa:</span>
-                <span className="font-extrabold text-slate-900">{selectedOrderReceipt.student_name}</span>
+                <span className="text-slate-500 text-xs">Nama Siswa:</span>
+                <span className="font-extrabold text-slate-900 text-sm">{selectedOrderReceipt.student_name}</span>
               </div>
               <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                 <span className="text-slate-400 text-[11px]">Sekolah:</span>
@@ -2595,19 +2807,19 @@ export default function MobileStorefront() {
          ========================================================================= */}
       {showFinalConfirmModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-sm animate-fade-in text-center space-y-4">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-md sm:max-w-lg animate-fade-in text-center space-y-4">
             <div className="w-14 h-14 mx-auto rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shadow-xs">
               <AlertCircle size={32} />
             </div>
 
             <div>
-              <h3 className="font-extrabold text-sm text-slate-900">
+              <h3 className="font-extrabold text-base text-slate-900">
                 Konfirmasi Pemesanan & Pembayaran
               </h3>
-              <p className="text-xs text-slate-700 mt-2 font-semibold leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-700 mt-2 font-semibold leading-relaxed">
                 Apakah Anda sudah menyelesaikan semua proses pemesanan dan pembayaran?
               </p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-normal">
+              <p className="text-xs text-slate-500 mt-1 leading-normal">
                 Setelah klik <strong>Ya</strong>, pesanan resmi tercatat dan notifikasi verifikasi akan dikirimkan langsung ke PIC {currentSchoolName} di sistem Aksara.
               </p>
             </div>
@@ -2617,9 +2829,9 @@ export default function MobileStorefront() {
                 type="button"
                 disabled={isSubmittingOrder}
                 onClick={handleFinalConfirmOrder}
-                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl text-xs font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-700/20"
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-700/20"
               >
-                <CheckCircle2 size={16} />
+                <CheckCircle2 size={18} />
                 <span>{isSubmittingOrder ? 'Memproses Pesanan...' : 'Ya, Selesaikan Pemesanan'}</span>
               </button>
 
@@ -2627,7 +2839,7 @@ export default function MobileStorefront() {
                 type="button"
                 disabled={isSubmittingOrder}
                 onClick={() => setShowFinalConfirmModal(false)}
-                className="w-full py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-all"
+                className="w-full py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs sm:text-sm font-bold transition-all"
               >
                 Tidak, Periksa Kembali
               </button>
@@ -2642,9 +2854,9 @@ export default function MobileStorefront() {
       {dashboardGuideStep && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-2xs flex flex-col justify-end p-4 pb-20 animate-fade-in pointer-events-auto">
           {/* Card Panduan Sesuai Langkah */}
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border-2 border-amber-400 w-full max-w-sm mx-auto animate-scale-up space-y-3 relative">
+          <div className="bg-white rounded-3xl p-5 shadow-2xl border-2 border-amber-400 w-full max-w-md sm:max-w-lg mx-auto animate-scale-up space-y-3 relative">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <span className="text-[11px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles size={14} className="text-amber-500" />
                 {dashboardGuideStep === 3 && 'Langkah 2: Katalog & Multi-Jenjang'}
                 {dashboardGuideStep === 4 && 'Langkah 3: Pilih Ukuran & Keranjang'}
@@ -2658,7 +2870,7 @@ export default function MobileStorefront() {
                     localStorage.setItem('kanvas_guide_active', 'false');
                   } catch (e) {}
                 }}
-                className="text-[11px] font-bold text-slate-400 hover:text-slate-600"
+                className="text-xs font-bold text-slate-400 hover:text-slate-600"
               >
                 Lewati
               </button>
@@ -2772,7 +2984,7 @@ export default function MobileStorefront() {
       {/* =========================================================================
           GLOBAL BOTTOM NAVIGATION BAR (Mobile Bottom Bar)
          ========================================================================= */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around py-2.5 shadow-lg max-w-[440px] mx-auto md:rounded-b-[32px]">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around py-3 shadow-lg w-full sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto md:rounded-b-[36px]">
         <button
           onClick={() => {
             setActiveTab('store');
@@ -2782,8 +2994,8 @@ export default function MobileStorefront() {
             activeTab === 'store' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
           }`}
         >
-          <Home size={20} />
-          <span className="text-[10px]">Katalog</span>
+          <Home size={22} />
+          <span className="text-xs font-semibold">Katalog</span>
         </button>
 
         <button
@@ -2795,8 +3007,8 @@ export default function MobileStorefront() {
             activeTab === 'orders' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
           }`}
         >
-          <Clock size={20} />
-          <span className="text-[10px]">Pesanan Saya</span>
+          <Clock size={22} />
+          <span className="text-xs font-semibold">Pesanan Saya</span>
         </button>
 
         <button
@@ -2808,8 +3020,8 @@ export default function MobileStorefront() {
             activeTab === 'profile' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
           }`}
         >
-          <User size={20} />
-          <span className="text-[10px]">Profil</span>
+          <User size={22} />
+          <span className="text-xs font-semibold">Profil</span>
         </button>
       </nav>
     </div>

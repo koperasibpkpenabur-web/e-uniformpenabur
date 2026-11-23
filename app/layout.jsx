@@ -37,9 +37,9 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-slate-950 min-h-screen text-slate-800 antialiased selection:bg-amber-500 selection:text-white">
-        <main className="min-h-screen w-full flex justify-center items-center md:py-6 sm:p-2">
-          {/* Mobile Shell Frame */}
-          <div className="w-full max-w-[440px] min-h-screen md:min-h-[850px] md:max-h-[920px] md:rounded-[40px] md:shadow-[0_25px_80px_rgba(0,0,0,0.7)] md:border-[8px] md:border-slate-800 bg-[#F8FAFC] flex flex-col relative overflow-hidden">
+        <main className="min-h-screen w-full flex justify-center items-stretch md:items-center md:py-6">
+          {/* Mobile Shell Frame: Stretches 100% on mobile, comfortable max-w on desktop */}
+          <div className="w-full sm:max-w-md md:max-w-lg lg:max-w-xl min-h-screen md:min-h-[880px] md:max-h-[96vh] md:rounded-[36px] md:shadow-[0_25px_80px_rgba(0,0,0,0.7)] md:border-[6px] md:border-slate-800 bg-[#F8FAFC] flex flex-col relative overflow-x-hidden">
             {children}
           </div>
         </main>

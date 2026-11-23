@@ -315,8 +315,8 @@ export default function HomeLogin() {
             Lewati <ArrowRight size={13} />
           </button>
 
-          {/* Pemutar Video 10 Detik */}
-          <div className="w-full max-w-[420px] aspect-[9/16] md:max-h-[88vh] flex items-center justify-center relative overflow-hidden">
+          {/* Pemutar Video 10 Detik - Proper Full Screen Mobile */}
+          <div className="w-full h-full max-w-lg md:max-h-[92vh] flex items-center justify-center relative overflow-hidden">
             <video
               ref={videoRef}
               src={getAssetPath('/video-intro-kanvas.mp4')}
@@ -396,14 +396,14 @@ export default function HomeLogin() {
           HANYA DITAMPILKAN SETELAH LOADING SELESAI 100%!
          ========================================================================= */}
       {appPhase === 'login' && (
-        <div className="flex-1 flex flex-col bg-[#F8FAFC] px-6 pt-6 pb-6 animate-fade-in justify-between min-h-screen max-w-md mx-auto relative">
+        <div className="flex-1 flex flex-col bg-[#F8FAFC] px-5 sm:px-7 pt-6 pb-6 animate-fade-in justify-between min-h-screen w-full max-w-lg mx-auto relative">
           {/* Header Branding */}
           <div className="flex flex-col items-center text-center relative pt-2">
             {/* Tombol Panduan Cepat (Bisa dibuka kapan saja) */}
             <button
               type="button"
               onClick={() => setGuideState('welcome')}
-              className="absolute right-0 top-0 text-[10.5px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1 transition-all shadow-2xs"
+              className="absolute right-0 top-0 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full border border-amber-200 flex items-center gap-1 transition-all shadow-2xs"
             >
               <span>💡 Panduan</span>
             </button>
@@ -413,31 +413,31 @@ export default function HomeLogin() {
               <img
                 src={getAssetPath('/kanvas-logo-fix.png')}
                 alt="Kanvas PENABUR"
-                className="relative w-44 md:w-52 h-auto object-contain drop-shadow-md"
+                className="relative w-48 md:w-56 h-auto object-contain drop-shadow-md"
               />
             </div>
 
             {/* Tulisan Resmi: Kanal Visual Atribut Sekolah BPK PENABUR */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-900 text-[10.5px] font-bold tracking-wide uppercase mb-2">
-              <ShieldCheck size={13} className="text-blue-600" />
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-900 text-xs font-bold tracking-wide uppercase mb-2">
+              <ShieldCheck size={14} className="text-blue-600" />
               Kanal Visual Atribut Sekolah BPK PENABUR
             </div>
 
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
               Pesan Seragam Sekolah
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-blue-700 to-amber-600">
                 Lebih Mudah & Praktis
               </span>
             </h1>
 
-            <p className="text-xs md:text-sm text-slate-500 mt-2 max-w-xs font-medium leading-relaxed">
+            <p className="text-sm md:text-base text-slate-600 mt-2 max-w-sm font-medium leading-relaxed">
               Masuk untuk mengakses katalog seragam resmi sesuai cabang sekolah & jenjang anak Anda.
             </p>
           </div>
 
           {/* Card Login (Posisi Naik & Center - 3 Highlights Dihilangkan) */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-md flex flex-col gap-4 my-auto relative z-40">
-            <span className="text-xs font-bold text-slate-700 text-center block">
+          <div className="bg-white rounded-3xl p-6 md:p-7 border border-slate-200/80 shadow-md flex flex-col gap-4 my-auto relative z-40 w-full">
+            <span className="text-sm font-bold text-slate-800 text-center block">
               Silakan Masuk dengan Akun Anda
             </span>
 
@@ -446,9 +446,9 @@ export default function HomeLogin() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={isLoadingGoogle}
-              className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-900 text-slate-800 rounded-2xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+              className="w-full py-4 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-900 text-slate-800 rounded-2xl font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
             >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -473,11 +473,11 @@ export default function HomeLogin() {
             <div className="pt-2 border-t border-slate-100 text-center relative">
               {/* Tooltip Spotlight Step 1: Di atas tulisan "Daftar disini" */}
               {guideState === 'spotlight_register' && (
-                <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-64 bg-slate-900 text-white rounded-xl p-2.5 shadow-2xl border border-amber-400 z-50 text-center animate-bounce-subtle">
-                  <p className="text-[11px] font-black text-amber-300">
+                <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-72 bg-slate-900 text-white rounded-xl p-2.5 shadow-2xl border border-amber-400 z-50 text-center animate-bounce-subtle">
+                  <p className="text-xs font-black text-amber-300">
                     👉 Klik ini untuk memulai
                   </p>
-                  <p className="text-[9.5px] text-slate-200 mt-0.5 leading-tight">
+                  <p className="text-[11px] text-slate-200 mt-0.5 leading-tight">
                     Pendaftaran akun wali murid & data siswa baru
                   </p>
                   {/* Panah bawah */}
@@ -485,7 +485,7 @@ export default function HomeLogin() {
                 </div>
               )}
 
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-sm text-slate-600 font-medium">
                 Belum punya akun?{' '}
                 <button
                   type="button"
@@ -509,8 +509,8 @@ export default function HomeLogin() {
 
           {/* Security Footer (Posisi Lebih Dekat Tanpa Scroll) */}
           <div className="pt-4 flex flex-col items-center text-center">
-            <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 font-medium">
-              <Lock size={12} className="text-slate-400" />
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <Lock size={13} className="text-slate-400" />
               <span>Koneksi Aman Terverifikasi Koperasi BPK PENABUR</span>
             </div>
           </div>
@@ -656,43 +656,43 @@ export default function HomeLogin() {
          ========================================================================= */}
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 w-full max-w-md max-h-[90vh] overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] overflow-y-auto animate-fade-in">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
               <div className="flex items-center gap-2">
-                <UserCheck size={18} className="text-blue-900" />
-                <h3 className="font-bold text-sm text-slate-900">Pendaftaran Akun Wali Murid</h3>
+                <UserCheck size={20} className="text-blue-900" />
+                <h3 className="font-bold text-base text-slate-900">Pendaftaran Akun Wali Murid</h3>
               </div>
               <button
                 onClick={() => setShowRegisterModal(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
               Lengkapi data di bawah ini untuk menghubungkan pemesanan seragam resmi siswa ke sekolah:
             </p>
 
             {guideState === 'spotlight_form' && (
-              <div className="p-3 rounded-2xl bg-gradient-to-r from-blue-900 to-blue-800 text-white border border-blue-700 shadow-sm text-xs mb-3 space-y-1 animate-fade-in">
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-900 to-blue-800 text-white border border-blue-700 shadow-sm text-xs mb-4 space-y-1 animate-fade-in">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold flex items-center gap-1.5 text-amber-300 text-[11px]">
-                    <Sparkles size={13} /> Langkah 1: Pengisian Formulir
+                  <span className="font-bold flex items-center gap-1.5 text-amber-300 text-xs">
+                    <Sparkles size={14} /> Langkah 1: Pengisian Formulir
                   </span>
-                  <span className="text-[10px] text-blue-200">Panduan Aktif</span>
+                  <span className="text-xs text-blue-200">Panduan Aktif</span>
                 </div>
-                <p className="text-[10.5px] text-blue-100 leading-snug">
+                <p className="text-xs text-blue-100 leading-snug">
                   Lengkapi data orang tua, nama siswa, kategori (Siswa Baru / Siswa Dalam), sekolah & kelas, lalu klik <b>Daftar Akun</b>.
                 </p>
               </div>
             )}
 
-            <form onSubmit={handleRegisterSubmit} className="space-y-3">
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
               {/* Nama Lengkap Orang Tua */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   Nama Lengkap Orang Tua *
                 </label>
                 <input
@@ -701,13 +701,13 @@ export default function HomeLogin() {
                   placeholder="Contoh: Hendra Wijaya"
                   value={registerForm.parentName}
                   onChange={(e) => setRegisterForm({ ...registerForm, parentName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
 
               {/* Nama Lengkap Siswa */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   Nama Lengkap Siswa *
                 </label>
                 <input
@@ -716,7 +716,7 @@ export default function HomeLogin() {
                   placeholder="Contoh: Jonathan Chris"
                   value={registerForm.studentName}
                   onChange={(e) => setRegisterForm({ ...registerForm, studentName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
 
@@ -740,28 +740,28 @@ export default function HomeLogin() {
 
                   <div
                     onClick={() => setRegisterForm({ ...registerForm, studentType: 'dalam' })}
-                    className={`p-2.5 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${
+                    className={`p-3 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${
                       registerForm.studentType === 'dalam'
                         ? 'border-blue-700 bg-blue-50/70 shadow-xs'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="text-[11px] font-extrabold text-slate-900">Siswa Dalam</span>
-                    <span className="text-[9.5px] text-slate-500">Internal / Naik Jenjang</span>
+                    <span className="text-xs font-extrabold text-slate-900">Siswa Dalam</span>
+                    <span className="text-[11px] text-slate-500 mt-0.5">Internal / Naik Jenjang</span>
                   </div>
                 </div>
               </div>
 
               {/* Nama Sekolah (Dropdown dari tabel school_whitelist) */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   {registerForm.studentType === 'dalam' ? 'Sekolah PENABUR Saat Ini *' : 'Sekolah PENABUR Tujuan *'}
                 </label>
                 <select
                   required
                   value={registerForm.schoolName}
                   onChange={(e) => handleRegisterSchoolChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
                 >
                   {schoolList.map((sch, idx) => (
                     <option key={idx} value={sch.name}>
@@ -769,7 +769,7 @@ export default function HomeLogin() {
                     </option>
                   ))}
                 </select>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                <span className="text-xs text-slate-400 mt-1 block">
                   Data diambil dari daftar resmi sekolah BPK PENABUR.
                 </span>
               </div>
@@ -777,11 +777,11 @@ export default function HomeLogin() {
               {/* Jenjang (Otomatis Lock Sesuai Sekolah yang Dipilih!) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-bold text-slate-700">
+                  <label className="block text-xs font-bold text-slate-800">
                     Jenjang Sekolah *
                   </label>
-                  <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5">
-                    <Lock size={10} /> Terkunci Otomatis
+                  <span className="text-xs text-amber-600 font-bold flex items-center gap-0.5">
+                    <Lock size={12} /> Terkunci Otomatis
                   </span>
                 </div>
                 <div className="relative">
@@ -789,25 +789,25 @@ export default function HomeLogin() {
                     type="text"
                     readOnly
                     value={registerForm.schoolLevel}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-100 border border-slate-300 text-xs font-black text-blue-900 cursor-not-allowed uppercase tracking-wider"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-300 text-sm font-black text-blue-900 cursor-not-allowed uppercase tracking-wider"
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-blue-100 text-blue-800 text-[9.5px] font-extrabold rounded-md">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-extrabold rounded-md">
                     {registerForm.schoolLevel}
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block italic">
+                <span className="text-xs text-slate-400 mt-1 block italic">
                   Jenjang otomatis dikunci berdasarkan sekolah (misal: SMPK 4 PENABUR &rarr; SMP).
                 </span>
               </div>
 
               {/* Edukasi Akses Multi-Jenjang untuk Siswa Dalam */}
               {registerForm.studentType === 'dalam' && (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10.5px] text-amber-900 space-y-1">
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
                   <p className="font-bold flex items-center gap-1">
-                    <Sparkles size={12} className="text-amber-600" />
+                    <Sparkles size={14} className="text-amber-600" />
                     Akses Multi-Jenjang Siswa Internal:
                   </p>
-                  <p className="leading-relaxed">
+                  <p className="leading-relaxed text-slate-700">
                     Siswa internal PENABUR dapat memesan seragam jenjang saat ini (<strong>{registerForm.schoolLevel}</strong>) serta jenjang lanjutan berikutnya (<strong>{getNextSchoolLevel(registerForm.schoolLevel) || 'Lanjutan'}</strong>).
                   </p>
                 </div>
@@ -815,7 +815,7 @@ export default function HomeLogin() {
 
               {/* Kelas Siswa (Dropdown Dinamis: SD: 1-6, SMP: 7-9, SMA: 10-12, TK: Tidak Perlu Isi) */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   Kelas Siswa *
                 </label>
                 {getAvailableGrades(registerForm.schoolLevel).length > 0 ? (
@@ -823,7 +823,7 @@ export default function HomeLogin() {
                     required
                     value={registerForm.studentClass}
                     onChange={(e) => setRegisterForm({ ...registerForm, studentClass: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white cursor-pointer"
                   >
                     {getAvailableGrades(registerForm.schoolLevel).map((grade) => (
                       <option key={grade} value={grade}>
@@ -832,14 +832,14 @@ export default function HomeLogin() {
                     ))}
                   </select>
                 ) : (
-                  <div className="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-500 flex items-center justify-between">
+                  <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600 flex items-center justify-between">
                     <span>Jenjang TK</span>
-                    <span className="text-[10px] text-amber-700 font-extrabold bg-amber-100/80 px-2 py-0.5 rounded-md">
+                    <span className="text-xs text-amber-700 font-extrabold bg-amber-100/80 px-2.5 py-0.5 rounded-md">
                       Tidak perlu mengisi kelas
                     </span>
                   </div>
                 )}
-                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                <span className="text-xs text-slate-400 mt-1 block">
                   {getAvailableGrades(registerForm.schoolLevel).length > 0
                     ? `Pilihan kelas otomatis disesuaikan untuk jenjang ${registerForm.schoolLevel}.`
                     : 'Untuk jenjang TK (TKK), siswa tidak memerlukan pengisian kelas.'}
@@ -848,7 +848,7 @@ export default function HomeLogin() {
 
               {/* No. HP (WhatsApp) */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   Nomor HP / WhatsApp Aktif *
                 </label>
                 <input
@@ -857,13 +857,13 @@ export default function HomeLogin() {
                   placeholder="Contoh: 081234567890"
                   value={registerForm.phone}
                   onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
 
               {/* Email (Optional / otomatis dari Google jika ada) */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-800 mb-1">
                   Email Akun
                 </label>
                 <input
@@ -871,7 +871,7 @@ export default function HomeLogin() {
                   placeholder="email@gmail.com"
                   value={registerForm.email}
                   onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
 
@@ -880,9 +880,9 @@ export default function HomeLogin() {
                 <button
                   type="submit"
                   disabled={isRegistering}
-                  className="w-full py-3.5 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl text-xs font-bold shadow-md hover:brightness-110 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                  className="w-full py-4 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl text-sm font-bold shadow-md hover:brightness-110 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
                 >
-                  <CheckCircle2 size={16} className="text-amber-400" />
+                  <CheckCircle2 size={18} className="text-amber-400" />
                   <span>{isRegistering ? 'Mendaftarkan Akun...' : 'Daftar Akun'}</span>
                 </button>
               </div>
