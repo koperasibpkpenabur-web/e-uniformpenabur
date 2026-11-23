@@ -7,6 +7,7 @@ import { getAssetPath } from '../lib/utils';
 import { 
   getSchoolList, 
   deriveSchoolLevel, 
+  getNextSchoolLevel,
   checkParentRegistered, 
   saveParentRegistration 
 } from '../lib/schools';
@@ -57,6 +58,7 @@ export default function HomeLogin() {
   const [registerForm, setRegisterForm] = useState({
     parentName: '',
     studentName: '',
+    studentType: 'luar', // 'luar' (Siswa Baru dari Luar) | 'dalam' (Siswa Dalam PENABUR)
     schoolName: '',
     schoolLevel: '',
     studentClass: '',
@@ -578,10 +580,42 @@ export default function HomeLogin() {
                 />
               </div>
 
+              {/* Kategori Asal Siswa: Siswa Baru (Luar) vs Siswa Dalam PENABUR */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                  Kategori Asal Siswa *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div
+                    onClick={() => setRegisterForm({ ...registerForm, studentType: 'luar' })}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${
+                      registerForm.studentType === 'luar'
+                        ? 'border-blue-700 bg-blue-50/70 shadow-xs'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-[11px] font-extrabold text-slate-900">Siswa Baru</span>
+                    <span className="text-[9.5px] text-slate-500">Dari Luar PENABUR</span>
+                  </div>
+
+                  <div
+                    onClick={() => setRegisterForm({ ...registerForm, studentType: 'dalam' })}
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${
+                      registerForm.studentType === 'dalam'
+                        ? 'border-blue-700 bg-blue-50/70 shadow-xs'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-[11px] font-extrabold text-slate-900">Siswa Dalam</span>
+                    <span className="text-[9.5px] text-slate-500">Internal / Naik Jenjang</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Nama Sekolah (Dropdown dari tabel school_whitelist) */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Nama Sekolah PENABUR *
+                  {registerForm.studentType === 'dalam' ? 'Sekolah PENABUR Saat Ini *' : 'Sekolah PENABUR Tujuan *'}
                 </label>
                 <select
                   required
@@ -625,6 +659,19 @@ export default function HomeLogin() {
                   Jenjang otomatis dikunci berdasarkan sekolah (misal: SMPK 4 PENABUR &rarr; SMP).
                 </span>
               </div>
+
+              {/* Edukasi Akses Multi-Jenjang untuk Siswa Dalam */}
+              {registerForm.studentType === 'dalam' && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[10.5px] text-amber-900 space-y-1">
+                  <p className="font-bold flex items-center gap-1">
+                    <Sparkles size={12} className="text-amber-600" />
+                    Akses Multi-Jenjang Siswa Internal:
+                  </p>
+                  <p className="leading-relaxed">
+                    Siswa internal PENABUR dapat memesan seragam jenjang saat ini (<strong>{registerForm.schoolLevel}</strong>) serta jenjang lanjutan berikutnya (<strong>{getNextSchoolLevel(registerForm.schoolLevel) || 'Lanjutan'}</strong>).
+                  </p>
+                </div>
+              )}
 
               {/* Kelas */}
               <div>

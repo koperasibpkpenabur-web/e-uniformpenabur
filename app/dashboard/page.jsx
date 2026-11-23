@@ -9,7 +9,8 @@ import {
   getSchoolList, 
   deriveSchoolLevel, 
   cleanSchoolName,
-  getSchoolPaymentInfo
+  getSchoolPaymentInfo,
+  getNextSchoolLevel
 } from '../../lib/schools';
 import {
   ShoppingBag,
@@ -261,10 +262,12 @@ export default function MobileStorefront() {
   const [editingStudentId, setEditingStudentId] = useState(null);
   const [studentForm, setStudentForm] = useState({
     name: '',
+    studentType: 'luar', // 'luar' | 'dalam'
     school: 'SDK 1 PENABUR',
     level: 'SD',
     grade: 'Kelas 1',
   });
+  const [activeCatalogLevel, setActiveCatalogLevel] = useState(null);
 
   // Checkout Details
   const [deliveryMethod, setDeliveryMethod] = useState('koperasi'); // 'koperasi' | 'rumah'
@@ -284,6 +287,12 @@ export default function MobileStorefront() {
   const activeStudent = useMemo(() => {
     return students.find((s) => s.id === activeStudentId) || students[0] || null;
   }, [students, activeStudentId]);
+
+  useEffect(() => {
+    if (activeStudent) {
+      setActiveCatalogLevel(activeStudent.level);
+    }
+  }, [activeStudent?.id, activeStudent?.level]);
 
   const currentSchoolName = activeStudent?.school || selectedSchool;
   const schoolPayment = useMemo(() => {
@@ -470,6 +479,7 @@ export default function MobileStorefront() {
     const defaultSchool = schoolList[0]?.name || 'SDK 1 PENABUR';
     setStudentForm({
       name: '',
+      studentType: 'luar',
       school: defaultSchool,
       level: deriveSchoolLevel(defaultSchool),
       grade: 'Kelas 1',
@@ -483,6 +493,7 @@ export default function MobileStorefront() {
     setEditingStudentId(student.id);
     setStudentForm({
       name: student.name,
+      studentType: student.studentType || 'luar',
       school: student.school,
       level: student.level,
       grade: student.grade,
@@ -498,13 +509,20 @@ export default function MobileStorefront() {
       return;
     }
 
+    const currentLevel = studentForm.level || deriveSchoolLevel(studentForm.school);
+    const nextLvl = studentForm.studentType === 'dalam' ? getNextSchoolLevel(currentLevel) : null;
+    const allowed = nextLvl ? [currentLevel, nextLvl] : [currentLevel];
+
     if (studentModalMode === 'add') {
       const newId = `std-${Date.now()}`;
       const newStudentObj = {
         id: newId,
         name: studentForm.name.trim(),
+        studentType: studentForm.studentType || 'luar',
         school: cleanSchoolName(studentForm.school),
-        level: studentForm.level || deriveSchoolLevel(studentForm.school),
+        level: currentLevel,
+        nextLevel: nextLvl,
+        allowedLevels: allowed,
         grade: studentForm.grade.trim() || 'Kelas 1',
       };
       const updated = [...students, newStudentObj];
@@ -512,6 +530,7 @@ export default function MobileStorefront() {
       setActiveStudentId(newId);
       setSelectedSchool(newStudentObj.school);
       setSelectedLevel(newStudentObj.level);
+      setActiveCatalogLevel(newStudentObj.level);
       syncSessionToStorage(updated, null);
       alert(`Siswa ${newStudentObj.name} berhasil ditambahkan!`);
     } else {
@@ -521,14 +540,22 @@ export default function MobileStorefront() {
           return {
             ...s,
             name: studentForm.name.trim(),
+            studentType: studentForm.studentType || 'luar',
             school: cleanSchoolName(studentForm.school),
-            level: studentForm.level || deriveSchoolLevel(studentForm.school),
+            level: currentLevel,
+            nextLevel: nextLvl,
+            allowedLevels: allowed,
             grade: studentForm.grade.trim() || 'Kelas 1',
           };
         }
         return s;
       });
       setStudents(updated);
+      if (activeStudentId === editingStudentId) {
+        setSelectedSchool(cleanSchoolName(studentForm.school));
+        setSelectedLevel(currentLevel);
+        setActiveCatalogLevel(currentLevel);
+      }
       syncSessionToStorage(updated, null);
       alert('Data siswa berhasil diperbarui!');
     }
@@ -581,7 +608,8 @@ export default function MobileStorefront() {
 
   // Filter products by Level Siswa Aktif (Strict Level SSOT), Kategori, dan Pencarian
   const filteredProducts = useMemo(() => {
-    const activeLevel = activeStudent?.level || selectedLevel || 'SMP';
+    // Jika siswa internal PENABUR dan sedang memilih tab jenjang tertentu, gunakan activeCatalogLevel
+    const activeLevel = activeCatalogLevel || activeStudent?.level || selectedLevel || 'SMP';
     return products.filter((p) => {
       const matchLevel = isProductMatchingLevel(p, activeLevel);
       const matchCat = selectedCategory === 'Semua' || p.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -591,7 +619,7 @@ export default function MobileStorefront() {
         p.category.toLowerCase().includes(searchQuery.toLowerCase());
       return matchLevel && matchCat && matchSearch;
     });
-  }, [products, activeStudent?.level, selectedLevel, selectedCategory, searchQuery]);
+  }, [products, activeCatalogLevel, activeStudent?.level, selectedLevel, selectedCategory, searchQuery]);
 
   // Cart Calculations
   const cartSubtotal = useMemo(() => {
@@ -927,26 +955,72 @@ export default function MobileStorefront() {
             )}
           </div>
 
-          {/* Banner Kunci Jenjang Otomatis Sesuai Siswa Terdaftar (SSOT) */}
-          <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-gradient-to-r from-blue-900/10 via-blue-50 to-indigo-50/50 border border-blue-200/80 text-blue-950">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-[#0F2C59] text-amber-400 flex items-center justify-center text-[11px] font-black shadow-xs">
-                {activeStudent?.level || selectedLevel || 'SMP'}
-              </span>
-              <div>
-                <span className="text-[11px] font-black block leading-none text-slate-900">
-                  Katalog Khusus Jenjang {activeStudent?.level || selectedLevel || 'SMP'}
+          {/* Multi-Level Switcher Khusus Siswa Dalam PENABUR (Naik Jenjang / Lulusan) */}
+          {activeStudent?.studentType === 'dalam' && (activeStudent?.nextLevel || getNextSchoolLevel(activeStudent?.level)) ? (
+            <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-2.5 space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-amber-600" />
+                  Pilihan Jenjang Pesanan Siswa Internal:
                 </span>
-                <span className="text-[9.5px] text-slate-500 font-medium">
-                  {activeStudent?.name || 'Siswa'} • {activeStudent?.school || selectedSchool}
+                <span className="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-md">
+                  {activeStudent.name} • {activeStudent.grade}
                 </span>
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCatalogLevel(activeStudent.level)}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    (activeCatalogLevel || activeStudent.level) === activeStudent.level
+                      ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
+                      : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
+                  }`}
+                >
+                  <School size={13} />
+                  <span>Jenjang {activeStudent.level} (Saat Ini)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveCatalogLevel(activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level))}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    (activeCatalogLevel || activeStudent.level) === (activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level))
+                      ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
+                      : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
+                  }`}
+                >
+                  <Sparkles size={13} className="text-amber-400" />
+                  <span>Jenjang {activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level)} (Lanjutan)</span>
+                </button>
+              </div>
+              <p className="text-[10px] text-amber-800 italic text-center">
+                * Anda dapat memesan seragam jenjang {activeStudent.level} dan {activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level)} ke keranjang yang sama.
+              </p>
             </div>
-            <span className="px-2 py-0.5 bg-blue-100 text-blue-900 text-[9px] font-extrabold rounded-md flex items-center gap-1">
-              <Lock size={10} />
-              Terkunci Otomatis
-            </span>
-          </div>
+          ) : (
+            /* Banner Kunci Jenjang Khusus Siswa Baru dari Luar */
+            <div className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-gradient-to-r from-blue-900/10 via-blue-50 to-indigo-50/50 border border-blue-200/80 text-blue-950">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-[#0F2C59] text-amber-400 flex items-center justify-center text-[11px] font-black shadow-xs">
+                  {activeStudent?.level || selectedLevel || 'SMP'}
+                </span>
+                <div>
+                  <span className="text-[11px] font-black block leading-none text-slate-900">
+                    Katalog Khusus Jenjang {activeStudent?.level || selectedLevel || 'SMP'}
+                  </span>
+                  <span className="text-[9.5px] text-slate-500 font-medium">
+                    {activeStudent?.name || 'Siswa'} • {activeStudent?.school || selectedSchool}
+                  </span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-900 text-[9px] font-extrabold rounded-md flex items-center gap-1">
+                <Lock size={10} />
+                Siswa Baru (Terkunci)
+              </span>
+            </div>
+          )}
 
           {/* Category Chips */}
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
@@ -1886,6 +1960,15 @@ export default function MobileStorefront() {
                       <span className="px-1.5 py-0.2 bg-blue-100 text-blue-900 text-[9.5px] font-black rounded-md">
                         {st.level}
                       </span>
+                      {st.studentType === 'dalam' ? (
+                        <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[9.5px] font-bold rounded-md">
+                          Siswa Dalam
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 bg-slate-100 text-slate-700 text-[9.5px] font-bold rounded-md">
+                          Siswa Baru
+                        </span>
+                      )}
                     </div>
                     <span className="text-[11px] text-slate-500 block truncate">
                       {st.school} • {st.grade}
@@ -2049,6 +2132,60 @@ export default function MobileStorefront() {
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white"
                 />
               </div>
+
+              {/* Kategori Siswa: Siswa Baru (Luar) vs Siswa Dalam (Internal) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Kategori Siswa *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStudentForm({ ...studentForm, studentType: 'luar' })}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      studentForm.studentType === 'luar'
+                        ? 'border-blue-600 bg-blue-50/70 text-blue-900 shadow-xs ring-1 ring-blue-600'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="font-bold text-[11px] flex items-center gap-1">
+                      <span>🔘 Siswa Baru</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-500 mt-0.5 leading-tight">
+                      Dari luar PENABUR (1 jenjang terkunci)
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStudentForm({ ...studentForm, studentType: 'dalam' })}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      studentForm.studentType === 'dalam'
+                        ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 shadow-xs ring-1 ring-emerald-600'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="font-bold text-[11px] flex items-center gap-1 text-emerald-900">
+                      <span>✨ Siswa Dalam</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-500 mt-0.5 leading-tight">
+                      Internal / Naik jenjang (2 jenjang)
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {studentForm.studentType === 'dalam' && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[10px] flex items-start gap-2">
+                  <span className="text-emerald-600 font-bold mt-0.5">ℹ️</span>
+                  <div>
+                    <span className="font-bold">Akses Multi-Jenjang Siswa Internal:</span>
+                    <p className="text-slate-600 text-[9.5px] mt-0.5">
+                      Siswa jenjang <b>{studentForm.level}</b> dapat memesan seragam jenjang <b>{studentForm.level}</b> dan jenjang lanjutan <b>{getNextSchoolLevel(studentForm.level) || 'SMA'}</b> sekaligus dalam satu keranjang belanja.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
