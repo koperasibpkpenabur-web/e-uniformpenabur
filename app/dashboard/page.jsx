@@ -50,17 +50,56 @@ import {
   UploadCloud
 } from 'lucide-react';
 
-const SIZE_ORDER = ['SS', 'S', 'M', 'L', 'XL', '2L', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L', 'STANDAR', 'ALL SIZE'];
+const LETTER_SIZE_ORDER = [
+  'SSS', 'SS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '2L', '3L', '4L', '5L', '6L', '7L', '8L', '9L', '10L'
+];
+
+export const compareUniformSizes = (a, b) => {
+  const strA = String(a || '').trim().toUpperCase();
+  const strB = String(b || '').trim().toUpperCase();
+
+  if (strA === strB) return 0;
+
+  // 'KHUSUS' / 'CUSTOM' selalu berada di paling akhir urutan
+  if (strA === 'KHUSUS' || strA.includes('KHUSUS')) return 1;
+  if (strB === 'KHUSUS' || strB.includes('KHUSUS')) return -1;
+
+  // 'ALL SIZE' / 'STANDAR' ditempatkan di depan
+  if (strA === 'ALL SIZE' || strA === 'STANDAR') return -1;
+  if (strB === 'ALL SIZE' || strB === 'STANDAR') return 1;
+
+  // 1. Cek ukuran huruf standar (SS, S, M, L, XL, 3L s/d 10L)
+  const idxLetterA = LETTER_SIZE_ORDER.indexOf(strA);
+  const idxLetterB = LETTER_SIZE_ORDER.indexOf(strB);
+
+  if (idxLetterA !== -1 && idxLetterB !== -1) {
+    return idxLetterA - idxLetterB;
+  }
+  if (idxLetterA !== -1) return -1;
+  if (idxLetterB !== -1) return 1;
+
+  // 2. Cek apakah murni angka (misal celana: 25, 26, 27... atau sepatu: 32...50 atau jas lab: 5...15)
+  const numA = Number(strA);
+  const numB = Number(strB);
+
+  if (!isNaN(numA) && !isNaN(numB)) {
+    return numA - numB;
+  }
+
+  // 3. Cek format range angka (misal kaos kaki: '15-16', '17-18', '23-24')
+  const matchRangeA = strA.match(/^(\d+)/);
+  const matchRangeB = strB.match(/^(\d+)/);
+  if (matchRangeA && matchRangeB) {
+    const startA = parseInt(matchRangeA[1], 10);
+    const startB = parseInt(matchRangeB[1], 10);
+    if (startA !== startB) return startA - startB;
+  }
+
+  return strA.localeCompare(strB, undefined, { numeric: true });
+};
 
 const sortSizes = (sizes) => {
-  return [...sizes].sort((a, b) => {
-    const indexA = SIZE_ORDER.indexOf(a.toUpperCase());
-    const indexB = SIZE_ORDER.indexOf(b.toUpperCase());
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-    if (indexA !== -1) return -1;
-    if (indexB !== -1) return 1;
-    return a.localeCompare(b);
-  });
+  return [...sizes].sort(compareUniformSizes);
 };
 
 // Fallback Katalog Seragam Resmi BPK PENABUR
@@ -481,7 +520,9 @@ export default function MobileStorefront() {
           data.forEach((item) => {
             if (item.is_kanvas_active === false) return;
 
-            const groupKey = item.variant_group || item.name;
+            const derivedLvl = (item.level || deriveSchoolLevel(item.name) || 'ALL').toUpperCase();
+            // groupKey menyertakan jenjang (level) agar barang dengan nama sama antar-jenjang (Kemeja Putih, Rompi, Sepatu) tidak tertimpa
+            const groupKey = `${derivedLvl}||${item.variant_group || item.name}`;
             // Ambil harga resmi siswa; jika data di database masih 0/belum diisi, gunakan harga standar acuan BPK PENABUR
             let price = Number(item.price_student || item.price || 0);
             if (price <= 0) {
@@ -501,7 +542,6 @@ export default function MobileStorefront() {
             }
 
             if (!groupedMap.has(groupKey)) {
-              const derivedLvl = (item.level || deriveSchoolLevel(item.name) || 'ALL').toUpperCase();
               let initialImages = [];
               if (Array.isArray(item.images) && item.images.length > 0) {
                 initialImages = item.images;
@@ -653,11 +693,7 @@ export default function MobileStorefront() {
 
           const formattedList = Array.from(groupedMap.values()).map((p) => ({
             ...p,
-            variants: p.variants.sort((a, b) => {
-              const idxA = SIZE_ORDER.indexOf(a.size.toUpperCase());
-              const idxB = SIZE_ORDER.indexOf(b.size.toUpperCase());
-              return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
-            }),
+            variants: p.variants.sort((a, b) => compareUniformSizes(a.size, b.size)),
           }));
 
           if (formattedList.length > 0) {
