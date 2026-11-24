@@ -482,7 +482,23 @@ export default function MobileStorefront() {
             if (item.is_kanvas_active === false) return;
 
             const groupKey = item.variant_group || item.name;
-            const price = Number(item.price_student || item.price || 0);
+            // Ambil harga resmi siswa; jika data di database masih 0/belum diisi, gunakan harga standar acuan BPK PENABUR
+            let price = Number(item.price_student || item.price || 0);
+            if (price <= 0) {
+              const nm = (item.name || '').toLowerCase();
+              if (nm.includes('sepatu')) price = 145000;
+              else if (nm.includes('jas lab')) price = 95000;
+              else if (nm.includes('rompi') || nm.includes('kotak')) price = 95000;
+              else if (nm.includes('celana panjang') || nm.includes('kulot')) price = 110000;
+              else if (nm.includes('celana') || nm.includes('rok')) price = 88000;
+              else if (nm.includes('kemeja') || nm.includes('kaos')) price = 85000;
+              else if (nm.includes('topi')) price = 25000;
+              else if (nm.includes('dasi')) price = 20000;
+              else if (nm.includes('kaos kaki')) price = 18000;
+              else if (nm.includes('kacu') || nm.includes('baret')) price = 25000;
+              else if (nm.includes('name tag') || nm.includes('buku') || nm.includes('agenda')) price = 15000;
+              else price = 80000;
+            }
 
             if (!groupedMap.has(groupKey)) {
               const derivedLvl = (item.level || deriveSchoolLevel(item.name) || 'ALL').toUpperCase();
@@ -500,24 +516,115 @@ export default function MobileStorefront() {
               if (initialImages.length === 0 && item.image_url) {
                 initialImages = [item.image_url];
               }
+              // Helper pemetaan gambar berkualitas tinggi berdasarkan jenis barang
+              const getSmartUniformImages = (name, cat, level) => {
+                const n = name.toLowerCase();
+                if (n.includes('pramuka') || n.includes('kacu') || n.includes('siaga') || n.includes('penggalang')) {
+                  return [
+                    'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80'
+                  ];
+                }
+                if (n.includes('olahraga') || n.includes('celana or') || n.includes('sport')) {
+                  return [
+                    'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80'
+                  ];
+                }
+                if (n.includes('kotak') || n.includes('rompi') || n.includes('batik')) {
+                  return [
+                    'https://images.unsplash.com/photo-1578932750294-f5075e85f44a?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80'
+                  ];
+                }
+                if (n.includes('celana') || n.includes('rok') || n.includes('kulot')) {
+                  if (n.includes('biru')) {
+                    return [
+                      'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&auto=format&fit=crop&q=80',
+                      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80'
+                    ];
+                  }
+                  if (n.includes('abu')) {
+                    return [
+                      'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&auto=format&fit=crop&q=80',
+                      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80'
+                    ];
+                  }
+                  return [
+                    'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80'
+                  ];
+                }
+                if (n.includes('sepatu')) {
+                  return [
+                    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format&fit=crop&q=80'
+                  ];
+                }
+                if (n.includes('topi') || n.includes('dasi') || n.includes('kaos kaki') || n.includes('name tag') || n.includes('clemek') || n.includes('jas lab')) {
+                  return [
+                    'https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80'
+                  ];
+                }
+                return [
+                  'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
+                  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80'
+                ];
+              };
+
               if (initialImages.length === 0) {
-                initialImages = ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60'];
+                initialImages = getSmartUniformImages(item.name, item.category, derivedLvl);
               }
 
-              // Normalisasi kategori agar sinkron dengan chip filter Kanvas
-              let normalizedCategory = item.category || 'Nasional';
-              const rawCat = (item.category || '').toLowerCase();
-              const rawName = (item.name || '').toLowerCase();
-              if (rawCat.includes('nasional') || rawName.includes('nasional')) {
-                normalizedCategory = 'Nasional';
-              } else if (rawCat.includes('batik') || rawName.includes('batik')) {
-                normalizedCategory = 'Batik';
-              } else if (rawCat.includes('pramuka') || rawName.includes('pramuka')) {
+              // Normalisasi Kategori Cerdas SSOT Kanvas:
+              // Sinkron dengan 5 chip tab filter: 'Nasional' | 'Batik' | 'Pramuka' | 'Olahraga' | 'Aksesoris'
+              const n = (item.name || '').toLowerCase();
+              const c = (item.category || '').toLowerCase();
+              let normalizedCategory = 'Nasional';
+
+              if (
+                n.includes('pramuka') ||
+                n.includes('kacu') ||
+                n.includes('baret') ||
+                n.includes('siaga') ||
+                n.includes('penggalang') ||
+                n.includes('ambalan') ||
+                n.includes('gudep') ||
+                n.includes('laken')
+              ) {
                 normalizedCategory = 'Pramuka';
-              } else if (rawCat.includes('olahraga') || rawCat.includes('sport') || rawName.includes('olahraga')) {
+              } else if (
+                n.includes('olahraga') ||
+                n.includes('celana or') ||
+                n.includes('kaos or') ||
+                n.includes('sport')
+              ) {
                 normalizedCategory = 'Olahraga';
-              } else if (rawCat.includes('aksesoris') || rawCat.includes('atribut') || rawCat.includes('topi') || rawCat.includes('dasi') || rawCat.includes('kaos kaki')) {
+              } else if (
+                n.includes('kotak') ||
+                n.includes('batik') ||
+                n.includes('rompi')
+              ) {
+                normalizedCategory = 'Batik';
+              } else if (
+                n.includes('topi') ||
+                n.includes('dasi') ||
+                n.includes('kaos kaki') ||
+                n.includes('sepatu') ||
+                n.includes('jas lab') ||
+                n.includes('clemek') ||
+                n.includes('name tag') ||
+                n.includes('agenda') ||
+                n.includes('buku') ||
+                n.includes('kertas') ||
+                c.includes('aksesoris') ||
+                c.includes('atribut') ||
+                c.includes('buku')
+              ) {
                 normalizedCategory = 'Aksesoris';
+              } else {
+                normalizedCategory = 'Nasional';
               }
 
               groupedMap.set(groupKey, {
