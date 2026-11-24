@@ -87,13 +87,18 @@ export default function HomeLogin() {
     }
   }, [appPhase]);
 
-  // 1. Inisialisasi Sesi (Opsi 2: Smart Session)
+  // 1. Inisialisasi Sesi (Smart Session & OAuth Detection)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
+        // Cek apakah ada token OAuth Google di URL (#access_token=... atau ?code=...)
+        const hasAuthHash =
+          window.location.hash.includes('access_token=') ||
+          window.location.search.includes('code=');
         const hasSeenIntro = sessionStorage.getItem('kanvas_intro_seen');
-        if (hasSeenIntro === 'true') {
-          // Jika sudah pernah melihat intro di tab/sesi ini, langsung ke login
+
+        if (hasAuthHash || hasSeenIntro === 'true') {
+          // Jika baru kembali dari Google OAuth atau sudah pernah tonton intro di sesi ini, langsung ke login
           setAppPhase('login');
         } else {
           setAppPhase('intro');
@@ -199,49 +204,68 @@ export default function HomeLogin() {
     }
   }, [appPhase]);
 
-  // 5. Cek Google Auth Callback saat halaman login aktif
+  // 5. Cek Google Auth Callback & Pasang Event Listener (Akurat & Cepat seperti di Aksara)
   useEffect(() => {
-    const handleAuthRedirect = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const userEmail = session.user.email;
-          const { registered, profile } = await checkParentRegistered(supabase, userEmail, session.user.id);
+    let isMounted = true;
 
-          if (registered) {
-            if (profile && typeof window !== 'undefined') {
-              localStorage.setItem('kanvas_parent_session', JSON.stringify(profile));
-            }
-            router.push('/dashboard');
-          } else {
-            setUnregisteredEmail(userEmail || '');
-            setRegisterForm((prev) => ({
-              ...prev,
-              email: userEmail || '',
-              parentName: session.user.user_metadata?.full_name || prev.parentName,
-            }));
-            setShowUnregisteredModal(true);
+    const processAuthSession = async (session) => {
+      if (!session?.user || !isMounted) return;
+      try {
+        const userEmail = session.user.email;
+        const { registered, profile } = await checkParentRegistered(supabase, userEmail, session.user.id);
+
+        if (registered) {
+          if (profile && typeof window !== 'undefined') {
+            localStorage.setItem('kanvas_parent_session', JSON.stringify(profile));
           }
+          router.push('/dashboard');
+        } else {
+          setUnregisteredEmail(userEmail || '');
+          setRegisterForm((prev) => ({
+            ...prev,
+            email: userEmail || '',
+            parentName: session.user.user_metadata?.full_name || prev.parentName,
+          }));
+          setShowUnregisteredModal(true);
         }
       } catch (err) {
         console.warn('Auth redirect check:', err);
       }
     };
 
-    if (appPhase === 'login') {
-      handleAuthRedirect();
-    }
-  }, [appPhase, router]);
+    // 1. Cek sesi saat ini
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) processAuthSession(session);
+    });
+
+    // 2. Dengarkan perubahan status login (OAuth redirect callback)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        processAuthSession(session);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, [router]);
 
   const handleGoogleLogin = async () => {
     triggerHaptic(14);
     setIsLoadingGoogle(true);
     try {
+      // Bersihkan sesi lokal lama sebelum membuka popup Google agar selalu menampilkan pemilih akun
+      await supabase.auth.signOut();
       const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}${getAssetPath('/')}` : undefined;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline',
+          },
         },
       });
 
