@@ -47,7 +47,8 @@ import {
   Calendar,
   Copy,
   ExternalLink,
-  UploadCloud
+  UploadCloud,
+  RefreshCw
 } from 'lucide-react';
 
 const LETTER_SIZE_ORDER = [
@@ -417,6 +418,7 @@ export default function MobileStorefront() {
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
   const [myOrders, setMyOrders] = useState([]);
+  const [isSyncingOrders, setIsSyncingOrders] = useState(false);
   const [selectedOrderReceipt, setSelectedOrderReceipt] = useState(null);
 
   // Payment & Multi-step Checkout States
@@ -728,7 +730,129 @@ export default function MobileStorefront() {
     };
 
     fetchSupabaseProducts();
+    fetchLiveParentOrders();
   }, []);
+
+  // Sinkronisasi status riwayat pesanan langsung dari tabel Supabase parent_orders
+  const fetchLiveParentOrders = async (fallbackLocalList = null) => {
+    try {
+      setIsSyncingOrders(true);
+      let authUserId = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        authUserId = session?.user?.id || null;
+      } catch (e) {}
+
+      let localList = fallbackLocalList;
+      if (!localList && typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('kanvas_my_orders');
+          if (raw) localList = JSON.parse(raw);
+        } catch (e) {}
+      }
+      if (!Array.isArray(localList)) localList = myOrders || [];
+
+      const localIds = localList.map((o) => o.id || o.order_number).filter(Boolean);
+
+      let query = supabase
+        .from('parent_orders')
+        .select('*, items:parent_order_items(*)');
+
+      if (authUserId && localIds.length > 0) {
+        query = query.or(`parent_auth_user_id.eq.${authUserId},id.in.(${localIds.map((id) => `"${id}"`).join(',')})`);
+      } else if (authUserId) {
+        query = query.eq('parent_auth_user_id', authUserId);
+      } else if (localIds.length > 0) {
+        query = query.in('id', localIds);
+      } else {
+        setIsSyncingOrders(false);
+        return;
+      }
+
+      const { data: remoteOrders, error } = await query.order('created_at', { ascending: false });
+
+      if (!error && remoteOrders && remoteOrders.length > 0) {
+        const remoteMap = new Map(remoteOrders.map((ro) => [ro.id, ro]));
+        const merged = [];
+
+        // Masukkan semua remote orders dengan data termutakhir
+        remoteOrders.forEach((ro) => {
+          const matchedLocal = localList.find((lo) => (lo.id || lo.order_number) === ro.id);
+          merged.push({
+            ...(matchedLocal || {}),
+            ...ro,
+            items: (ro.items && ro.items.length > 0)
+              ? ro.items.map((it) => ({
+                  ...it,
+                  name: it.product_name || it.name,
+                  price: it.price_student || it.price || 0,
+                }))
+              : (matchedLocal?.items || []),
+          });
+        });
+
+        // Pertahankan pesanan lokal yang belum ada di remote
+        localList.forEach((lo) => {
+          const loId = lo.id || lo.order_number;
+          if (!remoteMap.has(loId)) {
+            merged.push(lo);
+          }
+        });
+
+        setMyOrders(merged);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kanvas_my_orders', JSON.stringify(merged));
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal sinkronisasi live parent_orders:', err);
+    } finally {
+      setIsSyncingOrders(false);
+    }
+  };
+
+  // Helper tampilan badge status pesanan di tab Pesanan Saya
+  const renderOrderStatusBadge = (status) => {
+    const s = String(status || 'submitted').toLowerCase();
+    if (s === 'completed' || s === 'selesai') {
+      return (
+        <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[10px] flex items-center gap-1">
+          <CheckCircle2 size={11} className="text-emerald-600" />
+          Pesanan Selesai
+        </span>
+      );
+    }
+    if (s === 'ready_for_pickup' || s === 'siap_diambil') {
+      return (
+        <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-[10px] flex items-center gap-1 animate-pulse">
+          <CheckCircle2 size={11} className="text-emerald-600" />
+          Siap Diambil di Sekolah
+        </span>
+      );
+    }
+    if (s === 'processing' || s === 'verified' || s === 'disiapkan') {
+      return (
+        <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[10px] flex items-center gap-1">
+          <Clock size={11} className="text-blue-600" />
+          Sedang Disiapkan
+        </span>
+      );
+    }
+    if (s === 'cancelled' || s === 'batal') {
+      return (
+        <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-bold text-[10px] flex items-center gap-1">
+          <AlertCircle size={11} className="text-rose-600" />
+          Dibatalkan
+        </span>
+      );
+    }
+    return (
+      <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px] flex items-center gap-1">
+        <Clock size={11} className="text-amber-600" />
+        Menunggu Verifikasi
+      </span>
+    );
+  };
 
   // Helper untuk switch active student
   const handleSelectStudent = (student) => {
@@ -2065,6 +2189,7 @@ export default function MobileStorefront() {
               onClick={() => {
                 setActiveTab('orders');
                 setCheckoutStep('browsing');
+                fetchLiveParentOrders();
               }}
               className="w-full py-3 bg-[#0F2C59] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-md flex items-center justify-center gap-2"
             >
@@ -2105,9 +2230,20 @@ export default function MobileStorefront() {
               <h2 className="font-black text-base text-slate-900">Riwayat Pesanan Seragam</h2>
               <p className="text-[11px] text-slate-400">Bukti resmi pengambilan seragam untuk PIC sekolah</p>
             </div>
-            <span className="text-xs text-blue-900 font-bold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-              {myOrders.length} Pesanan
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fetchLiveParentOrders()}
+                disabled={isSyncingOrders}
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1 shadow-xs"
+                title="Segarkan status pesanan dari sekolah"
+              >
+                <RefreshCw size={13} className={isSyncingOrders ? 'animate-spin text-blue-900' : ''} />
+                <span className="text-[11px] hidden sm:inline">{isSyncingOrders ? 'Menyinkronkan...' : 'Segarkan'}</span>
+              </button>
+              <span className="text-xs text-blue-900 font-bold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                {myOrders.length} Pesanan
+              </span>
+            </div>
           </div>
 
           {myOrders.length === 0 ? (
@@ -2151,10 +2287,7 @@ export default function MobileStorefront() {
                           {ord.created_at ? new Date(ord.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Hari ini'}
                         </span>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px] flex items-center gap-1">
-                        <CheckCircle2 size={11} className="text-emerald-600" />
-                        Siap Diambil di Sekolah
-                      </span>
+                      {renderOrderStatusBadge(ord.status)}
                     </div>
 
                     {/* Identitas Siswa & Sekolah */}
@@ -2198,7 +2331,7 @@ export default function MobileStorefront() {
                               </div>
                             </div>
                             <span className="text-xs font-bold text-slate-900 whitespace-nowrap">
-                              Rp{(item.price * item.quantity).toLocaleString('id-ID')}
+                              Rp{(((item.price ?? item.price_student) || 0) * (item.quantity || 1)).toLocaleString('id-ID')}
                             </span>
                           </div>
                         ))}
@@ -2226,7 +2359,15 @@ export default function MobileStorefront() {
                     <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-2">
                       <QrCode size={16} className="text-blue-900 shrink-0" />
                       <p className="text-[10px] text-blue-900 leading-tight">
-                        <strong>Untuk Pengambilan:</strong> Tunjukkan kode pesanan ini kepada Petugas / PIC Seragam di sekolah saat serah terima barang.
+                        {String(ord.status || '').toLowerCase() === 'completed' || String(ord.status || '').toLowerCase() === 'selesai' ? (
+                          <span><strong>Pesanan Selesai:</strong> Seragam telah berhasil diserahkan kepada siswa / wali murid. Simpan bukti ini untuk arsip Anda.</span>
+                        ) : String(ord.status || '').toLowerCase() === 'ready_for_pickup' || String(ord.status || '').toLowerCase() === 'siap_diambil' ? (
+                          <span className="text-emerald-950"><strong>Seragam Siap Diambil!</strong> Silakan datang ke ruang seragam / TU sekolah Anda dengan menunjukkan kode pesanan ini.</span>
+                        ) : String(ord.status || '').toLowerCase() === 'processing' || String(ord.status || '').toLowerCase() === 'verified' ? (
+                          <span className="text-blue-950"><strong>Sedang Disiapkan:</strong> Pembayaran telah diverifikasi. Petugas sekolah sedang mengemas seragam pesanan Anda.</span>
+                        ) : (
+                          <span><strong>Menunggu Verifikasi:</strong> Bukti transfer telah terkirim dan sedang diverifikasi oleh staf sekolah. Tunjukkan kode ini saat pengambilan.</span>
+                        )}
                       </p>
                     </div>
 
@@ -3233,6 +3374,7 @@ export default function MobileStorefront() {
           onClick={() => {
             setActiveTab('orders');
             setCheckoutStep('browsing');
+            fetchLiveParentOrders();
           }}
           className={`flex flex-col items-center gap-1 transition-colors ${
             activeTab === 'orders' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
