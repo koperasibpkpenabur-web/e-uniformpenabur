@@ -106,8 +106,10 @@ const sortSizes = (sizes) => {
 const DEFAULT_PRODUCTS = [
   {
     id: 'prod-sd-kemeja-pendek',
+    code: 'A-SRG-SD-001',
+    typeCode: 'SRG',
     name: 'Kemeja Putih Pendek SD',
-    category: 'Nasional',
+    category: 'Seragam',
     level: 'SD',
     description: 'Bahan TC Oxford kualitas prima, adem, jahitan kuat dengan bordir logo PENABUR resmi.',
     imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
@@ -128,8 +130,10 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: 'prod-sd-celana-merah',
+    code: 'A-SRG-SD-002',
+    typeCode: 'SRG',
     name: 'Celana Pendek Merah SD',
-    category: 'Nasional',
+    category: 'Seragam',
     level: 'SD',
     description: 'Bahan Drill premium tahan luntur, dilengkapi karet pinggang samping fleksibel.',
     imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
@@ -148,8 +152,10 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: 'prod-sd-rok-merah',
+    code: 'A-SRG-SD-003',
+    typeCode: 'SRG',
     name: 'Rok Rempel Merah SD',
-    category: 'Nasional',
+    category: 'Seragam',
     level: 'SD',
     description: 'Bahan Famatex awet dan rapi, lipitan plisket tahan cuci berulang.',
     imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
@@ -168,8 +174,10 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: 'prod-smp-kemeja-pendek',
+    code: 'A-SRG-SMP-001',
+    typeCode: 'SRG',
     name: 'Kemeja Putih Pendek SMP',
-    category: 'Nasional',
+    category: 'Seragam',
     level: 'SMP',
     description: 'Bahan TC Oxford kualitas prima dengan bordir emblem SMP BPK PENABUR resmi.',
     imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
@@ -188,8 +196,10 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: 'prod-smp-celana-biru',
+    code: 'A-SRG-SMP-002',
+    typeCode: 'SRG',
     name: 'Celana Panjang Biru SMP',
-    category: 'Nasional',
+    category: 'Seragam',
     level: 'SMP',
     description: 'Bahan Famatex biru tua rapi berstandar nasional BPK PENABUR.',
     imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
@@ -206,8 +216,10 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: 'prod-smp-rok-biru',
+    code: 'A-SRG-SMP-003',
+    typeCode: 'SRG',
     name: 'Rok Rempel Biru SMP',
-    category: 'Nasional',
+    category: 'Seragam',
     level: 'SMP',
     description: 'Bahan Famatex biru tua rapi, lipit plisket presisi dan tahan cuci berulang.',
     imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
@@ -224,8 +236,10 @@ const DEFAULT_PRODUCTS = [
   },
   {
     id: 'prod-batik-penabur',
+    code: 'A-SRG-ALL-004',
+    typeCode: 'SRG',
     name: 'Kemeja Batik Resmi PENABUR',
-    category: 'Batik',
+    category: 'Seragam',
     level: 'ALL',
     description: 'Batik motif khas BPK PENABUR, bahan katun primisima sejuk dan nyaman dipakai sepanjang hari.',
     imageUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800&auto=format&fit=crop&q=80',
@@ -242,54 +256,69 @@ const DEFAULT_PRODUCTS = [
     ]
   },
   {
-    id: 'prod-pramuka-set',
-    name: 'Setelan Seragam Pramuka',
-    category: 'Pramuka',
+    id: 'prod-kaos-kaki-penabur',
+    code: 'B-KAK-ALL-001',
+    typeCode: 'KAK',
+    name: 'Kaos Kaki Putih Logo PENABUR',
+    category: 'Kaos Kaki',
     level: 'ALL',
-    description: 'Standar Kwartir Nasional & BPK PENABUR, bahan tebal tidak mudah sobek.',
-    imageUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80',
+    description: 'Kaos kaki rajut tebal berlogo bordir PENABUR resmi, nyaman dan elastis.',
+    imageUrl: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80',
     images: [
-      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'S', price: 95000, stock: 35 },
-      { size: 'M', price: 98000, stock: 45 },
-      { size: 'L', price: 102000, stock: 50 },
-      { size: 'XL', price: 106000, stock: 25 }
-    ]
-  },
-  {
-    id: 'prod-olahraga-set',
-    name: 'Setelan Kaos & Celana Olahraga',
-    category: 'Olahraga',
-    level: 'ALL',
-    description: 'Bahan dry-fit pori mikro cepat serap keringat, celana training elastis dengan kantong samping.',
-    imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'S', price: 115000, stock: 30 },
-      { size: 'M', price: 120000, stock: 40 },
-      { size: 'L', price: 125000, stock: 45 },
-      { size: 'XL', price: 130000, stock: 20 }
-    ]
-  },
-  {
-    id: 'prod-aksesoris-dasi-topi',
-    name: 'Paket Aksesoris (Dasi + Topi + Kaos Kaki)',
-    category: 'Aksesoris',
-    level: 'ALL',
-    description: 'Dasi bordir logo PENABUR, topi berstandar resmi, dan 2 pasang kaos kaki putih PENABUR.',
-    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80'
     ],
     variants: [
-      { size: 'ALL SIZE', price: 55000, stock: 120 }
+      { size: 'S', price: 25000, stock: 150 },
+      { size: 'M', price: 27000, stock: 150 },
+      { size: 'L', price: 30000, stock: 150 }
+    ]
+  },
+  {
+    id: 'prod-topi-penabur',
+    code: 'D-TP-ALL-001',
+    typeCode: 'TP',
+    name: 'Topi Upacara Resmi PENABUR',
+    category: 'Topi',
+    level: 'ALL',
+    description: 'Topi upacara resmi dengan bordir logo PENABUR dan pengatur ukuran di belakang.',
+    imageUrl: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&auto=format&fit=crop&q=80'
+    ],
+    variants: [
+      { size: 'ALL SIZE', price: 35000, stock: 80 }
+    ]
+  },
+  {
+    id: 'prod-perlengkapan-dasi',
+    code: 'C-PLK-ALL-001',
+    typeCode: 'PLK',
+    name: 'Dasi Seragam Resmi PENABUR',
+    category: 'Perlengkapan',
+    level: 'ALL',
+    description: 'Dasi resmi berlogo PENABUR dengan perekat rapi praktis dipakai siswa.',
+    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80'
+    ],
+    variants: [
+      { size: 'STANDAR', price: 25000, stock: 100 }
+    ]
+  },
+  {
+    id: 'prod-buku-agenda-siswa',
+    code: 'E-BK-ALL-001',
+    typeCode: 'BK',
+    name: 'Buku Agenda & Panduan Siswa',
+    category: 'Buku',
+    level: 'ALL',
+    description: 'Buku agenda kegiatan harian dan panduan akademik resmi BPK PENABUR.',
+    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80'
+    ],
+    variants: [
+      { size: 'STANDAR', price: 45000, stock: 90 }
     ]
   }
 ];
@@ -617,62 +646,53 @@ export default function MobileStorefront() {
                 initialImages = getSmartUniformImages(item.name, item.category, derivedLvl);
               }
 
-              // Normalisasi Kategori Cerdas SSOT Kanvas:
-              // Sinkron dengan 5 chip tab filter: 'Nasional' | 'Batik' | 'Pramuka' | 'Olahraga' | 'Aksesoris'
+              // Pemetaan Tipe & Kategori berdasarkan Standar Kode BPK PENABUR:
+              // SRG -> Seragam
+              // KAK -> Kaos Kaki
+              // PLK -> Perlengkapan
+              // TP  -> Topi
+              // BK  -> Buku
+              const codeUpper = String(item.code || '').toUpperCase();
               const n = (item.name || '').toLowerCase();
-              const c = (item.category || '').toLowerCase();
-              let normalizedCategory = 'Nasional';
+              let normalizedCategory = 'Seragam';
+              let typeCode = 'SRG';
 
-              if (
-                n.includes('pramuka') ||
-                n.includes('kacu') ||
-                n.includes('baret') ||
-                n.includes('siaga') ||
-                n.includes('penggalang') ||
-                n.includes('ambalan') ||
-                n.includes('gudep') ||
-                n.includes('laken')
-              ) {
-                normalizedCategory = 'Pramuka';
+              if (codeUpper.includes('KAK') || n.includes('kaos kaki')) {
+                normalizedCategory = 'Kaos Kaki';
+                typeCode = 'KAK';
+              } else if (codeUpper.includes('TP') || n.includes('topi')) {
+                normalizedCategory = 'Topi';
+                typeCode = 'TP';
+              } else if (codeUpper.includes('BK') || n.includes('buku') || n.includes('agenda') || n.includes('kertas')) {
+                normalizedCategory = 'Buku';
+                typeCode = 'BK';
               } else if (
-                n.includes('olahraga') ||
-                n.includes('celana or') ||
-                n.includes('kaos or') ||
-                n.includes('sport')
-              ) {
-                normalizedCategory = 'Olahraga';
-              } else if (
-                n.includes('kotak') ||
-                n.includes('batik') ||
-                n.includes('rompi')
-              ) {
-                normalizedCategory = 'Batik';
-              } else if (
-                n.includes('topi') ||
+                codeUpper.includes('PLK') ||
                 n.includes('dasi') ||
-                n.includes('kaos kaki') ||
-                n.includes('sepatu') ||
-                n.includes('jas lab') ||
+                n.includes('kacu') ||
+                n.includes('ring') ||
+                n.includes('baret') ||
+                n.includes('laken') ||
                 n.includes('clemek') ||
                 n.includes('name tag') ||
-                n.includes('agenda') ||
-                n.includes('buku') ||
-                n.includes('kertas') ||
-                c.includes('aksesoris') ||
-                c.includes('atribut') ||
-                c.includes('buku')
+                n.includes('ambalan') ||
+                n.includes('gudep')
               ) {
-                normalizedCategory = 'Aksesoris';
+                normalizedCategory = 'Perlengkapan';
+                typeCode = 'PLK';
               } else {
-                normalizedCategory = 'Nasional';
+                normalizedCategory = 'Seragam';
+                typeCode = 'SRG';
               }
 
               groupedMap.set(groupKey, {
                 id: item.id,
+                code: item.code,
+                typeCode: typeCode,
                 name: item.name,
                 category: normalizedCategory,
                 level: derivedLvl,
-                description: item.description || 'Seragam berstandar resmi Koperasi BPK PENABUR.',
+                description: item.description || `Produk resmi ${normalizedCategory} (${typeCode}) berstandar Koperasi BPK PENABUR.`,
                 imageUrl: initialImages[0],
                 images: initialImages,
                 variants: [],
@@ -893,11 +913,15 @@ export default function MobileStorefront() {
     const activeLevel = activeCatalogLevel || activeStudent?.level || selectedLevel || 'SMP';
     return products.filter((p) => {
       const matchLevel = isProductMatchingLevel(p, activeLevel);
-      const matchCat = selectedCategory === 'Semua' || p.category.toLowerCase() === selectedCategory.toLowerCase();
+      const matchCat =
+        selectedCategory === 'Semua' ||
+        p.category?.toLowerCase() === selectedCategory.toLowerCase() ||
+        (p.typeCode && p.typeCode.toUpperCase() === selectedCategory.toUpperCase());
       const matchSearch =
         !searchQuery.trim() ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase());
+        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.typeCode && p.typeCode.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchLevel && matchCat && matchSearch;
     });
   }, [products, activeCatalogLevel, activeStudent?.level, selectedLevel, selectedCategory, searchQuery]);
@@ -1321,19 +1345,37 @@ export default function MobileStorefront() {
             </div>
           )}
 
-          {/* Category Chips */}
+          {/* Category Chips: 5 Tipe Sesuai Standar Kode BPK PENABUR */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
-            {['Semua', 'Nasional', 'Batik', 'Pramuka', 'Olahraga', 'Aksesoris'].map((cat) => (
+            {[
+              { id: 'Semua', label: 'Semua', code: null },
+              { id: 'Seragam', label: 'Seragam', code: 'SRG' },
+              { id: 'Kaos Kaki', label: 'Kaos Kaki', code: 'KAK' },
+              { id: 'Perlengkapan', label: 'Perlengkapan', code: 'PLK' },
+              { id: 'Topi', label: 'Topi', code: 'TP' },
+              { id: 'Buku', label: 'Buku', code: 'BK' },
+            ].map((cat) => (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
-                  selectedCategory === cat
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 ${
+                  selectedCategory === cat.id
                     ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {cat}
+                <span>{cat.label}</span>
+                {cat.code && (
+                  <span
+                    className={`text-[10px] font-mono px-1 rounded ${
+                      selectedCategory === cat.id
+                        ? 'bg-slate-950/15 text-slate-950 font-black'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {cat.code}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -1374,8 +1416,13 @@ export default function MobileStorefront() {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
                         />
-                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider">
-                          {product.category}
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1">
+                          <span>{product.category}</span>
+                          {product.typeCode && (
+                            <span className="text-amber-400 font-mono text-[9px] bg-slate-800/90 px-1 rounded">
+                              {product.typeCode}
+                            </span>
+                          )}
                         </span>
                         {productImages.length > 1 && (
                           <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-sm text-[10px] font-bold text-amber-300 flex items-center gap-1 shadow-sm">
@@ -2618,9 +2665,19 @@ export default function MobileStorefront() {
               {/* Header: Title & Close Button */}
               <div className="flex items-start justify-between pb-3 border-b border-slate-100">
                 <div className="pr-4">
-                  <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-xs font-bold uppercase tracking-wider inline-block mb-1">
-                    {activeProductModal.category} • Jenjang {activeProductModal.level}
-                  </span>
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                      <span>{activeProductModal.category}</span>
+                      {activeProductModal.typeCode && (
+                        <span className="bg-blue-200/80 text-blue-950 px-1 rounded text-[10px] font-mono">
+                          {activeProductModal.typeCode}
+                        </span>
+                      )}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider">
+                      Jenjang {activeProductModal.level}
+                    </span>
+                  </div>
                   <h3 className="font-extrabold text-base sm:text-lg text-slate-900 leading-snug">
                     {activeProductModal.name}
                   </h3>
