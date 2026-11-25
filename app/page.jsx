@@ -24,7 +24,12 @@ import {
   AlertTriangle, 
   X, 
   UserCheck, 
-  Check 
+  Check,
+  Volume2,
+  VolumeX,
+  Smartphone,
+  Download,
+  Share2
 } from 'lucide-react';
 
 export default function HomeLogin() {
@@ -68,6 +73,43 @@ export default function HomeLogin() {
     email: '',
   });
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // Audio Intro Video State & Controls
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [showAudioToggle, setShowAudioToggle] = useState(false);
+
+  // Fitur Pasang Aplikasi (PWA Direct Install)
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [isAppStandalone, setIsAppStandalone] = useState(false);
+
+  // Cek PWA install prompt & URL parameter ?install=true
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      setIsAppStandalone(standalone);
+
+      const ua = window.navigator.userAgent.toLowerCase();
+      const apple = /iphone|ipad|ipod/.test(ua);
+      setIsIOSDevice(apple);
+
+      const handleBeforeInstall = (e) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+      };
+      window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('install') === 'true' && !standalone) {
+        setShowInstallModal(true);
+      }
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      };
+    }
+  }, []);
 
   // Onboarding Guided Tour (Opsi A Spotlight)
   // null | 'welcome' | 'ask' | 'spotlight_register' | 'spotlight_form'
@@ -139,22 +181,64 @@ export default function HomeLogin() {
     }, 300);
   };
 
-  const handleSkipIntro = () => {
-    if (videoRef.current) {
-      videoRef.current.pause();
+  // Auto-play video dengan audio jika diizinkan browser
+  useEffect(() => {
+    if (appPhase === 'intro' && videoRef.current) {
+      videoRef.current.muted = false;
+      const promise = videoRef.current.play();
+      if (promise !== undefined) {
+        promise
+          .then(() => {
+            setIsAudioMuted(false);
+            setShowAudioToggle(true);
+          })
+          .catch(() => {
+            // Jika browser membatasi autoplay audio, fallback ke muted
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play().catch(() => {});
+              setIsAudioMuted(true);
+              setShowAudioToggle(true);
+            }
+          });
+      }
     }
-    handleIntroComplete();
+  }, [appPhase]);
+
+  const toggleIntroAudio = (e) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      const nextMuted = !videoRef.current.muted;
+      videoRef.current.muted = nextMuted;
+      setIsAudioMuted(nextMuted);
+    }
   };
 
-  // Video fallback timer: durasi video 10.03 detik, diberi batas 11.5 detik jika autoplay terhenti di beberapa HP
+  // Video fallback timer: durasi video 5 detik, diberi batas 5.8 detik jika autoplay terhenti di beberapa HP
   useEffect(() => {
     if (appPhase === 'intro') {
       const timer = setTimeout(() => {
         handleIntroComplete();
-      }, 11500);
+      }, 5800);
       return () => clearTimeout(timer);
     }
   }, [appPhase]);
+
+  // PWA Trigger Install
+  const handleTriggerInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallModal(false);
+      }
+      setDeferredPrompt(null);
+    } else if (isIOSDevice) {
+      alert('Petunjuk iPhone/iPad:\n1. Ketuk tombol Bagikan (Share / kotak panah ke atas) di Safari.\n2. Gulir ke bawah dan pilih "Tambah ke Layar Utama" (Add to Home Screen).');
+    } else {
+      alert('Untuk memasang aplikasi Kanvas di HP:\nKetuk menu browser (titik 3 di pojok kanan atas) lalu pilih "Instal Aplikasi" atau "Tambahkan ke Layar Utama".');
+    }
+  };
 
   // 4. Loading Progression (~1.8 detik) lalu masuk ke Login
   useEffect(() => {
@@ -331,30 +415,40 @@ export default function HomeLogin() {
   return (
     <div className="relative w-full min-h-screen flex flex-col justify-between overflow-x-hidden font-sans">
       {/* =========================================================================
-          FASE 1: VIDEO INTRO 10 DETIK (Video Intro Kanvas.mp4)
+          FASE 1: VIDEO INTRO 5 DETIK (Video Intro Kanvas.mp4)
           HANYA RENDER FASE INI AGAR TIDAK ADA KEDIPAN/KEBOCORAN HALAMAN LOGIN!
          ========================================================================= */}
       {appPhase === 'intro' && (
         <div
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white select-none transition-opacity duration-300 ease-out ${
+          onClick={() => {
+            // Ketukan layar otomatis membuka audio jika sedang muted oleh browser
+            if (videoRef.current && isAudioMuted) {
+              videoRef.current.muted = false;
+              setIsAudioMuted(false);
+            }
+          }}
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white select-none transition-opacity duration-300 ease-out cursor-pointer ${
             fadeTransition ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          {/* Tombol Lewati */}
-          <button
-            onClick={handleSkipIntro}
-            className="absolute top-5 right-5 text-xs text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1 active:scale-95 z-50 shadow-md"
-          >
-            Lewati <ArrowRight size={13} />
-          </button>
+          {/* Tombol Audio Speaker (Lewati dihapus sesuai instruksi branding Kanvas) */}
+          {showAudioToggle && (
+            <button
+              onClick={toggleIntroAudio}
+              className="absolute top-5 right-5 text-xs text-slate-200 hover:text-white bg-black/60 hover:bg-black/80 px-3.5 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1.5 active:scale-95 z-50 border border-white/20 shadow-lg"
+              title={isAudioMuted ? 'Ketuk untuk menyalakan audio' : 'Audio menyala'}
+            >
+              {isAudioMuted ? <VolumeX size={14} className="text-amber-400" /> : <Volume2 size={14} className="text-emerald-400" />}
+              <span className="font-semibold">{isAudioMuted ? 'Nyalakan Audio' : 'Audio Aktif'}</span>
+            </button>
+          )}
 
-          {/* Pemutar Video 10 Detik - Proper Full Screen Mobile */}
+          {/* Pemutar Video 5 Detik - Proper Full Screen Mobile */}
           <div className="w-full h-full max-w-lg md:max-h-[92vh] flex items-center justify-center relative overflow-hidden">
             <video
               ref={videoRef}
               src={getAssetPath('/video-intro-kanvas.mp4')}
               autoPlay
-              muted
               playsInline
               preload="auto"
               onEnded={handleIntroComplete}
@@ -432,14 +526,27 @@ export default function HomeLogin() {
         <div className="flex-1 flex flex-col bg-[#F8FAFC] px-5 sm:px-7 pt-6 pb-6 animate-fade-in justify-between min-h-screen w-full max-w-lg mx-auto relative">
           {/* Header Branding */}
           <div className="flex flex-col items-center text-center relative pt-2">
-            {/* Tombol Panduan Cepat (Bisa dibuka kapan saja) */}
-            <button
-              type="button"
-              onClick={() => setGuideState('welcome')}
-              className="absolute right-0 top-0 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full border border-amber-200 flex items-center gap-1 transition-all shadow-2xs"
-            >
-              <span>💡 Panduan</span>
-            </button>
+            {/* Tombol Install App & Panduan Cepat */}
+            <div className="absolute right-0 top-0 flex items-center gap-2">
+              {!isAppStandalone && (
+                <button
+                  type="button"
+                  onClick={() => setShowInstallModal(true)}
+                  className="text-xs font-bold text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full border border-blue-200 flex items-center gap-1.5 transition-all shadow-2xs"
+                  title="Pasang Aplikasi Kanvas di HP"
+                >
+                  <Download size={13} className="text-blue-700" />
+                  <span>Install App</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setGuideState('welcome')}
+                className="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full border border-amber-200 flex items-center gap-1 transition-all shadow-2xs"
+              >
+                <span>💡 Panduan</span>
+              </button>
+            </div>
 
             <div className="relative mb-3 group mt-2">
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-amber-500/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
@@ -920,6 +1027,62 @@ export default function HomeLogin() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Pasang Aplikasi (Install PWA) */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-center relative animate-scale-up">
+            <button
+              onClick={() => setShowInstallModal(false)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-xs">
+              <Smartphone size={32} className="text-blue-900" />
+            </div>
+
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Pasang Aplikasi Kanvas PENABUR
+            </h3>
+            <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+              Akses pemesanan seragam lebih cepat langsung dari Layar Utama HP Anda tanpa perlu membuka browser berulang kali.
+            </p>
+
+            {isIOSDevice ? (
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left text-xs text-slate-700 space-y-2 mb-4">
+                <span className="font-bold block text-blue-900">Petunjuk Pemasangan di iPhone/iPad:</span>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-blue-900">1.</span>
+                  <span>Ketuk ikon <b>Bagikan (Share / kotak panah ke atas)</b> di bilah bawah Safari.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-blue-900">2.</span>
+                  <span>Gulir ke bawah lalu pilih <b>"Tambah ke Layar Utama" (Add to Home Screen)</b>.</span>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleTriggerInstall}
+                className="w-full py-3.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 mb-3 active:scale-95"
+              >
+                <Download size={16} />
+                <span>Pasang Aplikasi Sekarang</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowInstallModal(false)}
+              className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-700"
+            >
+              Lanjutkan di Browser Saja
+            </button>
           </div>
         </div>
       )}

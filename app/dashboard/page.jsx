@@ -32,6 +32,7 @@ import {
   Building,
   Phone,
   ArrowRight,
+  ArrowDown,
   Check,
   X,
   Truck,
@@ -394,6 +395,9 @@ export default function MobileStorefront() {
     setActiveProductModal(product);
     setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
     setModalImageIndex(0);
+    if (interactiveGuideStep === 'a_catalog') {
+      setInteractiveGuideStep('a_modal');
+    }
   };
 
   // Profile Edit & Student Add/Edit Modals
@@ -427,22 +431,36 @@ export default function MobileStorefront() {
   const [proofDriveUrl, setProofDriveUrl] = useState('');
   const [showFinalConfirmModal, setShowFinalConfirmModal] = useState(false);
 
-  // Onboarding Guided Tour (Opsi A Spotlight)
-  // null | 3 | 4 | 5 | 6
-  const [dashboardGuideStep, setDashboardGuideStep] = useState(null);
+  // Onboarding Guided Tour Kontekstual Interaktif (7 Langkah Terbimbing)
+  // null | 'a_catalog' | 'a_modal' | 'b_cart_arrow' | 'c_cart' | 'd_summary' | 'e_payment' | 'f_proof' | 'g_success'
+  const [interactiveGuideStep, setInteractiveGuideStep] = useState(null);
 
   useEffect(() => {
     try {
+      const guideCompleted = localStorage.getItem('kanvas_interactive_guide_done');
       const activeGuide = localStorage.getItem('kanvas_guide_active');
-      if (activeGuide === 'true') {
-        const step = parseInt(localStorage.getItem('kanvas_guide_step') || '3', 10);
+      if (activeGuide === 'true' && guideCompleted !== 'true') {
         const timer = setTimeout(() => {
-          setDashboardGuideStep(step);
-        }, 500);
+          setInteractiveGuideStep('a_catalog');
+        }, 700);
         return () => clearTimeout(timer);
       }
     } catch (e) {}
   }, []);
+
+  const dismissInteractiveGuide = () => {
+    setInteractiveGuideStep(null);
+    try {
+      localStorage.setItem('kanvas_interactive_guide_done', 'true');
+      localStorage.setItem('kanvas_guide_active', 'false');
+    } catch (e) {}
+  };
+
+  const startInteractiveGuide = () => {
+    setActiveTab('store');
+    setCheckoutStep('browsing');
+    setInteractiveGuideStep('a_catalog');
+  };
 
   // Active student object helper
   const activeStudent = useMemo(() => {
@@ -874,20 +892,56 @@ export default function MobileStorefront() {
     }
   };
 
-  // Helper sync session ke localStorage
-  const syncSessionToStorage = (updatedStudents, updatedParent) => {
+  // Helper sync session ke localStorage & Supabase parent_accounts
+  const syncSessionToStorage = async (updatedStudents, updatedParent, updatedActiveId) => {
     if (typeof window === 'undefined') return;
+    const finalStudents = updatedStudents || students;
+    const finalParentName = updatedParent ? updatedParent.fullName : parentProfile.fullName;
+    const finalPhone = updatedParent ? updatedParent.phone : parentProfile.phone;
+    const finalEmail = updatedParent ? updatedParent.email : parentProfile.email;
+    const finalActiveId = updatedActiveId || activeStudentId;
+
+    const payload = {
+      fullName: finalParentName,
+      phone: finalPhone,
+      email: finalEmail,
+      activeStudentId: finalActiveId,
+      students: finalStudents,
+      isRegistered: true,
+    };
+
+    // 1. Simpan ke LocalStorage HP
     try {
-      const payload = {
-        fullName: updatedParent ? updatedParent.fullName : parentProfile.fullName,
-        phone: updatedParent ? updatedParent.phone : parentProfile.phone,
-        email: updatedParent ? updatedParent.email : parentProfile.email,
-        activeStudentId: activeStudentId,
-        students: updatedStudents || students,
-        isRegistered: true,
-      };
       localStorage.setItem('kanvas_parent_session', JSON.stringify(payload));
     } catch (e) {}
+
+    // 2. Simpan permanen ke Supabase tabel parent_accounts
+    if (supabase && finalEmail) {
+      try {
+        let authUserId = null;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          authUserId = session?.user?.id || null;
+        } catch (e) {}
+
+        await supabase.from('parent_accounts').upsert(
+          [
+            {
+              auth_user_id: authUserId,
+              email: finalEmail.trim().toLowerCase(),
+              phone: finalPhone,
+              full_name: finalParentName,
+              students: finalStudents,
+              active_student_id: finalActiveId,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+          { onConflict: 'email' }
+        );
+      } catch (err) {
+        console.warn('Gagal sinkronisasi parent_accounts Supabase:', err);
+      }
+    }
   };
 
   // Handler Buka Modal Tambah Siswa
@@ -923,7 +977,7 @@ export default function MobileStorefront() {
   };
 
   // Simpan Tambah / Edit Siswa
-  const handleSaveStudentModal = (e) => {
+  const handleSaveStudentModal = async (e) => {
     e.preventDefault();
     if (!studentForm.name.trim()) {
       alert('Mohon isi nama lengkap siswa.');
@@ -956,7 +1010,7 @@ export default function MobileStorefront() {
       setSelectedSchool(newStudentObj.school);
       setSelectedLevel(newStudentObj.level);
       setActiveCatalogLevel(newStudentObj.level);
-      syncSessionToStorage(updated, null);
+      await syncSessionToStorage(updated, null, newId);
       alert(`Siswa ${newStudentObj.name} berhasil ditambahkan!`);
     } else {
       // Edit
@@ -981,7 +1035,7 @@ export default function MobileStorefront() {
         setSelectedLevel(currentLevel);
         setActiveCatalogLevel(currentLevel);
       }
-      syncSessionToStorage(updated, null);
+      await syncSessionToStorage(updated, null, activeStudentId);
       alert('Data siswa berhasil diperbarui!');
     }
 
@@ -989,7 +1043,7 @@ export default function MobileStorefront() {
   };
 
   // Simpan Edit Profil Wali Murid
-  const handleSaveParentProfile = (e) => {
+  const handleSaveParentProfile = async (e) => {
     e.preventDefault();
     if (!parentEditForm.fullName.trim() || !parentEditForm.phone.trim()) {
       alert('Mohon lengkapi nama dan nomor WhatsApp.');
@@ -1002,7 +1056,7 @@ export default function MobileStorefront() {
       phone: parentEditForm.phone.trim(),
     };
     setParentProfile(updated);
-    syncSessionToStorage(null, updated);
+    await syncSessionToStorage(null, updated, activeStudentId);
     setShowEditParentModal(false);
     alert('Profil wali murid berhasil diperbarui!');
   };
@@ -1099,6 +1153,9 @@ export default function MobileStorefront() {
     setAddedNotice(`+1 ${product.name} (${variant.size}) untuk ${targetStudentName}`);
     setTimeout(() => setAddedNotice(null), 2500);
     setActiveProductModal(null);
+    if (interactiveGuideStep === 'a_modal') {
+      setInteractiveGuideStep('b_cart_arrow');
+    }
   };
 
   const updateCartQuantity = (cartItemId, delta) => {
@@ -1121,6 +1178,9 @@ export default function MobileStorefront() {
     e.preventDefault();
     if (cart.length === 0) return;
     setCheckoutStep('payment_instruction');
+    if (interactiveGuideStep === 'd_summary') {
+      setInteractiveGuideStep('e_payment');
+    }
   };
 
   // Selesaikan Pesanan Resmi setelah konfirmasi pembayaran & upload bukti bayar
@@ -1213,16 +1273,20 @@ export default function MobileStorefront() {
     setIsSubmittingOrder(false);
     setShowFinalConfirmModal(false);
     setCheckoutStep('success');
+    if (interactiveGuideStep === 'f_proof') {
+      setInteractiveGuideStep('g_success');
+    }
   };
 
   const handleSignOut = async () => {
-    if (confirm('Keluar dari sesi pemesanan?')) {
+    if (confirm('Apakah Anda yakin ingin logout dari akun?')) {
       try {
         await supabase.auth.signOut();
       } catch (e) {}
       if (typeof window !== 'undefined') {
         localStorage.removeItem('kanvas_parent_session');
-        sessionStorage.removeItem('kanvas_intro_seen');
+        // Tandai bahwa intro sudah pernah ditonton agar langsung masuk ke halaman Login!
+        sessionStorage.setItem('kanvas_intro_seen', 'true');
       }
       router.push('/');
     }
@@ -1253,7 +1317,7 @@ export default function MobileStorefront() {
 
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setDashboardGuideStep(3)}
+              onClick={startInteractiveGuide}
               className="px-2.5 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-xs font-bold flex items-center gap-1 transition-all border border-amber-400/30"
               title="Buka Panduan Pemesanan"
             >
@@ -1269,7 +1333,12 @@ export default function MobileStorefront() {
             </button>
 
             <button
-              onClick={() => setCheckoutStep('cart')}
+              onClick={() => {
+                setCheckoutStep('cart');
+                if (interactiveGuideStep === 'b_cart_arrow') {
+                  setInteractiveGuideStep('c_cart');
+                }
+              }}
               className="relative p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 transition-all font-bold"
             >
               <ShoppingBag size={18} />
@@ -1690,7 +1759,12 @@ export default function MobileStorefront() {
               </div>
 
               <button
-                onClick={() => setCheckoutStep('checkout')}
+                onClick={() => {
+                  setCheckoutStep('checkout');
+                  if (interactiveGuideStep === 'c_cart') {
+                    setInteractiveGuideStep('d_summary');
+                  }
+                }}
                 className="w-full py-3.5 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-2xl font-bold text-xs shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
               >
                 <span>Lanjut ke Pengambilan & Pembayaran</span>
@@ -1982,7 +2056,12 @@ export default function MobileStorefront() {
           <div className="pt-2">
             <button
               type="button"
-              onClick={() => setCheckoutStep('upload_proof')}
+              onClick={() => {
+                setCheckoutStep('upload_proof');
+                if (interactiveGuideStep === 'e_payment') {
+                  setInteractiveGuideStep('f_proof');
+                }
+              }}
               className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
             >
               <CheckCircle2 size={16} />
@@ -2521,7 +2600,7 @@ export default function MobileStorefront() {
             className="w-full py-3 bg-red-50 text-red-700 border border-red-200 rounded-2xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2"
           >
             <LogOut size={16} />
-            <span>Keluar dari Aplikasi</span>
+            <span>Logout</span>
           </button>
         </div>
       )}
@@ -3221,136 +3300,219 @@ export default function MobileStorefront() {
       )}
 
       {/* =========================================================================
-          PANDUAN PEMESANAN: SPOTLIGHT & TOOLTIP FOKUS (OPSI A)
+          PANDUAN PEMESANAN INTERAKTIF TERBIMBING (7 LANGKAH DENGAN INDIKATOR PANAH)
          ========================================================================= */}
-      {dashboardGuideStep && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-2xs flex flex-col justify-end p-4 pb-20 animate-fade-in pointer-events-auto">
-          {/* Card Panduan Sesuai Langkah */}
-          <div className="bg-white rounded-3xl p-5 shadow-2xl border-2 border-amber-400 w-full max-w-md sm:max-w-lg mx-auto animate-scale-up space-y-3 relative">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <span className="text-xs font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles size={14} className="text-amber-500" />
-                {dashboardGuideStep === 3 && 'Langkah 2: Katalog & Multi-Jenjang'}
-                {dashboardGuideStep === 4 && 'Langkah 3: Pilih Ukuran & Keranjang'}
-                {dashboardGuideStep === 5 && 'Langkah 4: Pembayaran & Transfer'}
-                {dashboardGuideStep === 6 && 'Langkah 5: Pengambilan di Sekolah'}
-              </span>
-              <button
-                onClick={() => {
-                  setDashboardGuideStep(null);
-                  try {
-                    localStorage.setItem('kanvas_guide_active', 'false');
-                  } catch (e) {}
-                }}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600"
-              >
-                Lewati
-              </button>
+      {interactiveGuideStep && (
+        <>
+          {/* Langkah 1: Di Katalog (Pilih Seragam) */}
+          {interactiveGuideStep === 'a_catalog' && activeTab === 'store' && checkoutStep === 'browsing' && !activeProductModal && (
+            <div className="fixed bottom-20 left-4 right-4 z-50 flex justify-center pointer-events-auto">
+              <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 max-w-sm w-full space-y-2 relative animate-scale-up">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-amber-400" />
+                    Panduan 1/7: Pilih Seragam
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Lewati
+                  </button>
+                </div>
+                <p className="text-xs font-semibold leading-relaxed text-slate-100">
+                  Silahkan pilih seragam yang dibutuhkan.
+                </p>
+                <div className="flex items-center gap-1.5 text-[10.5px] text-amber-300 font-medium">
+                  <ArrowDown size={14} className="animate-bounce shrink-0" />
+                  <span>Ketuk salah satu produk seragam di bawah untuk memilih ukuran</span>
+                </div>
+              </div>
             </div>
+          )}
 
-            {dashboardGuideStep === 3 && (
-              <div className="space-y-2">
-                <h4 className="font-bold text-sm text-slate-900">
-                  Katalog Khusus Sesuai Jenjang
-                </h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Katalog seragam otomatis disaring untuk jenjang sekolah anak Anda. Bagi <b>Siswa Dalam</b> (naik jenjang), Anda dapat beralih tab jenjang di atas untuk memesan seragam jenjang lanjutan dalam satu keranjang belanja.
-                </p>
-                <div className="pt-2 flex gap-2">
-                  <button
-                    onClick={() => setDashboardGuideStep(4)}
-                    className="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <span>Lanjut ke Panduan Produk</span>
-                    <ArrowRight size={14} />
+          {/* Langkah 2: Di Modal Produk (Pilih Ukuran & Tambah ke Keranjang) */}
+          {interactiveGuideStep === 'a_modal' && activeProductModal && (
+            <div className="fixed top-16 left-4 right-4 z-[60] flex justify-center pointer-events-auto animate-fade-in">
+              <div className="bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-2xl border-2 border-amber-400 max-w-sm w-full space-y-1.5 relative">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-amber-400" />
+                    Panduan 2/7: Ukuran & Keranjang
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Lewati
                   </button>
                 </div>
-              </div>
-            )}
-
-            {dashboardGuideStep === 4 && (
-              <div className="space-y-2">
-                <h4 className="font-bold text-sm text-slate-900">
-                  Panduan Ukuran Resmi & Keranjang
-                </h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Klik kartu seragam untuk melihat panduan ukuran resmi (Size Chart S, M, L, XL), pilih ukuran dan jumlah yang diinginkan, lalu klik <b>+ Tambah ke Keranjang</b>.
+                <p className="text-xs font-semibold text-slate-100">
+                  Silahkan pilih ukuran dan klik tambah ke keranjang.
                 </p>
-                <div className="pt-2 flex gap-2">
-                  <button
-                    onClick={() => setDashboardGuideStep(3)}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
-                  >
-                    Kembali
-                  </button>
-                  <button
-                    onClick={() => setDashboardGuideStep(5)}
-                    className="flex-[2] py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <span>Lanjut ke Pembayaran</span>
-                    <ArrowRight size={14} />
+              </div>
+            </div>
+          )}
+
+          {/* Langkah 3: Setelah Tutup Modal (Panah ke Keranjang Kanan Atas) */}
+          {interactiveGuideStep === 'b_cart_arrow' && (
+            <div className="fixed top-14 right-3 z-50 max-w-xs w-72 pointer-events-auto animate-scale-up">
+              <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 space-y-2 relative">
+                {/* Arrow Penunjuk ke Atas Kanan */}
+                <div className="absolute -top-3 right-5 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-amber-400 animate-bounce"></div>
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <ShoppingBag size={13} className="text-amber-400" />
+                    Panduan 3/7: Buka Keranjang
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Lewati
                   </button>
                 </div>
-              </div>
-            )}
-
-            {dashboardGuideStep === 5 && (
-              <div className="space-y-2">
-                <h4 className="font-bold text-sm text-slate-900">
-                  Transfer Bank & Upload Bukti Bayar
-                </h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Buka keranjang dan klik Checkout. Salin nomor rekening resmi sekolah tujuan. Saat transfer bank, <b>wajib cantumkan keterangan transfer:</b> <span className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-bold font-mono">nama_depan_siswa nama_depan_orangtua</span>, lalu upload bukti ke link Google Drive sekolah yang disediakan.
+                <p className="text-xs font-semibold leading-relaxed text-slate-100">
+                  Jika ingin tambah produk, silahkan dilanjutkan. Setelah selesai, anda dapat klik keranjang di pojok kanan atas.
                 </p>
-                <div className="pt-2 flex gap-2">
-                  <button
-                    onClick={() => setDashboardGuideStep(4)}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
-                  >
-                    Kembali
-                  </button>
-                  <button
-                    onClick={() => setDashboardGuideStep(6)}
-                    className="flex-[2] py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <span>Lanjut ke Pengambilan</span>
-                    <ArrowRight size={14} />
+                <button
+                  onClick={() => {
+                    setCheckoutStep('cart');
+                    setInteractiveGuideStep('c_cart');
+                  }}
+                  className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95"
+                >
+                  <span>Buka Keranjang Sekarang</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Langkah 4: Di Keranjang Belanja (Pengambilan & Pembayaran) */}
+          {interactiveGuideStep === 'c_cart' && checkoutStep === 'cart' && (
+            <div className="fixed bottom-20 left-4 right-4 z-50 flex justify-center pointer-events-auto animate-fade-in">
+              <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 max-w-sm w-full space-y-2 relative">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-amber-400" />
+                    Panduan 4/7: Checkout
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Lewati
                   </button>
                 </div>
-              </div>
-            )}
-
-            {dashboardGuideStep === 6 && (
-              <div className="space-y-2">
-                <h4 className="font-bold text-sm text-slate-900">
-                  Kode Pesanan & Pengambilan di Sekolah
-                </h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Setelah pesanan selesai, struk digital dan <b>Kode Pesanan</b> unik akan tersimpan di menu <b>Pesanan Saya</b>. Tunjukkan kode ini kepada petugas/PIC Seragam di sekolah saat jadwal pengambilan seragam fisik.
+                <p className="text-xs font-semibold leading-relaxed text-slate-100">
+                  Silahkan klik Pengambilan & Pembayaran.
                 </p>
-                <div className="pt-2 flex gap-2">
-                  <button
-                    onClick={() => setDashboardGuideStep(5)}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
-                  >
-                    Kembali
+                <div className="flex items-center gap-1.5 text-[10.5px] text-amber-300 font-medium">
+                  <ArrowDown size={14} className="animate-bounce shrink-0" />
+                  <span>Klik tombol biru "Lanjut ke Pengambilan & Pembayaran" di bawah</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Langkah 5: Di Ringkasan & Pengambilan (Lanjut ke Info Rekening) */}
+          {interactiveGuideStep === 'd_summary' && checkoutStep === 'checkout' && (
+            <div className="fixed bottom-20 left-4 right-4 z-50 flex justify-center pointer-events-auto animate-fade-in">
+              <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 max-w-sm w-full space-y-2 relative">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-amber-400" />
+                    Panduan 5/7: Info Rekening
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Lewati
                   </button>
+                </div>
+                <p className="text-xs font-semibold leading-relaxed text-slate-100">
+                  Silahkan klik Lanjut ke Info Rekening Sekolah.
+                </p>
+                <div className="flex items-center gap-1.5 text-[10.5px] text-amber-300 font-medium">
+                  <ArrowDown size={14} className="animate-bounce shrink-0" />
+                  <span>Klik tombol biru di bawah formulir untuk melihat rekening sekolah</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Langkah 6: Di Info Rekening Sekolah (Salin Rekening & Nominal) */}
+          {interactiveGuideStep === 'e_payment' && checkoutStep === 'payment_instruction' && (
+            <div className="fixed bottom-20 left-4 right-4 z-50 flex justify-center pointer-events-auto animate-fade-in">
+              <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 max-w-sm w-full space-y-2 relative">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-amber-400" />
+                    Panduan 6/7: Salin Data Transfer
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Lewati
+                  </button>
+                </div>
+                <p className="text-xs font-semibold leading-relaxed text-slate-100">
+                  Klik Salin No. Rekening dan Total Nominal, tambahkan juga catatan keterangan pembayaran.
+                </p>
+                <div className="pt-1 flex gap-2">
                   <button
                     onClick={() => {
-                      setDashboardGuideStep(null);
-                      try {
-                        localStorage.setItem('kanvas_guide_active', 'false');
-                      } catch (e) {}
+                      setCheckoutStep('upload_proof');
+                      setInteractiveGuideStep('f_proof');
                     }}
-                    className="flex-[2] py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md"
+                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-md active:scale-95"
                   >
-                    <span>Selesai & Mulai Belanja 🎉</span>
+                    <span>Lanjut ke Upload Bukti &rarr;</span>
                   </button>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+
+          {/* Langkah 7: Di Halaman Upload Bukti Bayar */}
+          {interactiveGuideStep === 'f_proof' && checkoutStep === 'upload_proof' && (
+            <div className="fixed top-16 left-4 right-4 z-50 flex justify-center pointer-events-auto animate-fade-in">
+              <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 max-w-md w-full space-y-2 relative">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-amber-400" />
+                    Panduan 7/7: Upload Bukti & Konfirmasi
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Lewati
+                  </button>
+                </div>
+                <p className="text-xs font-semibold leading-relaxed text-slate-100">
+                  Silahkan upload bukti pembayaran, kemudian ceklis 'Saya telah menyelesaikan pembayaran transfer...' dan klik Selesaikan Pemesanan & Notifikasi Sekolah, dan klik 'Ya, Selesaikan Pemesanan'.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Langkah 8: Di Halaman Sukses (Panah ke Tab Pesanan Saya) */}
+          {interactiveGuideStep === 'g_success' && checkoutStep === 'success' && (
+            <div className="fixed bottom-20 left-4 right-4 z-50 flex justify-center pointer-events-auto animate-scale-up">
+              <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-emerald-400 max-w-sm w-full space-y-2 relative">
+                {/* Arrow Penunjuk ke Bawah (Tab Pesanan Saya) */}
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-emerald-400 animate-bounce"></div>
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700">
+                  <span className="text-[11px] font-black text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <CheckCircle2 size={13} className="text-emerald-400" />
+                    Pemesanan Berhasil Diselesaikan!
+                  </span>
+                  <button onClick={dismissInteractiveGuide} className="text-[11px] text-slate-400 hover:text-white font-bold">
+                    Tutup
+                  </button>
+                </div>
+                <p className="text-xs font-semibold leading-relaxed text-slate-100">
+                  Anda dapat cek prosesnya di tab 'Pesanan Saya'.
+                </p>
+                <button
+                  onClick={() => {
+                    dismissInteractiveGuide();
+                    setActiveTab('orders');
+                    setCheckoutStep('browsing');
+                    fetchLiveParentOrders();
+                  }}
+                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-md active:scale-95"
+                >
+                  <span>Buka Pesanan Saya Sekarang</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* =========================================================================
