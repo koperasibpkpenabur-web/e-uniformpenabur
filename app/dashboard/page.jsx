@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { getAssetPath, triggerHaptic } from '../../lib/utils';
@@ -49,6 +49,7 @@ import {
   Copy,
   ExternalLink,
   UploadCloud,
+  Camera,
   RefreshCw
 } from 'lucide-react';
 
@@ -431,6 +432,16 @@ export default function MobileStorefront() {
   const [proofDriveUrl, setProofDriveUrl] = useState('');
   const [showFinalConfirmModal, setShowFinalConfirmModal] = useState(false);
 
+  // Metode B: Direct Upload via Google Apps Script (GAS) seperti di Aksara
+  const [isUploadingGas, setIsUploadingGas] = useState(false);
+  const [uploadGasError, setUploadGasError] = useState(null);
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [previewImage, setPreviewImage] = useState(null);
+  const directFileInputRef = useRef(null);
+
+  // Kode unik urutan transaksi harian per sekolah (misal: 1, 2, 3...)
+  const [schoolDailyCode, setSchoolDailyCode] = useState(1);
+
   // Onboarding Guided Tour Kontekstual Interaktif (7 Langkah Terbimbing)
   // null | 'a_catalog' | 'a_modal' | 'b_cart_arrow' | 'c_cart' | 'd_summary' | 'e_payment' | 'f_proof' | 'g_success'
   const [interactiveGuideStep, setInteractiveGuideStep] = useState(null);
@@ -489,6 +500,100 @@ export default function MobileStorefront() {
       setCopiedField(fieldName);
       setTimeout(() => setCopiedField(null), 2500);
     }
+  };
+
+  // 1A. Hitung Kode Unik Urutan Transaksi Harian Khusus Sekolah Ini
+  useEffect(() => {
+    let isSubscribed = true;
+    const fetchSchoolDailyCode = async () => {
+      try {
+        if (!currentSchoolName) return;
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const { count, error } = await supabase
+          .from('parent_orders')
+          .select('*', { count: 'exact', head: true })
+          .ilike('school_name', `%${cleanSchoolName(currentSchoolName)}%`)
+          .gte('created_at', todayStart.toISOString());
+
+        if (!error && isSubscribed) {
+          const nextSeq = (count || 0) + 1;
+          setSchoolDailyCode(nextSeq);
+        }
+      } catch (e) {
+        // Fallback tetap 1
+      }
+    };
+    fetchSchoolDailyCode();
+    return () => {
+      isSubscribed = false;
+    };
+  }, [currentSchoolName]);
+
+  // 1B. Direct Upload Bukti Transfer ke Google Drive via Google Apps Script (Metode B Aksara)
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaKhmlXfZ19f_z6C57wKv0HZRI1NzdCoGpVC2WLudaQKfVtKLOW3T8ccMTpvg1NeU/exec';
+
+  const handleDirectUploadGas = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Ukuran file foto maksimal 5 MB.');
+      return;
+    }
+
+    setPreviewImage(URL.createObjectURL(file));
+    setUploadedFileName(file.name);
+    setIsUploadingGas(true);
+    setUploadGasError(null);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64Data = (reader.result || '').toString().split(',')[1];
+        if (!base64Data) {
+          throw new Error('Gagal membaca data file foto.');
+        }
+
+        const gdriveLink = schoolPayment.gdriveUploadLink || '';
+        let targetFolderId = '';
+        const match = gdriveLink.match(/[-\w]{25,}/);
+        if (match) targetFolderId = match[0];
+
+        const cleanSchool = cleanSchoolName(currentSchoolName);
+        const customFileName = `Bukti_${cleanSchool}_${transferNote.replace(/\s+/g, '_')}_${Date.now()}.jpg`;
+
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            fileName: customFileName,
+            mimeType: file.type || 'image/jpeg',
+            base64Data: base64Data,
+            folderId: targetFolderId,
+            schoolName: cleanSchool,
+            academicYear: '2026/2027',
+            type: 'parent_payment_receipt',
+          }),
+        });
+
+        const result = await response.json();
+        if (result.status === 'success' || result.fileUrl) {
+          const finalUrl = result.fileUrl || result.url || '';
+          setProofDriveUrl(finalUrl);
+          setIsProofConfirmed(true);
+        } else {
+          throw new Error(result.error || result.message || 'Gagal mengunggah file ke Google Drive.');
+        }
+      } catch (err) {
+        console.warn('Direct upload error:', err);
+        setUploadGasError(err.message || 'Gagal mengupload file ke Google Drive sekolah.');
+      } finally {
+        setIsUploadingGas(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Load School List & User Session
@@ -554,19 +659,38 @@ export default function MobileStorefront() {
 
     initData();
 
-    // 3. Fetch live products from Supabase
+    // 3. Fetch live products from Supabase (Mendukung Multi-Page > 1.000 Produk agar Semua Jenjang Lengkap)
     const fetchSupabaseProducts = async () => {
       setIsLoadingProducts(true);
       try {
-        const { data } = await supabase
-          .from('products')
-          .select('*')
-          .order('name');
+        let allProducts = [];
+        let from = 0;
+        const batchSize = 1000;
+        let hasMore = true;
 
-        if (data && data.length > 0) {
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('name')
+            .range(from, from + batchSize - 1);
+
+          if (error || !data || data.length === 0) {
+            hasMore = false;
+          } else {
+            allProducts = allProducts.concat(data);
+            if (data.length < batchSize) {
+              hasMore = false;
+            } else {
+              from += batchSize;
+            }
+          }
+        }
+
+        if (allProducts.length > 0) {
           const groupedMap = new Map();
 
-          data.forEach((item) => {
+          allProducts.forEach((item) => {
             if (item.is_kanvas_active === false) return;
 
             const derivedLvl = (item.level || deriveSchoolLevel(item.name) || 'ALL').toUpperCase();
@@ -1113,7 +1237,8 @@ export default function MobileStorefront() {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
 
-  const uniqueVerificationCode = 142;
+  // Kode unik harian per sekolah (urutan 1, 2, 3...)
+  const uniqueVerificationCode = schoolDailyCode;
   const shippingFee = deliveryMethod === 'rumah' ? 18000 : 0;
   const finalTotalAmount = cartSubtotal + (cart.length > 0 ? uniqueVerificationCode + shippingFee : 0);
 
@@ -1538,37 +1663,26 @@ export default function MobileStorefront() {
             </div>
           )}
 
-          {/* Category Chips: 5 Tipe Sesuai Standar Kode BPK PENABUR */}
+          {/* Category Chips: Hanya Nama Kategori Bersih */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
             {[
-              { id: 'Semua', label: 'Semua', code: null },
-              { id: 'Seragam', label: 'Seragam', code: 'SRG' },
-              { id: 'Kaos Kaki', label: 'Kaos Kaki', code: 'KAK' },
-              { id: 'Perlengkapan', label: 'Perlengkapan', code: 'PLK' },
-              { id: 'Topi', label: 'Topi', code: 'TP' },
-              { id: 'Buku', label: 'Buku', code: 'BK' },
+              { id: 'Semua', label: 'Semua' },
+              { id: 'Seragam', label: 'Seragam' },
+              { id: 'Kaos Kaki', label: 'Kaos Kaki' },
+              { id: 'Perlengkapan', label: 'Perlengkapan' },
+              { id: 'Topi', label: 'Topi' },
+              { id: 'Buku', label: 'Buku' },
             ].map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all flex items-center ${
                   selectedCategory === cat.id
                     ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 <span>{cat.label}</span>
-                {cat.code && (
-                  <span
-                    className={`text-[10px] font-mono px-1 rounded ${
-                      selectedCategory === cat.id
-                        ? 'bg-slate-950/15 text-slate-950 font-black'
-                        : 'bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    {cat.code}
-                  </span>
-                )}
               </button>
             ))}
           </div>
@@ -1747,8 +1861,8 @@ export default function MobileStorefront() {
                   <span className="font-semibold">Rp{cartSubtotal.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>Kode Verifikasi Unik</span>
-                  <span className="font-bold text-amber-600">+{uniqueVerificationCode}</span>
+                  <span>Kode Unik Transfer (No. Urut Sekolah)</span>
+                  <span className="font-bold text-amber-600">+{String(uniqueVerificationCode).padStart(3, '0')}</span>
                 </div>
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-sm">
                   <span className="font-black text-slate-900">Total Pembayaran</span>
@@ -2106,42 +2220,108 @@ export default function MobileStorefront() {
             </div>
           </div>
 
-          {/* TAUTAN GOOGLE DRIVE AKUN SEKOLAH */}
-          <div className="bg-white rounded-3xl p-5 border-2 border-blue-200 shadow-sm space-y-3 text-center">
+          {/* UPLOAD LANGSUNG KE GOOGLE DRIVE SEKOLAH (METODE B AKSARA) */}
+          <div className="bg-white rounded-3xl p-5 border-2 border-blue-200 shadow-sm space-y-3.5 text-center">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center shadow-xs">
-              <UploadCloud size={24} />
+              <Camera size={24} />
             </div>
             <div>
               <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">
-                Google Drive Akun Sekolah
+                Upload Foto Bukti Transfer
               </h3>
               <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
-                Silakan unggah foto / tangkapan layar struk transfer Anda ke folder Google Drive resmi {currentSchoolName}.
+                Foto struk ATM atau screenshot m-banking Anda. Sistem akan mengunggahnya langsung ke Google Drive {currentSchoolName}.
               </p>
             </div>
 
-            <a
-              href={schoolPayment.gdriveUploadLink || 'https://drive.google.com'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3 bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white rounded-xl text-xs font-bold hover:brightness-110 flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
-            >
-              <ExternalLink size={15} className="text-amber-400" />
-              <span>Buka Google Drive {currentSchoolName}</span>
-            </a>
+            <input
+              ref={directFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleDirectUploadGas}
+            />
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left text-[11px] text-slate-600 space-y-1">
-              <span className="font-bold text-slate-800 block text-[11px]">📋 Panduan Mengunggah File:</span>
-              <p>1. Klik tombol biru di atas untuk membuka folder Drive sekolah.</p>
-              <p>2. Unggah file struk / screenshot m-banking Anda.</p>
-              <p>3. Beri nama file: <strong className="text-blue-900 font-mono">{transferNote} - Bukti Transfer</strong></p>
+            {previewImage && (
+              <div className="relative mx-auto w-36 h-36 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-md">
+                <img src={previewImage} alt="Bukti Transfer" className="w-full h-full object-cover" />
+                {proofDriveUrl && (
+                  <div className="absolute bottom-0 inset-x-0 bg-emerald-600/90 text-white text-[10px] font-bold py-1 flex items-center justify-center gap-1">
+                    <Check size={12} /> Terupload ke Drive
+                  </div>
+                )}
+              </div>
+            )}
+
+            {proofDriveUrl ? (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-950 text-xs space-y-1.5">
+                <div className="flex items-center justify-center gap-1.5 font-bold text-emerald-800">
+                  <CheckCircle2 size={16} />
+                  <span>Bukti Transfer Berhasil Diunggah!</span>
+                </div>
+                <p className="text-[10.5px] text-emerald-700">
+                  File tersimpan aman di Google Drive {currentSchoolName}.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => directFileInputRef.current?.click()}
+                  className="mt-1 text-[11px] font-bold text-blue-800 underline hover:text-blue-950"
+                >
+                  Ganti Foto Bukti Lain
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={isUploadingGas}
+                onClick={() => directFileInputRef.current?.click()}
+                className={`w-full py-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] ${
+                  isUploadingGas
+                    ? 'bg-slate-300 text-slate-600 cursor-wait'
+                    : 'bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white hover:brightness-110 shadow-blue-900/20'
+                }`}
+              >
+                {isUploadingGas ? (
+                  <>
+                    <RefreshCw size={15} className="animate-spin text-amber-400" />
+                    <span>Sedang Mengunggah ke Google Drive...</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera size={16} className="text-amber-400" />
+                    <span>Ambil Foto / Pilih dari Galeri HP</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {uploadGasError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-[11px] font-medium text-left">
+                ⚠️ {uploadGasError}
+                <br />
+                <span className="text-[10px] text-rose-600">Anda dapat menggunakan tautan manual di bawah ini jika koneksi sedang terkendala.</span>
+              </div>
+            )}
+
+            {/* Alternatif Buka Google Drive Manual jika diperlukan */}
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <span className="text-slate-400">Atau buka folder manual:</span>
+              <a
+                href={schoolPayment.gdriveUploadLink || 'https://drive.google.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-800 hover:text-blue-950 font-bold flex items-center gap-1"
+              >
+                <span>Google Drive {currentSchoolName}</span>
+                <ExternalLink size={12} />
+              </a>
             </div>
           </div>
 
-          {/* OPSIONAL: INPUT LINK SHARE DRIVE */}
+          {/* Tautan File Google Drive jika diupload manual */}
           <div>
             <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              Tautan File Google Drive (Opsional)
+              Tautan File Google Drive (Otomatis Terisi setelah Upload)
             </label>
             <input
               type="url"
