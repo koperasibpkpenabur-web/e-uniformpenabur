@@ -105,226 +105,8 @@ const sortSizes = (sizes) => {
   return [...sizes].sort(compareUniformSizes);
 };
 
-// Fallback Katalog Seragam Resmi BPK PENABUR
-const DEFAULT_PRODUCTS = [
-  {
-    id: 'prod-sd-kemeja-pendek',
-    code: 'A-SRG-SD-001',
-    typeCode: 'SRG',
-    name: 'Kemeja Putih Pendek SD',
-    category: 'Seragam',
-    level: 'SD',
-    description: 'Bahan TC Oxford kualitas prima, adem, jahitan kuat dengan bordir logo PENABUR resmi.',
-    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'SS', price: 78000, stock: 45 },
-      { size: 'S', price: 80000, stock: 60 },
-      { size: 'M', price: 82000, stock: 75 },
-      { size: 'L', price: 85000, stock: 80 },
-      { size: 'XL', price: 88000, stock: 50 },
-      { size: '3L', price: 92000, stock: 25 },
-      { size: '4L', price: 96000, stock: 15 }
-    ]
-  },
-  {
-    id: 'prod-sd-celana-merah',
-    code: 'A-SRG-SD-002',
-    typeCode: 'SRG',
-    name: 'Celana Pendek Merah SD',
-    category: 'Seragam',
-    level: 'SD',
-    description: 'Bahan Drill premium tahan luntur, dilengkapi karet pinggang samping fleksibel.',
-    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'SS', price: 85000, stock: 35 },
-      { size: 'S', price: 88000, stock: 50 },
-      { size: 'M', price: 90000, stock: 65 },
-      { size: 'L', price: 93000, stock: 70 },
-      { size: 'XL', price: 96000, stock: 40 },
-      { size: '3L', price: 102000, stock: 20 }
-    ]
-  },
-  {
-    id: 'prod-sd-rok-merah',
-    code: 'A-SRG-SD-003',
-    typeCode: 'SRG',
-    name: 'Rok Rempel Merah SD',
-    category: 'Seragam',
-    level: 'SD',
-    description: 'Bahan Famatex awet dan rapi, lipitan plisket tahan cuci berulang.',
-    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'SS', price: 90000, stock: 30 },
-      { size: 'S', price: 92000, stock: 45 },
-      { size: 'M', price: 95000, stock: 60 },
-      { size: 'L', price: 98000, stock: 65 },
-      { size: 'XL', price: 102000, stock: 35 },
-      { size: '3L', price: 108000, stock: 15 }
-    ]
-  },
-  {
-    id: 'prod-smp-kemeja-pendek',
-    code: 'A-SRG-SMP-001',
-    typeCode: 'SRG',
-    name: 'Kemeja Putih Pendek SMP',
-    category: 'Seragam',
-    level: 'SMP',
-    description: 'Bahan TC Oxford kualitas prima dengan bordir emblem SMP BPK PENABUR resmi.',
-    imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'S', price: 86000, stock: 50 },
-      { size: 'M', price: 90000, stock: 60 },
-      { size: 'L', price: 94000, stock: 70 },
-      { size: 'XL', price: 98000, stock: 40 },
-      { size: '3L', price: 105000, stock: 25 }
-    ]
-  },
-  {
-    id: 'prod-smp-celana-biru',
-    code: 'A-SRG-SMP-002',
-    typeCode: 'SRG',
-    name: 'Celana Panjang Biru SMP',
-    category: 'Seragam',
-    level: 'SMP',
-    description: 'Bahan Famatex biru tua rapi berstandar nasional BPK PENABUR.',
-    imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'S', price: 110000, stock: 40 },
-      { size: 'M', price: 115000, stock: 55 },
-      { size: 'L', price: 120000, stock: 60 },
-      { size: 'XL', price: 126000, stock: 30 }
-    ]
-  },
-  {
-    id: 'prod-smp-rok-biru',
-    code: 'A-SRG-SMP-003',
-    typeCode: 'SRG',
-    name: 'Rok Rempel Biru SMP',
-    category: 'Seragam',
-    level: 'SMP',
-    description: 'Bahan Famatex biru tua rapi, lipit plisket presisi dan tahan cuci berulang.',
-    imageUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'S', price: 110000, stock: 35 },
-      { size: 'M', price: 115000, stock: 50 },
-      { size: 'L', border: 'border-slate-200', price: 120000, stock: 55 },
-      { size: 'XL', price: 126000, stock: 30 }
-    ]
-  },
-  {
-    id: 'prod-batik-penabur',
-    code: 'A-SRG-ALL-004',
-    typeCode: 'SRG',
-    name: 'Kemeja Batik Resmi PENABUR',
-    category: 'Seragam',
-    level: 'ALL',
-    description: 'Batik motif khas BPK PENABUR, bahan katun primisima sejuk dan nyaman dipakai sepanjang hari.',
-    imageUrl: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'S', price: 98000, stock: 40 },
-      { size: 'M', price: 102000, stock: 55 },
-      { size: 'L', price: 105000, stock: 60 },
-      { size: 'XL', price: 109000, stock: 30 },
-      { size: '3L', price: 115000, stock: 20 }
-    ]
-  },
-  {
-    id: 'prod-kaos-kaki-penabur',
-    code: 'B-KAK-ALL-001',
-    typeCode: 'KAK',
-    name: 'Kaos Kaki Putih Logo PENABUR',
-    category: 'Kaos Kaki',
-    level: 'ALL',
-    description: 'Kaos kaki rajut tebal berlogo bordir PENABUR resmi, nyaman dan elastis.',
-    imageUrl: 'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'S', price: 25000, stock: 150 },
-      { size: 'M', price: 27000, stock: 150 },
-      { size: 'L', price: 30000, stock: 150 }
-    ]
-  },
-  {
-    id: 'prod-topi-penabur',
-    code: 'D-TP-ALL-001',
-    typeCode: 'TP',
-    name: 'Topi Upacara Resmi PENABUR',
-    category: 'Topi',
-    level: 'ALL',
-    description: 'Topi upacara resmi dengan bordir logo PENABUR dan pengatur ukuran di belakang.',
-    imageUrl: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'ALL SIZE', price: 35000, stock: 80 }
-    ]
-  },
-  {
-    id: 'prod-perlengkapan-dasi',
-    code: 'C-PLK-ALL-001',
-    typeCode: 'PLK',
-    name: 'Dasi Seragam Resmi PENABUR',
-    category: 'Perlengkapan',
-    level: 'ALL',
-    description: 'Dasi resmi berlogo PENABUR dengan perekat rapi praktis dipakai siswa.',
-    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'STANDAR', price: 25000, stock: 100 }
-    ]
-  },
-  {
-    id: 'prod-buku-agenda-siswa',
-    code: 'E-BK-ALL-001',
-    typeCode: 'BK',
-    name: 'Buku Agenda & Panduan Siswa',
-    category: 'Buku',
-    level: 'ALL',
-    description: 'Buku agenda kegiatan harian dan panduan akademik resmi BPK PENABUR.',
-    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80'
-    ],
-    variants: [
-      { size: 'STANDAR', price: 45000, stock: 90 }
-    ]
-  }
-];
+// Fallback Katalog Seragam Resmi BPK PENABUR (Dikosongkan agar bersih dari foto sampel eksternal)
+const DEFAULT_PRODUCTS = [];
 
 // Helper to extract product images array (supports multi-angle slide preview)
 const getProductImages = (product) => {
@@ -346,7 +128,7 @@ const getProductImages = (product) => {
     }
   }
   const fallback = product.imageUrl || product.image_url;
-  return fallback ? [fallback] : ['https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=60'];
+  return fallback ? [fallback] : [getAssetPath('/kanvas-logo-fix.png')];
 };
 
 export default function MobileStorefront() {
@@ -659,44 +441,36 @@ export default function MobileStorefront() {
 
     initData();
 
-    // 3. Fetch live products from Supabase (Mendukung Multi-Page > 1.000 Produk agar Semua Jenjang Lengkap)
+    fetchLiveParentOrders();
+  }, []);
+
+  // 3. Fetch live products dari Supabase (Server-Query Terarah Sesuai Jenjang Siswa Aktif)
+  useEffect(() => {
+    let isSubscribed = true;
     const fetchSupabaseProducts = async () => {
       setIsLoadingProducts(true);
       try {
-        let allProducts = [];
-        let from = 0;
-        const batchSize = 1000;
-        let hasMore = true;
+        const targetLvl = (activeStudent?.level || selectedLevel || 'SD').toUpperCase();
+        const isInternal = activeStudent?.studentType === 'dalam';
+        const nextLvl = isInternal ? getNextSchoolLevel(targetLvl) : null;
+        const targetLevels = isInternal && nextLvl
+          ? [targetLvl, nextLvl.toUpperCase(), 'ALL', 'SEMUA']
+          : [targetLvl, 'ALL', 'SEMUA'];
 
-        while (hasMore) {
-          const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('name')
-            .range(from, from + batchSize - 1);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .in('level', targetLevels)
+          .order('name');
 
-          if (error || !data || data.length === 0) {
-            hasMore = false;
-          } else {
-            allProducts = allProducts.concat(data);
-            if (data.length < batchSize) {
-              hasMore = false;
-            } else {
-              from += batchSize;
-            }
-          }
-        }
-
-        if (allProducts.length > 0) {
+        if (!error && data && data.length > 0 && isSubscribed) {
           const groupedMap = new Map();
 
-          allProducts.forEach((item) => {
+          data.forEach((item) => {
             if (item.is_kanvas_active === false) return;
 
             const derivedLvl = (item.level || deriveSchoolLevel(item.name) || 'ALL').toUpperCase();
-            // groupKey menyertakan jenjang (level) agar barang dengan nama sama antar-jenjang (Kemeja Putih, Rompi, Sepatu) tidak tertimpa
             const groupKey = `${derivedLvl}||${item.variant_group || item.name}`;
-            // Ambil harga resmi siswa; jika data di database masih 0/belum diisi, gunakan harga standar acuan BPK PENABUR
             let price = Number(item.price_student || item.price || 0);
             if (price <= 0) {
               const nm = (item.name || '').toLowerCase();
@@ -729,73 +503,13 @@ export default function MobileStorefront() {
               if (initialImages.length === 0 && item.image_url) {
                 initialImages = [item.image_url];
               }
-              // Helper pemetaan gambar berkualitas tinggi berdasarkan jenis barang
-              const getSmartUniformImages = (name, cat, level) => {
-                const n = name.toLowerCase();
-                if (n.includes('pramuka') || n.includes('kacu') || n.includes('siaga') || n.includes('penggalang')) {
-                  return [
-                    'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80',
-                    'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80'
-                  ];
-                }
-                if (n.includes('olahraga') || n.includes('celana or') || n.includes('sport')) {
-                  return [
-                    'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&auto=format&fit=crop&q=80',
-                    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80'
-                  ];
-                }
-                if (n.includes('kotak') || n.includes('rompi') || n.includes('batik')) {
-                  return [
-                    'https://images.unsplash.com/photo-1578932750294-f5075e85f44a?w=800&auto=format&fit=crop&q=80',
-                    'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80'
-                  ];
-                }
-                if (n.includes('celana') || n.includes('rok') || n.includes('kulot')) {
-                  if (n.includes('biru')) {
-                    return [
-                      'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&auto=format&fit=crop&q=80',
-                      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80'
-                    ];
-                  }
-                  if (n.includes('abu')) {
-                    return [
-                      'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&auto=format&fit=crop&q=80',
-                      'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80'
-                    ];
-                  }
-                  return [
-                    'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&auto=format&fit=crop&q=80',
-                    'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop&q=80'
-                  ];
-                }
-                if (n.includes('sepatu')) {
-                  return [
-                    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80',
-                    'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format&fit=crop&q=80'
-                  ];
-                }
-                if (n.includes('topi') || n.includes('dasi') || n.includes('kaos kaki') || n.includes('name tag') || n.includes('clemek') || n.includes('jas lab')) {
-                  return [
-                    'https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?w=800&auto=format&fit=crop&q=80',
-                    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80'
-                  ];
-                }
-                return [
-                  'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
-                  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&auto=format&fit=crop&q=80'
-                ];
-              };
 
+              // Placeholder Resmi Kanvas PENABUR (Hapus total foto acak Unsplash internet)
               if (initialImages.length === 0) {
-                initialImages = getSmartUniformImages(item.name, item.category, derivedLvl);
+                initialImages = [getAssetPath('/kanvas-logo-fix.png')];
               }
 
               // Pemetaan Tipe & Kategori berdasarkan Standar Kode BPK PENABUR:
-              // SRG -> Seragam
-              // KAK -> Kaos Kaki
-              // PLK -> Perlengkapan
-              // TP  -> Topi
-              // BK  -> Buku
               const codeUpper = String(item.code || '').toUpperCase();
               const n = (item.name || '').toLowerCase();
               let normalizedCategory = 'Seragam';
@@ -836,7 +550,7 @@ export default function MobileStorefront() {
                 name: item.name,
                 category: normalizedCategory,
                 level: derivedLvl,
-                description: item.description || `Produk resmi ${normalizedCategory} (${typeCode}) berstandar Koperasi BPK PENABUR.`,
+                description: item.description || `Produk resmi ${normalizedCategory} berstandar Koperasi BPK PENABUR.`,
                 imageUrl: initialImages[0],
                 images: initialImages,
                 variants: [],
@@ -860,20 +574,22 @@ export default function MobileStorefront() {
             variants: p.variants.sort((a, b) => compareUniformSizes(a.size, b.size)),
           }));
 
-          if (formattedList.length > 0) {
+          if (formattedList.length > 0 && isSubscribed) {
             setProducts(formattedList);
           }
         }
       } catch (err) {
-        console.warn('Menggunakan katalog seragam bawaan:', err);
+        console.warn('Gagal memuat katalog seragam:', err);
       } finally {
-        setIsLoadingProducts(false);
+        if (isSubscribed) setIsLoadingProducts(false);
       }
     };
 
     fetchSupabaseProducts();
-    fetchLiveParentOrders();
-  }, []);
+    return () => {
+      isSubscribed = false;
+    };
+  }, [activeStudent?.level, activeStudent?.studentType, activeStudentId, selectedLevel]);
 
   // Sinkronisasi status riwayat pesanan langsung dari tabel Supabase parent_orders
   const fetchLiveParentOrders = async (fallbackLocalList = null) => {
@@ -1034,12 +750,24 @@ export default function MobileStorefront() {
       isRegistered: true,
     };
 
-    // 1. Simpan ke LocalStorage HP
+    // 1. Simpan ke LocalStorage HP (kanvas_parent_session dan kanvas_registered_parents)
     try {
       localStorage.setItem('kanvas_parent_session', JSON.stringify(payload));
+      const storedParents = localStorage.getItem('kanvas_registered_parents');
+      let parentList = storedParents ? JSON.parse(storedParents) : [];
+      const cleanEmail = (finalEmail || '').trim().toLowerCase();
+      const pIdx = parentList.findIndex(
+        (p) => p.email && cleanEmail && p.email.toLowerCase() === cleanEmail
+      );
+      if (pIdx >= 0) {
+        parentList[pIdx] = payload;
+      } else {
+        parentList.push(payload);
+      }
+      localStorage.setItem('kanvas_registered_parents', JSON.stringify(parentList));
     } catch (e) {}
 
-    // 2. Simpan permanen ke Supabase tabel parent_accounts
+    // 2. Simpan permanen ke Supabase tabel parent_accounts (Dual check update/insert agar tidak butuh unique constraint)
     if (supabase && finalEmail) {
       try {
         let authUserId = null;
@@ -1048,20 +776,33 @@ export default function MobileStorefront() {
           authUserId = session?.user?.id || null;
         } catch (e) {}
 
-        await supabase.from('parent_accounts').upsert(
-          [
-            {
-              auth_user_id: authUserId,
-              email: finalEmail.trim().toLowerCase(),
-              phone: finalPhone,
-              full_name: finalParentName,
-              students: finalStudents,
-              active_student_id: finalActiveId,
-              updated_at: new Date().toISOString(),
-            },
-          ],
-          { onConflict: 'email' }
-        );
+        const cleanEmail = finalEmail.trim().toLowerCase();
+        const { data: existingRows } = await supabase
+          .from('parent_accounts')
+          .select('id')
+          .ilike('email', cleanEmail)
+          .limit(1);
+
+        const accountRecord = {
+          auth_user_id: authUserId,
+          email: cleanEmail,
+          phone: finalPhone,
+          full_name: finalParentName,
+          students: finalStudents,
+          active_student_id: finalActiveId,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (existingRows && existingRows.length > 0) {
+          await supabase
+            .from('parent_accounts')
+            .update(accountRecord)
+            .eq('id', existingRows[0].id);
+        } else {
+          await supabase
+            .from('parent_accounts')
+            .insert([accountRecord]);
+        }
       } catch (err) {
         console.warn('Gagal sinkronisasi parent_accounts Supabase:', err);
       }
@@ -1698,7 +1439,13 @@ export default function MobileStorefront() {
               </span>
             </div>
 
-            {filteredProducts.length === 0 ? (
+            {isLoadingProducts ? (
+              <div className="bg-white rounded-3xl p-8 text-center border border-slate-100 my-4 shadow-sm animate-pulse">
+                <div className="w-8 h-8 mx-auto border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+                <h3 className="font-bold text-sm text-slate-800">Memuat Katalog Seragam...</h3>
+                <p className="text-xs text-slate-400 mt-1">Mengambil data jenjang siswa langsung dari sistem Kanvas</p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="bg-white rounded-3xl p-8 text-center border border-slate-100 my-4 shadow-sm">
                 <ShoppingBag size={36} className="mx-auto text-slate-300 mb-2" />
                 <h3 className="font-bold text-sm text-slate-700">Seragam Tidak Ditemukan</h3>
@@ -1711,6 +1458,7 @@ export default function MobileStorefront() {
                 {filteredProducts.map((product) => {
                   const lowestPrice = Math.min(...product.variants.map((v) => v.price));
                   const productImages = getProductImages(product);
+                  const isLogoPlaceholder = !product.imageUrl || product.imageUrl.includes('kanvas-logo');
                   return (
                     <div
                       key={product.id}
@@ -1721,7 +1469,11 @@ export default function MobileStorefront() {
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
+                          className={`w-full h-full ${isLogoPlaceholder ? 'object-contain p-2' : 'object-cover'} group-hover:scale-105 transition-transform duration-300 rounded-lg`}
+                          onError={(e) => {
+                            e.currentTarget.src = getAssetPath('/kanvas-logo-fix.png');
+                            e.currentTarget.className = 'w-full h-full object-contain p-2 transition-transform duration-300 rounded-lg';
+                          }}
                         />
                         <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1">
                           <span>{product.category}</span>
@@ -1814,7 +1566,11 @@ export default function MobileStorefront() {
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="w-14 h-14 rounded-xl object-cover bg-slate-50 shrink-0 border border-slate-100"
+                      className={`w-14 h-14 rounded-xl ${(!item.imageUrl || item.imageUrl.includes('kanvas-logo')) ? 'object-contain p-1.5' : 'object-cover'} bg-slate-50 shrink-0 border border-slate-100`}
+                      onError={(e) => {
+                        e.currentTarget.src = getAssetPath('/kanvas-logo-fix.png');
+                        e.currentTarget.className = 'w-14 h-14 rounded-xl object-contain p-1.5 bg-slate-50 shrink-0 border border-slate-100';
+                      }}
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-xs text-slate-900 truncate">{item.name}</h4>
@@ -3110,7 +2866,11 @@ export default function MobileStorefront() {
                   <img
                     src={activeImageUrl}
                     alt={`${activeProductModal.name} - Foto ${modalImageIndex + 1}`}
-                    className="w-full h-full object-cover transition-all duration-300 select-none"
+                    className={`w-full h-full ${(!activeImageUrl || activeImageUrl.includes('kanvas-logo')) ? 'object-contain p-6' : 'object-cover'} transition-all duration-300 select-none`}
+                    onError={(e) => {
+                      e.currentTarget.src = getAssetPath('/kanvas-logo-fix.png');
+                      e.currentTarget.className = 'w-full h-full object-contain p-6 transition-all duration-300 select-none';
+                    }}
                   />
 
                   {/* Badges on top */}
@@ -3183,7 +2943,11 @@ export default function MobileStorefront() {
                         <img
                           src={img}
                           alt={`Thumbnail ${idx + 1}`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full ${(!img || img.includes('kanvas-logo')) ? 'object-contain p-1.5' : 'object-cover'}`}
+                          onError={(e) => {
+                            e.currentTarget.src = getAssetPath('/kanvas-logo-fix.png');
+                            e.currentTarget.className = 'w-full h-full object-contain p-1.5';
+                          }}
                         />
                       </button>
                     ))}
