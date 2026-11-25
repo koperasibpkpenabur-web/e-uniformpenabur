@@ -526,34 +526,38 @@ export default function HomeLogin() {
         <div className="flex-1 flex flex-col bg-[#F8FAFC] px-5 sm:px-7 pt-6 pb-6 animate-fade-in justify-between min-h-screen w-full max-w-lg mx-auto relative">
           {/* Header Branding */}
           <div className="flex flex-col items-center text-center relative pt-2">
-            {/* Tombol Install App & Panduan Cepat */}
-            <div className="absolute right-0 top-0 flex items-center gap-2">
-              {!isAppStandalone && (
+            {/* Tombol Install App di Pojok Kiri Atas */}
+            {!isAppStandalone && (
+              <div className="absolute left-0 top-0 z-30 pointer-events-auto">
                 <button
                   type="button"
                   onClick={() => setShowInstallModal(true)}
-                  className="text-xs font-bold text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full border border-blue-200 flex items-center gap-1.5 transition-all shadow-2xs"
+                  className="text-xs font-bold text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 px-3.5 py-2 rounded-full border border-blue-200 flex items-center gap-1.5 transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95"
                   title="Pasang Aplikasi Kanvas di HP"
                 >
-                  <Download size={13} className="text-blue-700" />
+                  <Download size={14} className="text-blue-700" />
                   <span>Install App</span>
                 </button>
-              )}
+              </div>
+            )}
+
+            {/* Tombol Panduan Cepat di Pojok Kanan Atas */}
+            <div className="absolute right-0 top-0 z-30 pointer-events-auto">
               <button
                 type="button"
                 onClick={() => setGuideState('welcome')}
-                className="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full border border-amber-200 flex items-center gap-1 transition-all shadow-2xs"
+                className="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 rounded-full border border-amber-200 flex items-center gap-1.5 transition-all shadow-xs cursor-pointer touch-manipulation active:scale-95"
               >
                 <span>💡 Panduan</span>
               </button>
             </div>
 
             <div className="relative mb-3 group mt-2">
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-amber-500/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
+              <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/20 to-amber-500/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500 pointer-events-none"></div>
               <img
                 src={getAssetPath('/kanvas-logo-fix.png')}
                 alt="Kanvas PENABUR"
-                className="relative w-48 md:w-56 h-auto object-contain drop-shadow-md"
+                className="relative w-48 md:w-56 h-auto object-contain drop-shadow-md pointer-events-none"
               />
             </div>
 
