@@ -207,6 +207,29 @@ export default function MobileStorefront() {
   const [myOrders, setMyOrders] = useState([]);
   const [isSyncingOrders, setIsSyncingOrders] = useState(false);
   const [selectedOrderReceipt, setSelectedOrderReceipt] = useState(null);
+  const [activePendingOrderId, setActivePendingOrderId] = useState(null);
+  const [nowTick, setNowTick] = useState(Date.now());
+
+  // Interval timer untuk hitung mundur 24 jam pesanan belum bayar
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format sisa waktu 24 jam
+  const formatCountdown = (createdAt) => {
+    if (!createdAt) return '24:00:00';
+    const createdTime = new Date(createdAt).getTime();
+    const expiresTime = createdTime + 24 * 60 * 60 * 1000;
+    const diff = expiresTime - nowTick;
+    if (diff <= 0) return 'Kedaluwarsa';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    return `${hours}j ${minutes}m ${seconds < 10 ? '0' : ''}${seconds}d`;
+  };
 
   // Payment & Multi-step Checkout States
   const [copiedField, setCopiedField] = useState(null); // 'account' | 'amount' | 'note'
@@ -300,7 +323,7 @@ export default function MobileStorefront() {
           .gte('created_at', todayStart.toISOString());
 
         if (!error && isSubscribed) {
-          const nextSeq = (count || 0) + 1;
+          const nextSeq = ((count || 0) % 999) + 1;
           setSchoolDailyCode(nextSeq);
         }
       } catch (e) {
@@ -611,17 +634,19 @@ export default function MobileStorefront() {
       if (!Array.isArray(localList)) localList = myOrders || [];
 
       const localIds = localList.map((o) => o.id || o.order_number).filter(Boolean);
+      const parentEmail = (parentProfile?.email || '').trim().toLowerCase();
 
       let query = supabase
         .from('parent_orders')
         .select('*, items:parent_order_items(*)');
 
-      if (authUserId && localIds.length > 0) {
-        query = query.or(`parent_auth_user_id.eq.${authUserId},id.in.(${localIds.map((id) => `"${id}"`).join(',')})`);
-      } else if (authUserId) {
-        query = query.eq('parent_auth_user_id', authUserId);
-      } else if (localIds.length > 0) {
-        query = query.in('id', localIds);
+      const orConditions = [];
+      if (parentEmail) orConditions.push(`parent_email.eq.${parentEmail}`);
+      if (authUserId) orConditions.push(`parent_auth_user_id.eq.${authUserId}`);
+      if (localIds.length > 0) orConditions.push(`id.in.(${localIds.map((id) => `"${id}"`).join(',')})`);
+
+      if (orConditions.length > 0) {
+        query = query.or(orConditions.join(','));
       } else {
         setIsSyncingOrders(false);
         return;
@@ -670,8 +695,13 @@ export default function MobileStorefront() {
   };
 
   // Helper tampilan badge status pesanan di tab Pesanan Saya
-  const renderOrderStatusBadge = (status) => {
-    const s = String(status || 'submitted').toLowerCase();
+  const renderOrderStatusBadge = (ordOrStatus) => {
+    const ord = typeof ordOrStatus === 'object' && ordOrStatus !== null ? ordOrStatus : { status: ordOrStatus };
+    const s = String(ord.status || 'submitted').toLowerCase();
+    const payStatus = String(ord.payment_status || 'pending_verification').toLowerCase();
+    const createdTime = ord.created_at ? new Date(ord.created_at).getTime() : Date.now();
+    const isExpired = Date.now() - createdTime >= 24 * 60 * 60 * 1000;
+
     if (s === 'completed' || s === 'selesai') {
       return (
         <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[10px] flex items-center gap-1">
@@ -704,9 +734,25 @@ export default function MobileStorefront() {
         </span>
       );
     }
+    if (payStatus === 'unpaid') {
+      if (isExpired) {
+        return (
+          <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-bold text-[10px] flex items-center gap-1">
+            <AlertCircle size={11} className="text-rose-600" />
+            Kedaluwarsa (24 Jam)
+          </span>
+        );
+      }
+      return (
+        <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 font-bold text-[10px] flex items-center gap-1 animate-pulse">
+          <Clock size={11} className="text-amber-600" />
+          Menunggu Pembayaran
+        </span>
+      );
+    }
     return (
-      <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px] flex items-center gap-1">
-        <Clock size={11} className="text-amber-600" />
+      <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[10px] flex items-center gap-1">
+        <Clock size={11} className="text-blue-600" />
         Menunggu Verifikasi
       </span>
     );
@@ -1039,10 +1085,99 @@ export default function MobileStorefront() {
     );
   };
 
-  // Lanjut dari Form Ringkasan ke Panduan Rekening Sekolah
-  const handleProceedToPayment = (e) => {
+  // Lanjut dari Form Ringkasan ke Panduan Rekening Sekolah & Catat Status Menunggu Pembayaran
+  const handleProceedToPayment = async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
+
+    const studentName = activeStudent?.name || 'Siswa PENABUR';
+    const schoolName = activeStudent?.school || selectedSchool;
+    const schoolLevel = activeStudent?.level || selectedLevel;
+    const studentGrade = activeStudent?.grade || '-';
+
+    const orderNumber = activePendingOrderId || `KNP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    setActivePendingOrderId(orderNumber);
+
+    const pendingOrderRecord = {
+      id: orderNumber,
+      order_number: orderNumber,
+      school_name: schoolName,
+      school_level: schoolLevel,
+      student_name: studentName,
+      student_class: studentGrade,
+      parent_name: parentProfile.fullName || 'Wali Murid',
+      parent_phone: parentProfile.phone || '-',
+      parent_email: parentProfile.email || '-',
+      total_amount: finalTotalAmount,
+      delivery_method: deliveryMethod,
+      delivery_address: deliveryMethod === 'rumah' ? homeAddress : 'Ambil di Koperasi Sekolah',
+      payment_method: 'transfer_sekolah',
+      payment_status: 'unpaid',
+      payment_receipt_url: null,
+      transfer_note: transferNote,
+      bank_name: schoolPayment.bankName,
+      bank_account_number: schoolPayment.bankAccountNumber,
+      status: 'submitted',
+      academic_year: '2026/2027',
+      created_at: new Date().toISOString(),
+      items: [...cart],
+    };
+
+    try {
+      let authUserId = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        authUserId = session?.user?.id || null;
+      } catch (e) {}
+
+      // Simpan status pesanan menunggu pembayaran ke Supabase
+      await supabase.from('parent_orders').upsert([
+        {
+          id: orderNumber,
+          parent_auth_user_id: authUserId,
+          school_name: schoolName,
+          school_level: schoolLevel,
+          student_name: studentName,
+          student_class: studentGrade,
+          parent_name: parentProfile.fullName || 'Wali Murid',
+          parent_phone: parentProfile.phone || '-',
+          parent_email: parentProfile.email || null,
+          total_amount: finalTotalAmount,
+          payment_method: 'transfer_sekolah',
+          payment_status: 'unpaid',
+          payment_receipt_url: null,
+          status: 'submitted',
+          academic_year: '2026/2027',
+          created_at: pendingOrderRecord.created_at,
+        },
+      ]);
+
+      const itemsPayload = cart.map((item) => ({
+        parent_order_id: orderNumber,
+        product_id: item.productId && !String(item.productId).startsWith('mock-') && !String(item.productId).startsWith('prod-') ? item.productId : null,
+        product_name: item.name,
+        category: item.category || 'Seragam',
+        size: item.size || 'STANDAR',
+        quantity: item.quantity,
+        price_student: item.price,
+        subtotal: item.price * item.quantity,
+      }));
+      await supabase.from('parent_order_items').delete().eq('parent_order_id', orderNumber);
+      await supabase.from('parent_order_items').insert(itemsPayload);
+    } catch (err) {
+      console.warn('Catatan simpan pesanan awal:', err);
+    }
+
+    // Perbarui riwayat lokal
+    setMyOrders((prev) => {
+      const filtered = prev.filter((o) => (o.id || o.order_number) !== orderNumber);
+      const updated = [pendingOrderRecord, ...filtered];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kanvas_my_orders', JSON.stringify(updated));
+      }
+      return updated;
+    });
+
     setCheckoutStep('payment_instruction');
     if (interactiveGuideStep === 'd_summary') {
       setInteractiveGuideStep('e_payment');
@@ -1051,16 +1186,15 @@ export default function MobileStorefront() {
 
   // Selesaikan Pesanan Resmi setelah konfirmasi pembayaran & upload bukti bayar
   const handleFinalConfirmOrder = async () => {
-    if (cart.length === 0) return;
-
     const studentName = activeStudent?.name || 'Siswa PENABUR';
     const schoolName = activeStudent?.school || selectedSchool;
     const schoolLevel = activeStudent?.level || selectedLevel;
     const studentGrade = activeStudent?.grade || '-';
 
     setIsSubmittingOrder(true);
-    const orderNumber = `KNP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    const orderNumber = activePendingOrderId || `KNP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
+    const existingPending = myOrders.find((o) => (o.id || o.order_number) === orderNumber);
     const orderRecord = {
       id: orderNumber,
       order_number: orderNumber,
@@ -1082,8 +1216,8 @@ export default function MobileStorefront() {
       bank_account_number: schoolPayment.bankAccountNumber,
       status: 'submitted',
       academic_year: '2026/2027',
-      created_at: new Date().toISOString(),
-      items: cart,
+      created_at: existingPending?.created_at || new Date().toISOString(),
+      items: cart.length > 0 ? cart : (existingPending?.items || []),
     };
 
     try {
@@ -1093,55 +1227,136 @@ export default function MobileStorefront() {
         authUserId = session?.user?.id || null;
       } catch (e) {}
 
-      await supabase.from('parent_orders').insert([
-        {
-          id: orderNumber,
-          parent_auth_user_id: authUserId,
-          school_name: schoolName,
-          school_level: schoolLevel,
-          student_name: studentName,
-          student_class: studentGrade,
-          parent_name: parentProfile.fullName,
-          parent_phone: parentProfile.phone,
-          parent_email: parentProfile.email || null,
-          total_amount: finalTotalAmount,
-          payment_method: 'transfer_sekolah',
+      const { error: updErr } = await supabase
+        .from('parent_orders')
+        .update({
           payment_status: 'pending_verification',
           payment_receipt_url: proofDriveUrl.trim() || 'Uploaded to School Google Drive',
-          status: 'submitted',
-          academic_year: '2026/2027',
-        },
-      ]);
+          total_amount: finalTotalAmount,
+          parent_name: parentProfile.fullName || 'Wali Murid',
+          parent_phone: parentProfile.phone || '-',
+          parent_email: parentProfile.email || null,
+        })
+        .eq('id', orderNumber);
 
-      const itemsPayload = cart.map((item) => ({
-        parent_order_id: orderNumber,
-        product_id: item.productId && !String(item.productId).startsWith('mock-') && !String(item.productId).startsWith('prod-') ? item.productId : null,
-        product_name: item.name,
-        category: item.category || 'Seragam',
-        size: item.size || 'STANDAR',
-        quantity: item.quantity,
-        price_student: item.price,
-        subtotal: item.price * item.quantity,
-      }));
-      await supabase.from('parent_order_items').insert(itemsPayload);
+      if (updErr) {
+        await supabase.from('parent_orders').upsert([
+          {
+            id: orderNumber,
+            parent_auth_user_id: authUserId,
+            school_name: schoolName,
+            school_level: schoolLevel,
+            student_name: studentName,
+            student_class: studentGrade,
+            parent_name: parentProfile.fullName || 'Wali Murid',
+            parent_phone: parentProfile.phone || '-',
+            parent_email: parentProfile.email || null,
+            total_amount: finalTotalAmount,
+            payment_method: 'transfer_sekolah',
+            payment_status: 'pending_verification',
+            payment_receipt_url: proofDriveUrl.trim() || 'Uploaded to School Google Drive',
+            status: 'submitted',
+            academic_year: '2026/2027',
+          },
+        ]);
+      }
+
+      if (cart.length > 0) {
+        const itemsPayload = cart.map((item) => ({
+          parent_order_id: orderNumber,
+          product_id: item.productId && !String(item.productId).startsWith('mock-') && !String(item.productId).startsWith('prod-') ? item.productId : null,
+          product_name: item.name,
+          category: item.category || 'Seragam',
+          size: item.size || 'STANDAR',
+          quantity: item.quantity,
+          price_student: item.price,
+          subtotal: item.price * item.quantity,
+        }));
+        await supabase.from('parent_order_items').delete().eq('parent_order_id', orderNumber);
+        await supabase.from('parent_order_items').insert(itemsPayload);
+      }
     } catch (err) {
       console.warn('Catatan Supabase:', err);
     }
 
-    const updatedHistory = [orderRecord, ...myOrders];
+    const updatedHistory = myOrders.map((o) => ((o.id || o.order_number) === orderNumber ? orderRecord : o));
+    if (!updatedHistory.find((o) => (o.id || o.order_number) === orderNumber)) {
+      updatedHistory.unshift(orderRecord);
+    }
     setMyOrders(updatedHistory);
     if (typeof window !== 'undefined') {
       localStorage.setItem('kanvas_my_orders', JSON.stringify(updatedHistory));
+      localStorage.removeItem('kanvas_cart');
     }
 
     setCompletedOrder(orderRecord);
     setCart([]);
+    setActivePendingOrderId(null);
     setIsSubmittingOrder(false);
     setShowFinalConfirmModal(false);
     setCheckoutStep('success');
     if (interactiveGuideStep === 'f_proof') {
       setInteractiveGuideStep('g_success');
     }
+  };
+
+  // Lanjutkan Pembayaran dari Tab Pesanan Saya
+  const handleResumePayment = (ord) => {
+    setActivePendingOrderId(ord.id || ord.order_number);
+    setActiveTab('store');
+    setCheckoutStep('payment_instruction');
+    triggerHaptic(15);
+  };
+
+  // Kembalikan Item Pesanan ke Keranjang Belanja
+  const handleRevertToCart = (ord) => {
+    const rawItems = Array.isArray(ord?.items) ? ord.items : [];
+    if (rawItems.length === 0) {
+      alert('Rincian seragam tidak ditemukan pada data pesanan ini.');
+      return;
+    }
+    const restored = rawItems.map((it, idx) => ({
+      id: it.id || `cart-${Date.now()}-${idx}`,
+      productId: it.product_id || it.productId || `prod-${idx}`,
+      name: it.product_name || it.name,
+      category: it.category || 'Seragam',
+      size: it.size || 'STANDAR',
+      price: it.price_student || it.price || 0,
+      quantity: it.quantity || 1,
+      studentId: activeStudent?.id || null,
+      studentName: ord.student_name || activeStudent?.name || 'Siswa',
+      studentSchool: ord.school_name || activeStudent?.school || selectedSchool,
+      imageUrl: it.imageUrl || it.image_url || getAssetPath('/kanvas-logo-fix.png'),
+    }));
+
+    setCart(restored);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kanvas_cart', JSON.stringify(restored));
+    }
+    setActiveTab('store');
+    setCheckoutStep('cart');
+    triggerHaptic(15);
+  };
+
+  // Batalkan Pesanan Menunggu Pembayaran
+  const handleCancelOrder = async (ord) => {
+    const orderId = ord.id || ord.order_number;
+    if (!confirm(`Batalkan pesanan ${orderId}? Seluruh pilihan seragam akan dikembalikan ke keranjang belanja Anda.`)) {
+      return;
+    }
+    try {
+      await supabase.from('parent_orders').update({ status: 'cancelled' }).eq('id', orderId);
+    } catch (e) {}
+
+    setMyOrders((prev) => {
+      const updated = prev.map((o) => ((o.id || o.order_number) === orderId ? { ...o, status: 'cancelled' } : o));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kanvas_my_orders', JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    handleRevertToCart(ord);
   };
 
   const handleSignOut = async () => {
@@ -2302,7 +2517,7 @@ export default function MobileStorefront() {
                           {ord.created_at ? new Date(ord.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Hari ini'}
                         </span>
                       </div>
-                      {renderOrderStatusBadge(ord.status)}
+                      {renderOrderStatusBadge(ord)}
                     </div>
 
                     {/* Identitas Siswa & Sekolah */}
@@ -2370,30 +2585,110 @@ export default function MobileStorefront() {
                       </div>
                     </div>
 
-                    {/* Pesan Instruksi Pengambilan untuk PIC Seragam */}
-                    <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-2">
-                      <QrCode size={16} className="text-blue-900 shrink-0" />
-                      <p className="text-[10px] text-blue-900 leading-tight">
-                        {String(ord.status || '').toLowerCase() === 'completed' || String(ord.status || '').toLowerCase() === 'selesai' ? (
-                          <span><strong>Pesanan Selesai:</strong> Seragam telah berhasil diserahkan kepada siswa / wali murid. Simpan bukti ini untuk arsip Anda.</span>
-                        ) : String(ord.status || '').toLowerCase() === 'ready_for_pickup' || String(ord.status || '').toLowerCase() === 'siap_diambil' ? (
-                          <span className="text-emerald-950"><strong>Seragam Siap Diambil!</strong> Silakan datang ke ruang seragam / TU sekolah Anda dengan menunjukkan kode pesanan ini.</span>
-                        ) : String(ord.status || '').toLowerCase() === 'processing' || String(ord.status || '').toLowerCase() === 'verified' ? (
-                          <span className="text-blue-950"><strong>Sedang Disiapkan:</strong> Pembayaran telah diverifikasi. Petugas sekolah sedang mengemas seragam pesanan Anda.</span>
-                        ) : (
-                          <span><strong>Menunggu Verifikasi:</strong> Bukti transfer telah terkirim dan sedang diverifikasi oleh staf sekolah. Tunjukkan kode ini saat pengambilan.</span>
-                        )}
-                      </p>
-                    </div>
+                    {/* Status & Action Card */}
+                    {String(ord.payment_status || '').toLowerCase() === 'unpaid' && String(ord.status || '').toLowerCase() !== 'cancelled' ? (
+                      (() => {
+                        const createdTime = ord.created_at ? new Date(ord.created_at).getTime() : Date.now();
+                        const isExpired = Date.now() - createdTime >= 24 * 60 * 60 * 1000;
+                        if (!isExpired) {
+                          return (
+                            <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                                  <Clock size={14} className="text-amber-600 animate-spin" />
+                                  Sisa Waktu Pembayaran:
+                                </span>
+                                <span className="font-black text-amber-950 font-mono text-sm bg-white px-2.5 py-0.5 rounded-lg border border-amber-300 shadow-xs">
+                                  {formatCountdown(ord.created_at)}
+                                </span>
+                              </div>
+                              <p className="text-[10.5px] text-amber-800 leading-tight">
+                                Harap transfer dan upload bukti bayar dalam 24 jam. Jika melewati batas waktu, pesanan otomatis dibatalkan dan seragam dapat dikembalikan ke keranjang.
+                              </p>
+                              <div className="flex gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleResumePayment(ord)}
+                                  className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                                >
+                                  <span>Lanjut Bayar & Upload Bukti &rarr;</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCancelOrder(ord)}
+                                  className="px-3.5 py-2.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all active:scale-[0.98]"
+                                >
+                                  Batalkan
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-rose-900 flex items-center gap-1.5">
+                                  <AlertCircle size={14} className="text-rose-600" />
+                                  Batas Waktu Pembayaran Habis (24 Jam)
+                                </span>
+                              </div>
+                              <p className="text-[10.5px] text-rose-800 leading-tight">
+                                Pesanan ini telah kedaluwarsa karena tidak diselesaikan dalam 24 jam. Anda dapat mengembalikan seragam ini ke keranjang belanja Anda.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => handleRevertToCart(ord)}
+                                className="w-full py-2.5 bg-[#0F2C59] hover:brightness-110 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
+                              >
+                                <ShoppingBag size={14} />
+                                <span>Kembalikan Seragam ke Keranjang</span>
+                              </button>
+                            </div>
+                          );
+                        }
+                      })()
+                    ) : String(ord.status || '').toLowerCase() === 'cancelled' ? (
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <p className="text-[10.5px] text-slate-500 leading-tight">
+                          Pesanan telah dibatalkan. Anda dapat memasukkan kembali seragam ini ke dalam keranjang belanja.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleRevertToCart(ord)}
+                          className="w-full py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                        >
+                          <ShoppingBag size={13} />
+                          <span>Pesan Ulang (Kembalikan ke Keranjang)</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Pesan Instruksi Pengambilan untuk PIC Seragam */}
+                        <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-2">
+                          <QrCode size={16} className="text-blue-900 shrink-0" />
+                          <p className="text-[10px] text-blue-900 leading-tight">
+                            {String(ord.status || '').toLowerCase() === 'completed' || String(ord.status || '').toLowerCase() === 'selesai' ? (
+                              <span><strong>Pesanan Selesai:</strong> Seragam telah berhasil diserahkan kepada siswa / wali murid. Simpan bukti ini untuk arsip Anda.</span>
+                            ) : String(ord.status || '').toLowerCase() === 'ready_for_pickup' || String(ord.status || '').toLowerCase() === 'siap_diambil' ? (
+                              <span className="text-emerald-950"><strong>Seragam Siap Diambil!</strong> Silakan datang ke ruang seragam / TU sekolah Anda dengan menunjukkan kode pesanan ini.</span>
+                            ) : String(ord.status || '').toLowerCase() === 'processing' || String(ord.status || '').toLowerCase() === 'verified' ? (
+                              <span className="text-blue-950"><strong>Sedang Disiapkan:</strong> Pembayaran telah diverifikasi. Petugas sekolah sedang mengemas seragam pesanan Anda.</span>
+                            ) : (
+                              <span><strong>Menunggu Verifikasi:</strong> Bukti transfer telah terkirim dan sedang diverifikasi oleh staf sekolah. Tunjukkan kode ini saat pengambilan.</span>
+                            )}
+                          </p>
+                        </div>
 
-                    {/* Tombol Tampilkan Tiket Pengambilan (Untuk PIC) */}
-                    <button
-                      onClick={() => setSelectedOrderReceipt(ord)}
-                      className="w-full py-2.5 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                    >
-                      <Receipt size={14} className="text-amber-400" />
-                      <span>Buka Bukti Pengambilan Seragam (Untuk PIC)</span>
-                    </button>
+                        {/* Tombol Tampilkan Tiket Pengambilan (Untuk PIC) */}
+                        <button
+                          onClick={() => setSelectedOrderReceipt(ord)}
+                          className="w-full py-2.5 bg-gradient-to-r from-[#0F2C59] to-[#1E3A8A] text-white rounded-xl text-xs font-bold hover:brightness-110 shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                        >
+                          <Receipt size={14} className="text-amber-400" />
+                          <span>Buka Bukti Pengambilan Seragam (Untuk PIC)</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -2862,11 +3157,11 @@ export default function MobileStorefront() {
 
               {/* Enlarged Photo Preview with Slider / Carousel */}
               <div className="my-3.5">
-                <div className="relative w-full aspect-[4/3] max-h-72 sm:max-h-80 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner group flex items-center justify-center">
+                <div className="relative w-full aspect-square max-h-64 sm:max-h-72 max-w-xs sm:max-w-sm mx-auto rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 shadow-inner group flex items-center justify-center p-2">
                   <img
                     src={activeImageUrl}
                     alt={`${activeProductModal.name} - Foto ${modalImageIndex + 1}`}
-                    className={`w-full h-full ${(!activeImageUrl || activeImageUrl.includes('kanvas-logo')) ? 'object-contain p-6' : 'object-cover'} transition-all duration-300 select-none`}
+                    className={`w-full h-full ${(!activeImageUrl || activeImageUrl.includes('kanvas-logo')) ? 'object-contain p-6' : 'object-contain p-1'} transition-all duration-300 select-none`}
                     onError={(e) => {
                       e.currentTarget.src = getAssetPath('/kanvas-logo-fix.png');
                       e.currentTarget.className = 'w-full h-full object-contain p-6 transition-all duration-300 select-none';
@@ -3022,7 +3317,7 @@ export default function MobileStorefront() {
           MODAL: SIZE GUIDE POP-UP
          ========================================================================= */}
       {isSizeGuideOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 w-full max-w-md sm:max-w-lg max-h-[85vh] overflow-y-auto animate-fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
               <div className="flex items-center gap-2">
