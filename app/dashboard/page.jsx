@@ -111,25 +111,32 @@ const DEFAULT_PRODUCTS = [];
 
 // Helper to extract product images array (supports multi-angle slide preview)
 const getProductImages = (product) => {
-  if (!product) return [];
+  if (!product) return [getAssetPath('/kanvas-logo-fix.png')];
+  let candidates = [];
   if (Array.isArray(product.images) && product.images.length > 0) {
-    return product.images.filter(Boolean);
-  }
-  if (Array.isArray(product.image_urls) && product.image_urls.length > 0) {
-    return product.image_urls.filter(Boolean);
-  }
-  if (typeof product.images === 'string') {
+    candidates = product.images.filter(Boolean);
+  } else if (Array.isArray(product.image_urls) && product.image_urls.length > 0) {
+    candidates = product.image_urls.filter(Boolean);
+  } else if (typeof product.images === 'string') {
     try {
       const parsed = JSON.parse(product.images);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed.filter(Boolean);
+      if (Array.isArray(parsed) && parsed.length > 0) candidates = parsed.filter(Boolean);
     } catch {
       if (product.images.includes(',')) {
-        return product.images.split(',').map((s) => s.trim()).filter(Boolean);
+        candidates = product.images.split(',').map((s) => s.trim()).filter(Boolean);
       }
     }
   }
-  const fallback = product.imageUrl || product.image_url;
-  return fallback ? [fallback] : [getAssetPath('/kanvas-logo-fix.png')];
+  if (candidates.length === 0) {
+    const fallback = product.imageUrl || product.image_url;
+    if (fallback) candidates = [fallback];
+  }
+  // Filter out placeholder logo if genuine product photos exist
+  const realImages = candidates.filter((img) => typeof img === 'string' && img.trim() && !img.includes('kanvas-logo'));
+  if (realImages.length > 0) {
+    return realImages;
+  }
+  return [getAssetPath('/kanvas-logo-fix.png')];
 };
 
 export default function MobileStorefront() {
@@ -172,13 +179,49 @@ export default function MobileStorefront() {
   const [activeProductModal, setActiveProductModal] = useState(null);
   const [modalSelectedSize, setModalSelectedSize] = useState('');
   const [modalImageIndex, setModalImageIndex] = useState(0);
+  const [fullScreenPreviewImage, setFullScreenPreviewImage] = useState(null);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+
+  // Touch Swipe Gesture Refs untuk Carousel Modal & Preview
+  const touchStartXRef = useRef(0);
+  const touchEndXRef = useRef(0);
+  const isSwipingRef = useRef(false);
+
+  const handleTouchStart = (e) => {
+    touchStartXRef.current = e.targetTouches[0].clientX;
+    touchEndXRef.current = e.targetTouches[0].clientX;
+    isSwipingRef.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndXRef.current = e.targetTouches[0].clientX;
+    if (Math.abs(touchStartXRef.current - touchEndXRef.current) > 10) {
+      isSwipingRef.current = true;
+    }
+  };
+
+  const handleTouchEnd = (modalImages) => {
+    const diff = touchStartXRef.current - touchEndXRef.current;
+    const threshold = 35;
+    if (modalImages && modalImages.length > 1) {
+      if (diff > threshold) {
+        // Swipe ke kiri -> Foto berikutnya
+        triggerHaptic(10);
+        setModalImageIndex((prev) => (prev < modalImages.length - 1 ? prev + 1 : 0));
+      } else if (diff < -threshold) {
+        // Swipe ke kanan -> Foto sebelumnya
+        triggerHaptic(10);
+        setModalImageIndex((prev) => (prev > 0 ? prev - 1 : modalImages.length - 1));
+      }
+    }
+  };
 
   const handleOpenProductModal = (product) => {
     triggerHaptic(12);
     setActiveProductModal(product);
     setModalSelectedSize(product.variants[0]?.size || 'STANDAR');
     setModalImageIndex(0);
+    setFullScreenPreviewImage(null);
     if (interactiveGuideStep === 'step_1_catalog' || interactiveGuideStep === 'a_catalog') {
       setInteractiveGuideStep('step_2_modal');
     }
@@ -610,26 +653,6 @@ export default function MobileStorefront() {
             }
 
             if (!groupedMap.has(groupKey)) {
-              let initialImages = [];
-              if (Array.isArray(item.images) && item.images.length > 0) {
-                initialImages = item.images;
-              } else if (item.image_urls) {
-                try {
-                  const parsed = typeof item.image_urls === 'string' ? JSON.parse(item.image_urls) : item.image_urls;
-                  if (Array.isArray(parsed)) initialImages = parsed;
-                } catch {
-                  if (typeof item.image_urls === 'string') initialImages = item.image_urls.split(',').map((s) => s.trim());
-                }
-              }
-              if (initialImages.length === 0 && item.image_url) {
-                initialImages = [item.image_url];
-              }
-
-              // Placeholder Resmi Kanvas PENABUR (Hapus total foto acak Unsplash internet)
-              if (initialImages.length === 0) {
-                initialImages = [getAssetPath('/kanvas-logo-fix.png')];
-              }
-
               // Pemetaan Tipe & Kategori berdasarkan Standar Kode BPK PENABUR:
               const codeUpper = String(item.code || '').toUpperCase();
               const n = (item.name || '').toLowerCase();
@@ -672,16 +695,20 @@ export default function MobileStorefront() {
                 category: normalizedCategory,
                 level: derivedLvl,
                 description: item.description || `Produk resmi ${normalizedCategory} berstandar Koperasi BPK PENABUR.`,
-                imageUrl: initialImages[0],
-                images: initialImages,
+                imageUrl: '',
+                images: [],
                 variants: [],
               });
             }
 
             const current = groupedMap.get(groupKey);
-            if (item.image_url && !current.images.includes(item.image_url)) {
-              current.images.push(item.image_url);
+
+            // Kumpulkan URL gambar valid dari setiap varian tanpa memasukkan placeholder logo
+            const rawUrl = item.image_url || (Array.isArray(item.images) ? item.images[0] : null);
+            if (rawUrl && typeof rawUrl === 'string' && rawUrl.trim() && !rawUrl.includes('kanvas-logo') && !current.images.includes(rawUrl.trim())) {
+              current.images.push(rawUrl.trim());
             }
+
             current.variants.push({
               size: item.size || 'STANDAR',
               price: price,
@@ -690,10 +717,17 @@ export default function MobileStorefront() {
             });
           });
 
-          const formattedList = Array.from(groupedMap.values()).map((p) => ({
-            ...p,
-            variants: p.variants.sort((a, b) => compareUniformSizes(a.size, b.size)),
-          }));
+          const formattedList = Array.from(groupedMap.values()).map((p) => {
+            const realImages = p.images.filter((img) => img && !img.includes('kanvas-logo'));
+            const hasRealImage = realImages.length > 0;
+            const finalImages = hasRealImage ? realImages : [getAssetPath('/kanvas-logo-fix.png')];
+            return {
+              ...p,
+              imageUrl: finalImages[0],
+              images: finalImages,
+              variants: p.variants.sort((a, b) => compareUniformSizes(a.size, b.size)),
+            };
+          });
 
           if (formattedList.length > 0 && isSubscribed) {
             setProducts(formattedList);
@@ -3238,9 +3272,21 @@ export default function MobileStorefront() {
                 </button>
               </div>
 
-              {/* Enlarged Photo Preview with Slider / Carousel */}
+              {/* Enlarged Photo Preview with Slider / Carousel (Touch Swipe & Tap to View Full Image) */}
               <div className="my-3.5">
-                <div className="relative w-full aspect-square max-h-64 sm:max-h-72 max-w-xs sm:max-w-sm mx-auto rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 shadow-inner group flex items-center justify-center p-2">
+                <div
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={() => handleTouchEnd(modalImages)}
+                  onClick={() => {
+                    if (isSwipingRef.current) return;
+                    if (activeImageUrl && !activeImageUrl.includes('kanvas-logo')) {
+                      setFullScreenPreviewImage(activeImageUrl);
+                    }
+                  }}
+                  className="relative w-full aspect-square max-h-64 sm:max-h-72 max-w-xs sm:max-w-sm mx-auto rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 shadow-inner group flex items-center justify-center p-2 cursor-pointer"
+                  title="Ketuk foto untuk melihat tampilan utuh"
+                >
                   <img
                     src={activeImageUrl}
                     alt={`${activeProductModal.name} - Foto ${modalImageIndex + 1}`}
@@ -3454,6 +3500,94 @@ export default function MobileStorefront() {
           </div>
         </div>
       )}
+
+      {/* =========================================================================
+          MODAL: FULL-SCREEN UNTOUCHED IMAGE PREVIEW (GAMBAR UTUH)
+         ========================================================================= */}
+      {fullScreenPreviewImage && activeProductModal && (() => {
+        const modalImages = getProductImages(activeProductModal);
+        const currentImage = modalImages[modalImageIndex] || fullScreenPreviewImage;
+
+        return (
+          <div
+            onClick={() => setFullScreenPreviewImage(null)}
+            className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex flex-col justify-between p-3 sm:p-5 animate-fade-in select-none"
+          >
+            {/* Top Bar: Title & Close Button */}
+            <div className="flex items-center justify-between text-white pb-2 z-10 w-full max-w-4xl mx-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="truncate pr-4">
+                <h4 className="font-bold text-sm sm:text-base text-white truncate">{activeProductModal.name}</h4>
+                {modalImages.length > 1 && (
+                  <span className="text-xs text-amber-300 font-medium">
+                    Foto {modalImageIndex + 1} dari {modalImages.length}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setFullScreenPreviewImage(null)}
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-all shrink-0 active:scale-95"
+                title="Tutup Preview"
+                aria-label="Tutup Preview"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Main Image (Centered, Uncropped, High-Res) */}
+            <div
+              className="flex-1 flex items-center justify-center relative w-full h-full my-auto overflow-hidden"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={() => handleTouchEnd(modalImages)}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={currentImage}
+                alt={activeProductModal.name}
+                className="max-h-[82vh] max-w-[95vw] w-auto h-auto object-contain rounded-xl shadow-2xl transition-all duration-300"
+                onError={(e) => {
+                  e.currentTarget.src = getAssetPath('/kanvas-logo-fix.png');
+                }}
+              />
+
+              {/* Navigation arrows in full screen */}
+              {modalImages.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic(10);
+                      setModalImageIndex((prev) => (prev > 0 ? prev - 1 : modalImages.length - 1));
+                    }}
+                    className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 hover:bg-black/70 text-white border border-white/20 flex items-center justify-center transition-all active:scale-90 shadow-lg"
+                    title="Foto Sebelumnya"
+                    aria-label="Foto Sebelumnya"
+                  >
+                    <ChevronLeft size={26} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic(10);
+                      setModalImageIndex((prev) => (prev < modalImages.length - 1 ? prev + 1 : 0));
+                    }}
+                    className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 hover:bg-black/70 text-white border border-white/20 flex items-center justify-center transition-all active:scale-90 shadow-lg"
+                    title="Foto Selanjutnya"
+                    aria-label="Foto Selanjutnya"
+                  >
+                    <ChevronRight size={26} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Bottom hint */}
+            <div className="text-center pt-2 text-slate-400 text-xs">
+              <span>Ketuk di luar gambar atau tombol silang untuk menutup</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* =========================================================================
           MODAL: TIKET PENGAMBILAN SERAGAM RESMI (UNTUK PIC SERAGAM SEKOLAH)
