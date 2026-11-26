@@ -4,10 +4,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { getAssetPath, triggerHaptic } from '../../lib/utils';
-import { 
-  DEFAULT_SCHOOL_WHITELIST, 
-  getSchoolList, 
-  deriveSchoolLevel, 
+import {
+  DEFAULT_SCHOOL_WHITELIST,
+  getSchoolList,
+  deriveSchoolLevel,
   cleanSchoolName,
   getSchoolPaymentInfo,
   getNextSchoolLevel,
@@ -263,7 +263,7 @@ export default function MobileStorefront() {
         }, 700);
         return () => clearTimeout(timer);
       }
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   // Sinkronisasi otomatis ke Step 4 saat orang tua masuk ke halaman instruksi rekening sekolah
@@ -279,13 +279,13 @@ export default function MobileStorefront() {
     try {
       localStorage.setItem('kanvas_interactive_guide_done', 'true');
       localStorage.setItem('kanvas_guide_active', 'false');
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const startInteractiveGuide = () => {
     try {
       localStorage.removeItem('kanvas_interactive_guide_done');
-    } catch (e) {}
+    } catch (e) { }
     if (checkoutStep === 'payment_instruction') {
       setInteractiveGuideStep('step_4_payment');
     } else if (activeProductModal) {
@@ -720,14 +720,14 @@ export default function MobileStorefront() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         authUserId = session?.user?.id || null;
-      } catch (e) {}
+      } catch (e) { }
 
       let localList = fallbackLocalList;
       if (!localList && typeof window !== 'undefined') {
         try {
           const raw = localStorage.getItem('kanvas_my_orders');
           if (raw) localList = JSON.parse(raw);
-        } catch (e) {}
+        } catch (e) { }
       }
       if (!Array.isArray(localList)) localList = myOrders || [];
 
@@ -764,10 +764,10 @@ export default function MobileStorefront() {
             ...ro,
             items: (ro.items && ro.items.length > 0)
               ? ro.items.map((it) => ({
-                  ...it,
-                  name: it.product_name || it.name,
-                  price: it.price_student || it.price || 0,
-                }))
+                ...it,
+                name: it.product_name || it.name,
+                price: it.price_student || it.price || 0,
+              }))
               : (matchedLocal?.items || []),
           });
         });
@@ -872,7 +872,7 @@ export default function MobileStorefront() {
           parsed.activeStudentId = student.id;
           localStorage.setItem('kanvas_parent_session', JSON.stringify(parsed));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -909,7 +909,7 @@ export default function MobileStorefront() {
         parentList.push(payload);
       }
       localStorage.setItem('kanvas_registered_parents', JSON.stringify(parentList));
-    } catch (e) {}
+    } catch (e) { }
 
     // 2. Simpan permanen ke Supabase tabel parent_accounts (Dual check update/insert agar tidak butuh unique constraint)
     if (supabase && finalEmail) {
@@ -918,7 +918,7 @@ export default function MobileStorefront() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           authUserId = session?.user?.id || null;
-        } catch (e) {}
+        } catch (e) { }
 
         const cleanEmail = finalEmail.trim().toLowerCase();
         const { data: existingRows } = await supabase
@@ -1226,7 +1226,7 @@ export default function MobileStorefront() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         authUserId = session?.user?.id || null;
-      } catch (e) {}
+      } catch (e) { }
 
       // Simpan status pesanan menunggu pembayaran ke Supabase
       await supabase.from('parent_orders').upsert([
@@ -1323,7 +1323,7 @@ export default function MobileStorefront() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         authUserId = session?.user?.id || null;
-      } catch (e) {}
+      } catch (e) { }
 
       const { error: updErr } = await supabase
         .from('parent_orders')
@@ -1444,7 +1444,7 @@ export default function MobileStorefront() {
     }
     try {
       await supabase.from('parent_orders').update({ status: 'cancelled' }).eq('id', orderId);
-    } catch (e) {}
+    } catch (e) { }
 
     setMyOrders((prev) => {
       const updated = prev.map((o) => ((o.id || o.order_number) === orderId ? { ...o, status: 'cancelled' } : o));
@@ -1461,7 +1461,7 @@ export default function MobileStorefront() {
     if (confirm('Apakah Anda yakin ingin logout dari akun?')) {
       try {
         await supabase.auth.signOut();
-      } catch (e) {}
+      } catch (e) { }
       if (typeof window !== 'undefined') {
         localStorage.removeItem('kanvas_parent_session');
         // Tandai bahwa intro sudah pernah ditonton agar langsung masuk ke halaman Login!
@@ -1557,23 +1557,20 @@ export default function MobileStorefront() {
                   <button
                     key={st.id}
                     onClick={() => handleSelectStudent(st)}
-                    className={`px-3 py-1.5 rounded-xl text-left shrink-0 transition-all border ${
-                      isSelected
-                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-extrabold'
-                        : 'bg-white/10 text-white border-white/15 hover:bg-white/20'
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl text-left shrink-0 transition-all border ${isSelected
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-extrabold'
+                      : 'bg-white/10 text-white border-white/15 hover:bg-white/20'
+                      }`}
                   >
                     <div className="flex items-center gap-1.5 leading-none">
                       <span className="text-sm font-bold">{st.name}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-black ${
-                        isSelected ? 'bg-slate-900 text-amber-300' : 'bg-white/20 text-blue-200'
-                      }`}>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-black ${isSelected ? 'bg-slate-900 text-amber-300' : 'bg-white/20 text-blue-200'
+                        }`}>
                         {st.level}
                       </span>
                     </div>
-                    <span className={`text-xs block mt-0.5 truncate max-w-[200px] ${
-                      isSelected ? 'text-slate-900 font-semibold' : 'text-blue-200'
-                    }`}>
+                    <span className={`text-xs block mt-0.5 truncate max-w-[200px] ${isSelected ? 'text-slate-900 font-semibold' : 'text-blue-200'
+                      }`}>
                       {st.school} • {st.grade}
                     </span>
                   </button>
@@ -1668,11 +1665,10 @@ export default function MobileStorefront() {
                 <button
                   type="button"
                   onClick={() => setActiveCatalogLevel(activeStudent.level)}
-                  className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    (activeCatalogLevel || activeStudent.level) === activeStudent.level
-                      ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
-                      : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
-                  }`}
+                  className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${(activeCatalogLevel || activeStudent.level) === activeStudent.level
+                    ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
+                    : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
+                    }`}
                 >
                   <School size={14} />
                   <span>Jenjang {activeStudent.level} (Saat Ini)</span>
@@ -1681,11 +1677,10 @@ export default function MobileStorefront() {
                 <button
                   type="button"
                   onClick={() => setActiveCatalogLevel(activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level))}
-                  className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    (activeCatalogLevel || activeStudent.level) === (activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level))
-                      ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
-                      : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
-                  }`}
+                  className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${(activeCatalogLevel || activeStudent.level) === (activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level))
+                    ? 'bg-[#0F2C59] text-white shadow-sm ring-2 ring-blue-900/30'
+                    : 'bg-white border border-amber-200 text-slate-700 hover:bg-amber-100/50'
+                    }`}
                 >
                   <Sparkles size={14} className="text-amber-400" />
                   <span>Jenjang {activeStudent.nextLevel || getNextSchoolLevel(activeStudent.level)} (Lanjutan)</span>
@@ -1731,11 +1726,10 @@ export default function MobileStorefront() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all flex items-center ${
-                  selectedCategory === cat.id
-                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all flex items-center ${selectedCategory === cat.id
+                  ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
               >
                 <span>{cat.label}</span>
               </button>
@@ -2025,11 +2019,10 @@ export default function MobileStorefront() {
 
             <div
               onClick={() => setDeliveryMethod('koperasi')}
-              className={`p-3 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                deliveryMethod === 'koperasi'
-                  ? 'border-blue-700 bg-blue-50/50'
-                  : 'border-slate-200 bg-slate-50'
-              }`}
+              className={`p-3 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${deliveryMethod === 'koperasi'
+                ? 'border-blue-700 bg-blue-50/50'
+                : 'border-slate-200 bg-slate-50'
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Building size={18} className="text-blue-700" />
@@ -2049,11 +2042,10 @@ export default function MobileStorefront() {
 
             <div
               onClick={() => setDeliveryMethod('rumah')}
-              className={`p-3 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${
-                deliveryMethod === 'rumah'
-                  ? 'border-blue-700 bg-blue-50/50'
-                  : 'border-slate-200 bg-slate-50'
-              }`}
+              className={`p-3 rounded-xl border-2 cursor-pointer flex items-center justify-between transition-all ${deliveryMethod === 'rumah'
+                ? 'border-blue-700 bg-blue-50/50'
+                : 'border-slate-200 bg-slate-50'
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Truck size={18} className="text-blue-700" />
@@ -2343,11 +2335,10 @@ export default function MobileStorefront() {
                 type="button"
                 disabled={isUploadingGas}
                 onClick={() => directFileInputRef.current?.click()}
-                className={`w-full py-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] ${
-                  isUploadingGas
-                    ? 'bg-slate-300 text-slate-600 cursor-wait'
-                    : 'bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white hover:brightness-110 shadow-blue-900/20'
-                }`}
+                className={`w-full py-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] ${isUploadingGas
+                  ? 'bg-slate-300 text-slate-600 cursor-wait'
+                  : 'bg-gradient-to-r from-blue-900 to-[#0F2C59] text-white hover:brightness-110 shadow-blue-900/20'
+                  }`}
               >
                 {isUploadingGas ? (
                   <>
@@ -2403,16 +2394,14 @@ export default function MobileStorefront() {
           {/* CHECKBOX KONFIRMASI WAJIB */}
           <div
             onClick={() => setIsProofConfirmed(!isProofConfirmed)}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none ${
-              isProofConfirmed
-                ? 'border-emerald-600 bg-emerald-50/70'
-                : 'border-slate-200 bg-white hover:border-slate-300'
-            }`}
+            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none ${isProofConfirmed
+              ? 'border-emerald-600 bg-emerald-50/70'
+              : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
           >
             <div
-              className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                isProofConfirmed ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
-              }`}
+              className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isProofConfirmed ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300'
+                }`}
             >
               {isProofConfirmed && <Check size={14} />}
             </div>
@@ -2432,11 +2421,10 @@ export default function MobileStorefront() {
               type="button"
               disabled={!isProofConfirmed}
               onClick={() => setShowFinalConfirmModal(true)}
-              className={`w-full py-3.5 rounded-2xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition-all ${
-                isProofConfirmed
-                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-emerald-700/20 hover:brightness-110 active:scale-[0.98]'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-              }`}
+              className={`w-full py-3.5 rounded-2xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition-all ${isProofConfirmed
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-emerald-700/20 hover:brightness-110 active:scale-[0.98]'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                }`}
             >
               <CheckCircle2 size={16} />
               <span>Selesaikan Pemesanan & Notifikasi Sekolah</span>
@@ -3038,11 +3026,10 @@ export default function MobileStorefront() {
                   <button
                     type="button"
                     onClick={() => setStudentForm({ ...studentForm, studentType: 'luar' })}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      studentForm.studentType === 'luar'
-                        ? 'border-blue-600 bg-blue-50/70 text-blue-900 shadow-xs ring-1 ring-blue-600'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${studentForm.studentType === 'luar'
+                      ? 'border-blue-600 bg-blue-50/70 text-blue-900 shadow-xs ring-1 ring-blue-600'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
                   >
                     <div className="font-bold text-[11px] flex items-center gap-1">
                       <span>🔘 Siswa Baru</span>
@@ -3055,11 +3042,10 @@ export default function MobileStorefront() {
                   <button
                     type="button"
                     onClick={() => setStudentForm({ ...studentForm, studentType: 'dalam' })}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      studentForm.studentType === 'dalam'
-                        ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 shadow-xs ring-1 ring-emerald-600'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${studentForm.studentType === 'dalam'
+                      ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 shadow-xs ring-1 ring-emerald-600'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
                   >
                     <div className="font-bold text-[11px] flex items-center gap-1 text-emerald-900">
                       <span>✨ Siswa Dalam</span>
@@ -3095,9 +3081,9 @@ export default function MobileStorefront() {
                     const found = schoolList.find((s) => cleanSchoolName(s.name) === cleanSchoolName(chosen));
                     const autoLevel = found?.level || deriveSchoolLevel(chosen);
                     const grades = getAvailableGrades(autoLevel);
-                    setStudentForm({ 
-                      ...studentForm, 
-                      school: chosen, 
+                    setStudentForm({
+                      ...studentForm,
+                      school: chosen,
                       level: autoLevel,
                       grade: grades.length > 0 ? (grades.includes(studentForm.grade) ? studentForm.grade : grades[0]) : '-'
                     });
@@ -3270,8 +3256,8 @@ export default function MobileStorefront() {
                     {modalImageIndex === 0
                       ? 'Tampak Depan'
                       : modalImageIndex === 1
-                      ? 'Detail Bahan & Kerah'
-                      : 'Tampak Belakang / Lipatan'}
+                        ? 'Detail Bahan & Kerah'
+                        : 'Tampak Belakang / Lipatan'}
                   </div>
 
                   {modalImages.length > 1 && (
@@ -3306,11 +3292,10 @@ export default function MobileStorefront() {
                           <button
                             key={idx}
                             onClick={() => setModalImageIndex(idx)}
-                            className={`h-2 rounded-full transition-all ${
-                              modalImageIndex === idx
-                                ? 'w-6 bg-amber-400 shadow-sm'
-                                : 'w-2 bg-white/70 hover:bg-white'
-                            }`}
+                            className={`h-2 rounded-full transition-all ${modalImageIndex === idx
+                              ? 'w-6 bg-amber-400 shadow-sm'
+                              : 'w-2 bg-white/70 hover:bg-white'
+                              }`}
                             aria-label={`Lihat foto ${idx + 1}`}
                           />
                         ))}
@@ -3326,11 +3311,10 @@ export default function MobileStorefront() {
                       <button
                         key={idx}
                         onClick={() => setModalImageIndex(idx)}
-                        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
-                          modalImageIndex === idx
-                            ? 'border-blue-900 shadow-md scale-105'
-                            : 'border-slate-200 opacity-60 hover:opacity-100'
-                        }`}
+                        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${modalImageIndex === idx
+                          ? 'border-blue-900 shadow-md scale-105'
+                          : 'border-slate-200 opacity-60 hover:opacity-100'
+                          }`}
                       >
                         <img
                           src={img}
@@ -3379,11 +3363,10 @@ export default function MobileStorefront() {
                       <button
                         key={v.size}
                         onClick={() => setModalSelectedSize(v.size)}
-                        className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all border ${
-                          modalSelectedSize === v.size
-                            ? 'border-blue-900 bg-blue-900 text-white shadow-md scale-105'
-                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-                        }`}
+                        className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all border ${modalSelectedSize === v.size
+                          ? 'border-blue-900 bg-blue-900 text-white shadow-md scale-105'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                          }`}
                       >
                         {v.size}
                       </button>
@@ -3654,15 +3637,13 @@ export default function MobileStorefront() {
                   height: `${spotlightRect.height}px`,
                   boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.80)',
                 }}
-                className={`absolute pointer-events-none transition-all duration-300 ${
-                  spotlightRect.shape === 'circle' ? 'rounded-full' : 'rounded-3xl'
-                } ring-4 ring-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.5)]`}
+                className={`absolute pointer-events-none transition-all duration-300 ${spotlightRect.shape === 'circle' ? 'rounded-full' : 'rounded-3xl'
+                  } ring-4 ring-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.5)]`}
               >
                 {/* Ping glow highlight */}
                 <div
-                  className={`w-full h-full animate-ping opacity-25 border-2 border-amber-300 ${
-                    spotlightRect.shape === 'circle' ? 'rounded-full' : 'rounded-3xl'
-                  }`}
+                  className={`w-full h-full animate-ping opacity-25 border-2 border-amber-300 ${spotlightRect.shape === 'circle' ? 'rounded-full' : 'rounded-3xl'
+                    }`}
                 />
               </div>
             </div>
@@ -3682,7 +3663,7 @@ export default function MobileStorefront() {
               <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 max-w-sm w-full space-y-2 relative animate-scale-up">
                 {/* Panah Penunjuk ke Atas (Menunjuk langsung ke kartu seragam pertama) */}
                 <div className="absolute -top-3 left-1/4 sm:left-1/3 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[10px] border-b-amber-400 animate-bounce" />
-                
+
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-700">
                   <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
                     <Sparkles size={13} className="text-amber-400" />
@@ -3736,7 +3717,7 @@ export default function MobileStorefront() {
               <div className="bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl border-2 border-amber-400 space-y-2 relative">
                 {/* Panah Penunjuk ke Atas (Menunjuk langsung ke ikon keranjang kuning) */}
                 <div className="absolute -top-3 right-6 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[10px] border-b-amber-400 animate-bounce" />
-                
+
                 <div className="flex items-center justify-between pb-1 border-b border-slate-700">
                   <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
                     <ShoppingBag size={13} className="text-amber-400" />
@@ -3804,9 +3785,8 @@ export default function MobileStorefront() {
             setActiveTab('store');
             setCheckoutStep('browsing');
           }}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'store' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
-          }`}
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'store' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
+            }`}
         >
           <Home size={22} />
           <span className="text-xs font-semibold">Katalog</span>
@@ -3818,9 +3798,8 @@ export default function MobileStorefront() {
             setCheckoutStep('browsing');
             fetchLiveParentOrders();
           }}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'orders' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
-          }`}
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'orders' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
+            }`}
         >
           <Clock size={22} />
           <span className="text-xs font-semibold">Pesanan Saya</span>
@@ -3831,9 +3810,8 @@ export default function MobileStorefront() {
             setActiveTab('profile');
             setCheckoutStep('browsing');
           }}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'profile' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
-          }`}
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'profile' ? 'text-blue-900 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium'
+            }`}
         >
           <User size={22} />
           <span className="text-xs font-semibold">Profil</span>
