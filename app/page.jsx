@@ -129,6 +129,69 @@ export default function HomeLogin() {
   // null | 'welcome' | 'ask' | 'spotlight_register' | 'spotlight_form'
   const [guideState, setGuideState] = useState(null);
 
+  // Mobile Back Button Handler (Double-tap to Exit)
+  const [showExitToast, setShowExitToast] = useState(false);
+  const lastBackPressRef = useRef(0);
+  const showRegisterModalRef = useRef(false);
+
+  useEffect(() => {
+    showRegisterModalRef.current = showRegisterModal;
+  }, [showRegisterModal]);
+
+  // Handle Tombol Back Mobile: Cegah balik ke dashboard dan terapkan "Klik kembali 2x untuk keluar"
+  useEffect(() => {
+    if (appPhase !== 'login' || typeof window === 'undefined') return;
+
+    // Pasang guard entry di history
+    window.history.pushState({ page: 'login_root' }, '', window.location.href);
+
+    const handlePopState = () => {
+      // 1. Jika modal pendaftaran sedang terbuka, tombol back menutup modalnya terlebih dahulu
+      if (showRegisterModalRef.current) {
+        setShowRegisterModal(false);
+        window.history.pushState({ page: 'login_root' }, '', window.location.href);
+        return;
+      }
+
+      // 2. Deteksi Double-Tap Back dalam kurun waktu 2 detik
+      const now = Date.now();
+      const timeDiff = now - lastBackPressRef.current;
+
+      if (timeDiff < 2000) {
+        // Klik kedua dalam 2 detik: Pengguna mengonfirmasi ingin keluar aplikasi
+        lastBackPressRef.current = 0;
+        setShowExitToast(false);
+        try {
+          window.close();
+        } catch (e) { }
+        window.history.back();
+      } else {
+        // Klik pertama: Tahan navigasi, tampilkan toast & getaran halus
+        lastBackPressRef.current = now;
+        window.history.pushState({ page: 'login_root' }, '', window.location.href);
+        try {
+          triggerHaptic(20);
+        } catch (e) { }
+        setShowExitToast(true);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [appPhase]);
+
+  // Sembunyikan toast keluar setelah 2 detik
+  useEffect(() => {
+    if (showExitToast) {
+      const timer = setTimeout(() => {
+        setShowExitToast(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showExitToast]);
+
   // Jalankan panduan pada halaman login jika belum pernah dilihat
   useEffect(() => {
     if (appPhase === 'login' && !showInstallModal) {
@@ -151,12 +214,28 @@ export default function HomeLogin() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isLoggedOut =
+          urlParams.get('logout') === 'true' ||
+          sessionStorage.getItem('kanvas_logged_out') === 'true';
+
+        if (isLoggedOut) {
+          try {
+            sessionStorage.removeItem('kanvas_logged_out');
+            if (urlParams.get('logout')) {
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          } catch (e) { }
+          setAppPhase('login');
+          setIsSessionChecked(true);
+          return;
+        }
+
         // Cek apakah ada token OAuth Google di URL (#access_token=... atau ?code=...)
         const hasAuthHash =
           window.location.hash.includes('access_token=') ||
           window.location.search.includes('code=');
 
-        const urlParams = new URLSearchParams(window.location.search);
         const isPwaParam = urlParams.get('source') === 'pwa';
         const standalone =
           window.matchMedia('(display-mode: standalone)').matches ||
@@ -953,6 +1032,14 @@ export default function HomeLogin() {
               }}
               className="fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-2xs transition-opacity"
             ></div>
+          )}
+
+          {/* Floating Exit Toast (Klik kembali sekali lagi untuk keluar) */}
+          {showExitToast && (
+            <div className="fixed bottom-7 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-5 py-3 rounded-full text-xs font-semibold shadow-2xl border border-slate-700/80 backdrop-blur-md flex items-center gap-2.5 animate-bounce-subtle pointer-events-none whitespace-nowrap">
+              <Smartphone size={15} className="text-amber-400 shrink-0" />
+              <span>Klik kembali sekali lagi untuk keluar aplikasi</span>
+            </div>
           )}
         </div>
       )}

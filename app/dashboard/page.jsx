@@ -549,10 +549,14 @@ export default function MobileStorefront() {
       const list = await getSchoolList(supabase);
       setSchoolList(list);
 
-      // 2. Load Parent Session
+      // 2. Load Parent Session (Keluarkan otomatis jika tidak ada sesi aktif)
       if (typeof window !== 'undefined') {
         try {
           const stored = localStorage.getItem('kanvas_parent_session');
+          if (!stored) {
+            router.replace('/?logout=true');
+            return;
+          }
           if (stored) {
             const parsed = JSON.parse(stored);
             setParentProfile({
@@ -1498,10 +1502,12 @@ export default function MobileStorefront() {
       } catch (e) { }
       if (typeof window !== 'undefined') {
         localStorage.removeItem('kanvas_parent_session');
-        // Tandai bahwa intro sudah pernah ditonton agar langsung masuk ke halaman Login!
+        // Tandai bahwa sesi sudah logout agar langsung masuk ke Login tanpa intro/loading
+        sessionStorage.setItem('kanvas_logged_out', 'true');
         sessionStorage.setItem('kanvas_intro_seen', 'true');
+        sessionStorage.setItem('kanvas_install_gate_dismissed', 'true');
       }
-      router.push('/');
+      router.replace('/?logout=true');
     }
   };
 
