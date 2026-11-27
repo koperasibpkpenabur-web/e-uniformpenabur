@@ -82,17 +82,26 @@ export default function HomeLogin() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [isAppStandalone, setIsAppStandalone] = useState(false);
 
-  // Cek PWA install prompt & URL parameter ?install=true
+  // Cek PWA install prompt, status standalone, & deteksi in-app browser (WhatsApp, Instagram, dsb)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const urlParams = new URLSearchParams(window.location.search);
+      const isPwaParam = urlParams.get('source') === 'pwa';
+      const standalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true ||
+        isPwaParam;
       setIsAppStandalone(standalone);
 
       const ua = window.navigator.userAgent.toLowerCase();
       const apple = /iphone|ipad|ipod/.test(ua);
       setIsIOSDevice(apple);
+
+      const inApp = /whatsapp|fban|fbav|instagram|line|tiktok|musical_ly/.test(ua);
+      setIsInAppBrowser(inApp);
 
       const handleBeforeInstall = (e) => {
         e.preventDefault();
@@ -100,23 +109,34 @@ export default function HomeLogin() {
       };
       window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('install') === 'true' && !standalone) {
-        setShowInstallModal(true);
-      }
-
       return () => {
         window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       };
     }
   }, []);
 
+  // Otomatis rekomendasikan pasang aplikasi saat masuk ke halaman Login jika dibuka dari browser web
+  useEffect(() => {
+    if (appPhase === 'login' && !isAppStandalone) {
+      try {
+        const installDismissed = sessionStorage.getItem('kanvas_install_dismissed');
+        if (!installDismissed) {
+          const timer = setTimeout(() => {
+            setShowInstallModal(true);
+          }, 400);
+          return () => clearTimeout(timer);
+        }
+      } catch (e) {}
+    }
+  }, [appPhase, isAppStandalone]);
+
   // Onboarding Guided Tour (Opsi A Spotlight)
   // null | 'welcome' | 'ask' | 'spotlight_register' | 'spotlight_form'
   const [guideState, setGuideState] = useState(null);
 
+  // Jalankan panduan setelah modal install selesai/ditutup agar tidak bertumpuk
   useEffect(() => {
-    if (appPhase === 'login') {
+    if (appPhase === 'login' && !showInstallModal) {
       try {
         const dismissed = localStorage.getItem('kanvas_tour_dismissed');
         if (!dismissed) {
@@ -127,7 +147,7 @@ export default function HomeLogin() {
         }
       } catch (e) {}
     }
-  }, [appPhase]);
+  }, [appPhase, showInstallModal]);
 
   // Tracker kesiapan data sekolah dari Supabase di balik layar
   const isSchoolDataReady = useRef(false);
@@ -265,19 +285,38 @@ export default function HomeLogin() {
     }
   }, [appPhase]);
 
+  // Tutup Modal Rekomendasi Install & Simpan State Sesi
+  const handleCloseInstallModal = () => {
+    setShowInstallModal(false);
+    try {
+      sessionStorage.setItem('kanvas_install_dismissed', 'true');
+    } catch (e) {}
+  };
+
   // PWA Trigger Install
   const handleTriggerInstall = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setShowInstallModal(false);
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setShowInstallModal(false);
+          try {
+            sessionStorage.setItem('kanvas_install_dismissed', 'true');
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.error('PWA install error:', err);
       }
       setDeferredPrompt(null);
     } else if (isIOSDevice) {
-      alert('Petunjuk iPhone/iPad:\n1. Ketuk tombol Bagikan (Share / kotak panah ke atas) di Safari.\n2. Gulir ke bawah dan pilih "Tambah ke Layar Utama" (Add to Home Screen).');
+      alert(
+        'Petunjuk iPhone/iPad (Safari):\n1. Ketuk ikon Bagikan (Share / kotak panah ke atas) di bilah bawah Safari.\n2. Gulir ke bawah dan pilih "Tambah ke Layar Utama" (Add to Home Screen).\n3. Ketuk "Tambah" di pojok kanan atas.'
+      );
     } else {
-      alert('Untuk memasang aplikasi Kanvas di HP:\nKetuk menu browser (titik 3 di pojok kanan atas) lalu pilih "Instal Aplikasi" atau "Tambahkan ke Layar Utama".');
+      alert(
+        'Untuk memasang aplikasi Kanvas di HP:\n1. Ketuk menu titik 3 di pojok kanan atas Chrome.\n2. Pilih "Instal Aplikasi" atau "Tambahkan ke Layar Utama".'
+      );
     }
   };
 
@@ -1095,55 +1134,83 @@ export default function HomeLogin() {
 
       {/* Modal Pasang Aplikasi (Install PWA) */}
       {showInstallModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-center relative animate-scale-up">
             <button
-              onClick={() => setShowInstallModal(false)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200"
+              onClick={handleCloseInstallModal}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition-colors"
             >
               <X size={16} />
             </button>
 
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-xs">
-              <Smartphone size={32} className="text-blue-900" />
+            {/* Rekomendasi Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-black uppercase tracking-wide mb-3">
+              <Sparkles size={12} className="text-amber-600" />
+              <span>Rekomendasi Resmi Koperasi</span>
             </div>
 
-            <h3 className="text-base font-bold text-slate-900 mb-1">
+            {/* Icon Kanvas */}
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-100 shadow-sm relative group">
+              <img
+                src={getAssetPath('/kanvas-logo-only.png')}
+                alt="Kanvas"
+                className="w-12 h-12 object-contain drop-shadow-sm"
+              />
+            </div>
+
+            <h3 className="text-base font-black text-slate-900 mb-1">
               Pasang Aplikasi Kanvas PENABUR
             </h3>
-            <p className="text-xs text-slate-600 mb-5 leading-relaxed">
-              Akses pemesanan seragam lebih cepat langsung dari Layar Utama HP Anda tanpa perlu membuka browser berulang kali.
+            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+              Akses pemesanan seragam resmi lebih cepat langsung dari Layar Utama HP Anda, tanpa perlu membuka browser berulang kali.
             </p>
 
-            {isIOSDevice ? (
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left text-xs text-slate-700 space-y-2 mb-4">
-                <span className="font-bold block text-blue-900">Petunjuk Pemasangan di iPhone/iPad:</span>
-                <div className="flex items-start gap-2">
-                  <span className="font-bold text-blue-900">1.</span>
-                  <span>Ketuk ikon <b>Bagikan (Share / kotak panah ke atas)</b> di bilah bawah Safari.</span>
+            {/* Deteksi jika user membuka dari browser chat (WhatsApp / Instagram dsb) */}
+            {isInAppBrowser && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-left text-xs text-amber-950 mb-4 space-y-1">
+                <div className="font-bold flex items-center gap-1 text-amber-900">
+                  <AlertTriangle size={13} className="text-amber-600 shrink-0" />
+                  <span>Membuka lewat WhatsApp / Chat</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-bold text-blue-900">2.</span>
-                  <span>Gulir ke bawah lalu pilih <b>"Tambah ke Layar Utama" (Add to Home Screen)</b>.</span>
+                <p className="text-[11px] text-amber-800 leading-snug">
+                  Agar aplikasi dapat dipasang ke Layar Utama: ketuk ikon titik 3 di pojok kanan atas, lalu pilih <b>"Buka di Browser / Chrome / Safari"</b>.
+                </p>
+              </div>
+            )}
+
+            {isIOSDevice ? (
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-left text-xs text-slate-700 space-y-2 mb-4">
+                <span className="font-bold block text-blue-900 text-xs">Cara Pasang di iPhone/iPad (Safari):</span>
+                <div className="flex items-center gap-2.5 bg-white p-2 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-900 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+                  <span className="text-[11px] leading-tight text-slate-700">
+                    Ketuk tombol <b>Bagikan (Share / ikon kotak panah ke atas)</b> di bilah bawah Safari.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5 bg-white p-2 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-900 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+                  <span className="text-[11px] leading-tight text-slate-700">
+                    Gulir ke bawah lalu pilih <b>"Tambah ke Layar Utama" (Add to Home Screen)</b>.
+                  </span>
                 </div>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={handleTriggerInstall}
-                className="w-full py-3.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 mb-3 active:scale-95"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-900 to-blue-800 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-600/20"
               >
-                <Download size={16} />
-                <span>Pasang Aplikasi Sekarang</span>
+                <Download size={16} className="text-amber-400" />
+                <span>Pasang Aplikasi Sekarang (1 Ketuk)</span>
               </button>
             )}
 
             <button
               type="button"
-              onClick={() => setShowInstallModal(false)}
-              className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-700"
+              onClick={handleCloseInstallModal}
+              className="w-full py-2.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
             >
-              Lanjutkan di Browser Saja
+              Lanjutkan di Browser Saja →
             </button>
           </div>
         </div>

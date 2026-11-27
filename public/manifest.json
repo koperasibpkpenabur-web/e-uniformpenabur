@@ -2,7 +2,7 @@
   "name": "Kanvas PENABUR - Pemesanan Seragam",
   "short_name": "Kanvas",
   "description": "Aplikasi Pemesanan Seragam Resmi Siswa BPK PENABUR Jakarta",
-  "start_url": "./",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
