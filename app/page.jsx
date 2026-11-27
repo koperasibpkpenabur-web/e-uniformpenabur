@@ -4,26 +4,26 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
 import { getAssetPath, triggerHaptic } from '../lib/utils';
-import { 
-  getSchoolList, 
-  deriveSchoolLevel, 
+import {
+  getSchoolList,
+  deriveSchoolLevel,
   getNextSchoolLevel,
   getAvailableGrades,
   cleanSchoolName,
-  checkParentRegistered, 
-  saveParentRegistration 
+  checkParentRegistered,
+  saveParentRegistration
 } from '../lib/schools';
-import { 
-  Sparkles, 
-  ArrowRight, 
-  ShieldCheck, 
-  CheckCircle2, 
-  ShoppingBag, 
-  School, 
-  Lock, 
-  AlertTriangle, 
-  X, 
-  UserCheck, 
+import {
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
+  ShoppingBag,
+  School,
+  Lock,
+  AlertTriangle,
+  X,
+  UserCheck,
   Check,
   Volume2,
   VolumeX,
@@ -130,7 +130,7 @@ export default function HomeLogin() {
           }, 450);
           return () => clearTimeout(timer);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [appPhase, showInstallModal]);
 
@@ -145,7 +145,7 @@ export default function HomeLogin() {
         const hasAuthHash =
           window.location.hash.includes('access_token=') ||
           window.location.search.includes('code=');
-        
+
         const urlParams = new URLSearchParams(window.location.search);
         const isPwaParam = urlParams.get('source') === 'pwa';
         const standalone =
@@ -208,7 +208,7 @@ export default function HomeLogin() {
     try {
       const todayDateStr = new Date().toISOString().split('T')[0];
       localStorage.setItem('kanvas_intro1_last_date', todayDateStr);
-    } catch (e) {}
+    } catch (e) { }
 
     setFadeTransition(true);
     setTimeout(() => {
@@ -232,7 +232,7 @@ export default function HomeLogin() {
             // Jika browser membatasi autoplay audio, fallback ke muted
             if (videoRef.current) {
               videoRef.current.muted = true;
-              videoRef.current.play().catch(() => {});
+              videoRef.current.play().catch(() => { });
               setIsAudioMuted(true);
               setShowAudioToggle(true);
             }
@@ -286,14 +286,14 @@ export default function HomeLogin() {
     setShowInstallModal(false);
     try {
       sessionStorage.setItem('kanvas_install_dismissed', 'true');
-    } catch (e) {}
+    } catch (e) { }
   };
 
   // Opsi A: Lanjutkan dari Layar Sambutan (Install Gate) ke Video Intro 1
   const handleContinueFromInstallGate = () => {
     try {
       sessionStorage.setItem('kanvas_install_gate_dismissed', 'true');
-    } catch (e) {}
+    } catch (e) { }
 
     const todayDateStr = new Date().toISOString().split('T')[0];
     const lastIntroDate = localStorage.getItem('kanvas_intro1_last_date');
@@ -319,7 +319,7 @@ export default function HomeLogin() {
           try {
             sessionStorage.setItem('kanvas_install_gate_dismissed', 'true');
             sessionStorage.setItem('kanvas_install_dismissed', 'true');
-          } catch (e) {}
+          } catch (e) { }
           if (appPhase === 'install_gate') {
             handleContinueFromInstallGate();
           } else {
@@ -483,14 +483,14 @@ export default function HomeLogin() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         authUserId = session?.user?.id || null;
-      } catch (e) {}
+      } catch (e) { }
 
       await saveParentRegistration(supabase, registerForm, authUserId);
       if (guideState === 'spotlight_form') {
         try {
           localStorage.setItem('kanvas_guide_active', 'true');
           localStorage.setItem('kanvas_guide_step', '3');
-        } catch (e) {}
+        } catch (e) { }
       }
       setShowRegisterModal(false);
       alert(`Pendaftaran Berhasil!\nSelamat datang Bapak/Ibu ${registerForm.parentName}. Silakan melanjutkan pemesanan seragam.`);
@@ -515,9 +515,8 @@ export default function HomeLogin() {
          ========================================================================= */}
       {appPhase === 'install_gate' && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-[#070B14] text-white p-5 select-none transition-opacity duration-300 ease-out ${
-            fadeTransition ? 'opacity-0' : 'opacity-100'
-          }`}
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-[#070B14] text-white p-5 select-none transition-opacity duration-300 ease-out ${fadeTransition ? 'opacity-0' : 'opacity-100'
+            }`}
         >
           {/* Ambient Glow */}
           <div className="absolute -inset-10 bg-gradient-to-tr from-blue-600/25 via-amber-500/20 to-transparent rounded-full blur-3xl opacity-70 pointer-events-none"></div>
@@ -526,7 +525,7 @@ export default function HomeLogin() {
             {/* Rekomendasi Badge */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-[11px] font-black uppercase tracking-wide mb-3">
               <Sparkles size={12} className="text-amber-400" />
-              <span>Rekomendasi Koperasi Penabur</span>
+              <span>Aplikasi Kanal Visual Atribut Sekolah BPK PENABUR</span>
             </div>
 
             {/* Icon Kanvas */}
@@ -542,7 +541,7 @@ export default function HomeLogin() {
               Pasang Aplikasi Kanvas PENABUR
             </h2>
             <p className="text-xs text-slate-300 mb-5 leading-relaxed">
-              Pasang aplikasi ke Layar Utama HP untuk akses pemesanan seragam resmi yang lebih cepat, praktis, dan tanpa membuka browser.
+              Pasang aplikasi ke Layar Utama HP untuk akses pemesanan seragam.
             </p>
 
             {/* Peringatan jika membuka dari browser chat (WhatsApp / Instagram) */}
@@ -581,7 +580,7 @@ export default function HomeLogin() {
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-500/20"
               >
                 <Download size={16} className="text-amber-300" />
-                <span>Pasang Aplikasi Sekarang (1 Ketuk)</span>
+                <span>Install Aplikasi</span>
               </button>
             )}
 
@@ -591,7 +590,7 @@ export default function HomeLogin() {
               onClick={handleContinueFromInstallGate}
               className="w-full py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5"
             >
-              <span>Lanjutkan Lewat Web (Tonton Intro)</span>
+              <span>Lanjutkan Lewat Web</span>
               <ArrowRight size={13} />
             </button>
           </div>
@@ -611,9 +610,8 @@ export default function HomeLogin() {
               setIsAudioMuted(false);
             }
           }}
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white select-none transition-opacity duration-300 ease-out cursor-pointer ${
-            fadeTransition ? 'opacity-0' : 'opacity-100'
-          }`}
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white select-none transition-opacity duration-300 ease-out cursor-pointer ${fadeTransition ? 'opacity-0' : 'opacity-100'
+            }`}
         >
           {/* Tombol Audio Speaker (Lewati dihapus sesuai instruksi branding Kanvas) */}
           {showAudioToggle && (
@@ -648,9 +646,8 @@ export default function HomeLogin() {
          ========================================================================= */}
       {appPhase === 'intro2' && (
         <div
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white px-6 select-none transition-opacity duration-400 ease-out ${
-            fadeTransition ? 'opacity-0' : 'opacity-100'
-          }`}
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white px-6 select-none transition-opacity duration-400 ease-out ${fadeTransition ? 'opacity-0' : 'opacity-100'
+            }`}
         >
           <div className="relative w-full max-w-xs sm:max-w-sm flex flex-col items-center justify-center animate-fade-in p-4">
             {/* Ambient Warm & Blue Glow */}
@@ -670,9 +667,8 @@ export default function HomeLogin() {
          ========================================================================= */}
       {appPhase === 'loading' && (
         <div
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B1528] text-white px-6 select-none transition-opacity duration-300 ease-out ${
-            fadeTransition ? 'opacity-0' : 'opacity-100'
-          }`}
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B1528] text-white px-6 select-none transition-opacity duration-300 ease-out ${fadeTransition ? 'opacity-0' : 'opacity-100'
+            }`}
         >
           <div className="w-full max-w-xs flex flex-col items-center text-center">
             {/* Ambient Logo Glow */}
@@ -845,11 +841,10 @@ export default function HomeLogin() {
                     }
                     setShowRegisterModal(true);
                   }}
-                  className={`text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer transition-all ${
-                    guideState === 'spotlight_register'
+                  className={`text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer transition-all ${guideState === 'spotlight_register'
                       ? 'bg-amber-400 text-slate-950 px-2.5 py-1 rounded-md ring-4 ring-amber-400/50 shadow-md font-black animate-pulse'
                       : ''
-                  }`}
+                    }`}
                 >
                   Daftar disini
                 </button>
@@ -872,7 +867,7 @@ export default function HomeLogin() {
                 setGuideState(null);
                 try {
                   localStorage.setItem('kanvas_guide_active', 'false');
-                } catch (e) {}
+                } catch (e) { }
               }}
               className="fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-2xs transition-opacity"
             ></div>
@@ -932,7 +927,7 @@ export default function HomeLogin() {
                   try {
                     localStorage.setItem('kanvas_tour_dismissed', 'true');
                     localStorage.setItem('kanvas_guide_active', 'false');
-                  } catch (e) {}
+                  } catch (e) { }
                 }}
                 className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all active:scale-98"
               >
@@ -945,7 +940,7 @@ export default function HomeLogin() {
                   try {
                     localStorage.setItem('kanvas_tour_dismissed', 'true');
                     localStorage.setItem('kanvas_guide_active', 'true');
-                  } catch (e) {}
+                  } catch (e) { }
                 }}
                 className="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-98"
               >
@@ -1079,11 +1074,10 @@ export default function HomeLogin() {
                 <div className="grid grid-cols-2 gap-2">
                   <div
                     onClick={() => setRegisterForm({ ...registerForm, studentType: 'luar' })}
-                    className={`p-2.5 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${
-                      registerForm.studentType === 'luar'
+                    className={`p-2.5 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${registerForm.studentType === 'luar'
                         ? 'border-blue-700 bg-blue-50/70 shadow-xs'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     <span className="text-[11px] font-extrabold text-slate-900">Siswa Baru</span>
                     <span className="text-[9.5px] text-slate-500">Dari Luar PENABUR</span>
@@ -1091,11 +1085,10 @@ export default function HomeLogin() {
 
                   <div
                     onClick={() => setRegisterForm({ ...registerForm, studentType: 'dalam' })}
-                    className={`p-3 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${
-                      registerForm.studentType === 'dalam'
+                    className={`p-3 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${registerForm.studentType === 'dalam'
                         ? 'border-blue-700 bg-blue-50/70 shadow-xs'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     <span className="text-xs font-extrabold text-slate-900">Siswa Dalam</span>
                     <span className="text-[11px] text-slate-500 mt-0.5">Internal / Naik Jenjang</span>
@@ -1269,7 +1262,7 @@ export default function HomeLogin() {
             </div>
 
             <h3 className="text-base font-black text-slate-900 mb-1">
-              Pasang Aplikasi Kanvas PENABUR
+              Install Aplikasi Kanvas PENABUR
             </h3>
             <p className="text-xs text-slate-600 mb-4 leading-relaxed">
               Akses pemesanan seragam resmi lebih cepat langsung dari Layar Utama HP Anda, tanpa perlu membuka browser berulang kali.
