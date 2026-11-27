@@ -115,26 +115,11 @@ export default function HomeLogin() {
     }
   }, []);
 
-  // Otomatis rekomendasikan pasang aplikasi saat masuk ke halaman Login jika dibuka dari browser web
-  useEffect(() => {
-    if (appPhase === 'login' && !isAppStandalone) {
-      try {
-        const installDismissed = sessionStorage.getItem('kanvas_install_dismissed');
-        if (!installDismissed) {
-          const timer = setTimeout(() => {
-            setShowInstallModal(true);
-          }, 400);
-          return () => clearTimeout(timer);
-        }
-      } catch (e) {}
-    }
-  }, [appPhase, isAppStandalone]);
-
   // Onboarding Guided Tour (Opsi A Spotlight)
   // null | 'welcome' | 'ask' | 'spotlight_register' | 'spotlight_form'
   const [guideState, setGuideState] = useState(null);
 
-  // Jalankan panduan setelah modal install selesai/ditutup agar tidak bertumpuk
+  // Jalankan panduan pada halaman login jika belum pernah dilihat
   useEffect(() => {
     if (appPhase === 'login' && !showInstallModal) {
       try {
@@ -152,7 +137,7 @@ export default function HomeLogin() {
   // Tracker kesiapan data sekolah dari Supabase di balik layar
   const isSchoolDataReady = useRef(false);
 
-  // 1. Inisialisasi Sesi (Smart Daily Session 1x Sehari & OAuth Detection)
+  // 1. Inisialisasi Sesi (Smart Daily Session 1x Sehari, Opsi A Install Gate, & OAuth Detection)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -161,17 +146,28 @@ export default function HomeLogin() {
           window.location.hash.includes('access_token=') ||
           window.location.search.includes('code=');
         
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPwaParam = urlParams.get('source') === 'pwa';
+        const standalone =
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true ||
+          isPwaParam;
+
+        const installGateDismissed = sessionStorage.getItem('kanvas_install_gate_dismissed');
         const todayDateStr = new Date().toISOString().split('T')[0];
         const lastIntroDate = localStorage.getItem('kanvas_intro1_last_date');
 
         if (hasAuthHash) {
           // Jika baru kembali dari Google OAuth, langsung ke login
           setAppPhase('login');
+        } else if (!standalone && !installGateDismissed) {
+          // OPSI A: Jika dibuka dari web browser, tawarkan Rekomendasi Install App SEBELUM Intro 1!
+          setAppPhase('install_gate');
         } else if (lastIntroDate === todayDateStr) {
           // Kunjungan kedua & seterusnya di hari yang sama: Langsung mulai dari Intro 2
           setAppPhase('intro2');
         } else {
-          // Kunjungan pertama di hari ini: Putar Intro 1 (Video)
+          // Kunjungan pertama di hari ini (atau dari PWA terinstal): Putar Intro 1 (Video)
           setAppPhase('intro');
         }
       } catch (e) {
@@ -293,6 +289,26 @@ export default function HomeLogin() {
     } catch (e) {}
   };
 
+  // Opsi A: Lanjutkan dari Layar Sambutan (Install Gate) ke Video Intro 1
+  const handleContinueFromInstallGate = () => {
+    try {
+      sessionStorage.setItem('kanvas_install_gate_dismissed', 'true');
+    } catch (e) {}
+
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    const lastIntroDate = localStorage.getItem('kanvas_intro1_last_date');
+
+    setFadeTransition(true);
+    setTimeout(() => {
+      if (lastIntroDate === todayDateStr) {
+        setAppPhase('intro2');
+      } else {
+        setAppPhase('intro');
+      }
+      setFadeTransition(false);
+    }, 300);
+  };
+
   // PWA Trigger Install
   const handleTriggerInstall = async () => {
     if (deferredPrompt) {
@@ -300,10 +316,15 @@ export default function HomeLogin() {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
-          setShowInstallModal(false);
           try {
+            sessionStorage.setItem('kanvas_install_gate_dismissed', 'true');
             sessionStorage.setItem('kanvas_install_dismissed', 'true');
           } catch (e) {}
+          if (appPhase === 'install_gate') {
+            handleContinueFromInstallGate();
+          } else {
+            setShowInstallModal(false);
+          }
         }
       } catch (err) {
         console.error('PWA install error:', err);
@@ -488,6 +509,95 @@ export default function HomeLogin() {
 
   return (
     <div className="relative w-full min-h-screen flex flex-col justify-between overflow-x-hidden font-sans">
+      {/* =========================================================================
+          OPSI A: LAYAR REKOMENDASI INSTALL APLIKASI SEBELUM INTRO 1
+          Hanya tampil saat user membuka tautan via browser (bukan aplikasi terinstal)
+         ========================================================================= */}
+      {appPhase === 'install_gate' && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-[#070B14] text-white p-5 select-none transition-opacity duration-300 ease-out ${
+            fadeTransition ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          {/* Ambient Glow */}
+          <div className="absolute -inset-10 bg-gradient-to-tr from-blue-600/25 via-amber-500/20 to-transparent rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+
+          <div className="bg-slate-900/95 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-sm w-full text-center relative z-10 shadow-2xl backdrop-blur-md animate-scale-up">
+            {/* Rekomendasi Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-[11px] font-black uppercase tracking-wide mb-3">
+              <Sparkles size={12} className="text-amber-400" />
+              <span>Rekomendasi Koperasi Penabur</span>
+            </div>
+
+            {/* Icon Kanvas */}
+            <div className="w-16 h-16 bg-blue-950/80 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-800/60 shadow-lg relative">
+              <img
+                src={getAssetPath('/kanvas-logo-only.png')}
+                alt="Kanvas"
+                className="w-12 h-12 object-contain drop-shadow-md"
+              />
+            </div>
+
+            <h2 className="text-lg font-black text-white mb-1.5">
+              Pasang Aplikasi Kanvas PENABUR
+            </h2>
+            <p className="text-xs text-slate-300 mb-5 leading-relaxed">
+              Pasang aplikasi ke Layar Utama HP untuk akses pemesanan seragam resmi yang lebih cepat, praktis, dan tanpa membuka browser.
+            </p>
+
+            {/* Peringatan jika membuka dari browser chat (WhatsApp / Instagram) */}
+            {isInAppBrowser && (
+              <div className="bg-amber-500/10 border border-amber-400/30 rounded-2xl p-3 text-left text-xs text-amber-200 mb-4 space-y-1">
+                <div className="font-bold flex items-center gap-1 text-amber-300">
+                  <AlertTriangle size={13} className="shrink-0" />
+                  <span>Membuka lewat WhatsApp / Chat</span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-snug">
+                  Agar tombol install aktif: ketuk titik 3 di pojok kanan atas, lalu pilih <b>"Buka di Browser / Chrome / Safari"</b>.
+                </p>
+              </div>
+            )}
+
+            {isIOSDevice ? (
+              <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5 text-left text-xs text-slate-200 space-y-2 mb-4">
+                <span className="font-bold block text-amber-400 text-xs">Cara Pasang di iPhone/iPad (Safari):</span>
+                <div className="flex items-center gap-2.5 bg-slate-900/90 p-2 rounded-xl border border-slate-700/60">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+                  <span className="text-[11px] leading-tight text-slate-200">
+                    Ketuk tombol <b>Bagikan (Share / ikon kotak panah ke atas)</b> di bilah bawah Safari.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5 bg-slate-900/90 p-2 rounded-xl border border-slate-700/60">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+                  <span className="text-[11px] leading-tight text-slate-200">
+                    Gulir ke bawah dan pilih <b>"Tambah ke Layar Utama" (Add to Home Screen)</b>.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleTriggerInstall}
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-500/20"
+              >
+                <Download size={16} className="text-amber-300" />
+                <span>Pasang Aplikasi Sekarang (1 Ketuk)</span>
+              </button>
+            )}
+
+            {/* Tombol Lanjutkan Lewat Web */}
+            <button
+              type="button"
+              onClick={handleContinueFromInstallGate}
+              className="w-full py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+            >
+              <span>Lanjutkan Lewat Web (Tonton Intro)</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* =========================================================================
           FASE 1: VIDEO INTRO 5 DETIK (Video Intro Kanvas.mp4)
           HANYA RENDER FASE INI AGAR TIDAK ADA KEDIPAN/KEBOCORAN HALAMAN LOGIN!
