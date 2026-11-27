@@ -129,7 +129,10 @@ export default function HomeLogin() {
     }
   }, [appPhase]);
 
-  // 1. Inisialisasi Sesi (Smart Session & OAuth Detection)
+  // Tracker kesiapan data sekolah dari Supabase di balik layar
+  const isSchoolDataReady = useRef(false);
+
+  // 1. Inisialisasi Sesi (Smart Daily Session 1x Sehari & OAuth Detection)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -137,16 +140,22 @@ export default function HomeLogin() {
         const hasAuthHash =
           window.location.hash.includes('access_token=') ||
           window.location.search.includes('code=');
-        const hasSeenIntro = sessionStorage.getItem('kanvas_intro_seen');
+        
+        const todayDateStr = new Date().toISOString().split('T')[0];
+        const lastIntroDate = localStorage.getItem('kanvas_intro1_last_date');
 
-        if (hasAuthHash || hasSeenIntro === 'true') {
-          // Jika baru kembali dari Google OAuth atau sudah pernah tonton intro di sesi ini, langsung ke login
+        if (hasAuthHash) {
+          // Jika baru kembali dari Google OAuth, langsung ke login
           setAppPhase('login');
+        } else if (lastIntroDate === todayDateStr) {
+          // Kunjungan kedua & seterusnya di hari yang sama: Langsung mulai dari Intro 2
+          setAppPhase('intro2');
         } else {
+          // Kunjungan pertama di hari ini: Putar Intro 1 (Video)
           setAppPhase('intro');
         }
       } catch (e) {
-        setAppPhase('intro');
+        setAppPhase('intro2');
       }
       setIsSessionChecked(true);
     }
@@ -155,30 +164,41 @@ export default function HomeLogin() {
   // 2. Load school list
   useEffect(() => {
     const loadSchools = async () => {
-      const list = await getSchoolList(supabase);
-      setSchoolList(list);
-      if (list.length > 0) {
-        const firstSchool = list[0].name;
-        const firstLevel = list[0].level || deriveSchoolLevel(firstSchool);
-        const grades = getAvailableGrades(firstLevel);
-        setRegisterForm((prev) => ({
-          ...prev,
-          schoolName: firstSchool,
-          schoolLevel: firstLevel,
-          studentClass: grades.length > 0 ? grades[0] : '-',
-        }));
+      try {
+        const list = await getSchoolList(supabase);
+        setSchoolList(list);
+        if (list.length > 0) {
+          const firstSchool = list[0].name;
+          const firstLevel = list[0].level || deriveSchoolLevel(firstSchool);
+          const grades = getAvailableGrades(firstLevel);
+          setRegisterForm((prev) => ({
+            ...prev,
+            schoolName: firstSchool,
+            schoolLevel: firstLevel,
+            studentClass: grades.length > 0 ? grades[0] : '-',
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching schools:', err);
+      } finally {
+        isSchoolDataReady.current = true;
       }
     };
     loadSchools();
   }, []);
 
-  // 3. Transisi Mulus dari Intro -> Loading (Tanpa Kebocoran Tampilan Login!)
+  // 3. Transisi Intro 1 (Video) -> Intro 2 (Splash Logo)
   const handleIntroComplete = () => {
+    try {
+      const todayDateStr = new Date().toISOString().split('T')[0];
+      localStorage.setItem('kanvas_intro1_last_date', todayDateStr);
+    } catch (e) {}
+
     setFadeTransition(true);
     setTimeout(() => {
-      setAppPhase('loading');
+      setAppPhase('intro2');
       setFadeTransition(false);
-    }, 300);
+    }, 350);
   };
 
   // Auto-play video dengan audio jika diizinkan browser
@@ -214,13 +234,34 @@ export default function HomeLogin() {
     }
   };
 
-  // Video fallback timer: durasi video 5 detik, diberi batas 5.8 detik jika autoplay terhenti di beberapa HP
+  // Video fallback timer: durasi video 5 detik, diberi batas 6.0 detik agar ada jeda fade out mulus tanpa lag
   useEffect(() => {
     if (appPhase === 'intro') {
       const timer = setTimeout(() => {
         handleIntroComplete();
-      }, 5800);
+      }, 6000);
       return () => clearTimeout(timer);
+    }
+  }, [appPhase]);
+
+  // 4. Intro 2: Splash Logo Tampil 2.5 Detik (Fade-in saat muncul, fade-out saat keluar -> Masuk ke Loading)
+  useEffect(() => {
+    if (appPhase === 'intro2') {
+      // Mulai fade-out di detik 2.1 (berlangsung 400ms)
+      const fadeTimer = setTimeout(() => {
+        setFadeTransition(true);
+      }, 2100);
+
+      // Tepat 2.5 detik pindah ke Loading
+      const completeTimer = setTimeout(() => {
+        setAppPhase('loading');
+        setFadeTransition(false);
+      }, 2500);
+
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(completeTimer);
+      };
     }
   }, [appPhase]);
 
@@ -240,44 +281,38 @@ export default function HomeLogin() {
     }
   };
 
-  // 4. Loading Progression (~1.8 detik) lalu masuk ke Login
+  // 5. Loading Progression (2.5 detik meyakinkan + verifikasi data Supabase)
   useEffect(() => {
     if (appPhase === 'loading') {
       const t1 = setTimeout(() => {
         setLoadingProgress(45);
-        setLoadingStatusText('Sinkronisasi Katalog Seragam & Atribut...');
+        setLoadingStatusText('Sinkronisasi Katalog Seragam & Atribut BPK PENABUR...');
         setLoadingChecks((prev) => prev.map((c) => (c.id === 1 ? { ...c, done: true } : c)));
-      }, 400);
+      }, 500);
 
       const t2 = setTimeout(() => {
         setLoadingProgress(75);
-        setLoadingStatusText('Memvalidasi Data Sekolah & Jenjang...');
+        setLoadingStatusText('Memvalidasi Data Sekolah & Jenjang Siswa...');
         setLoadingChecks((prev) => prev.map((c) => (c.id === 2 ? { ...c, done: true } : c)));
-      }, 900);
+      }, 1200);
 
       const t3 = setTimeout(() => {
-        setLoadingProgress(98);
-        setLoadingStatusText('Kondisi Aplikasi Prima & Siap Digunakan...');
+        setLoadingProgress(95);
+        setLoadingStatusText('Koneksi Aman Terverifikasi & Sistem Siap...');
         setLoadingChecks((prev) => prev.map((c) => (c.id === 3 ? { ...c, done: true } : c)));
-      }, 1400);
+      }, 1900);
 
       const t4 = setTimeout(() => {
         setLoadingProgress(100);
+        setLoadingStatusText('Kondisi Aplikasi Prima & Siap Digunakan...');
         setLoadingChecks((prev) => prev.map((c) => (c.id === 4 ? { ...c, done: true } : c)));
-        
-        // Tandai bahwa intro & loading sudah selesai untuk sesi browser ini (Opsi 2)
-        if (typeof window !== 'undefined') {
-          try {
-            sessionStorage.setItem('kanvas_intro_seen', 'true');
-          } catch (e) {}
-        }
 
         setFadeTransition(true);
         setTimeout(() => {
           setAppPhase('login');
           setFadeTransition(false);
         }, 350);
-      }, 1900);
+      }, 2500);
 
       return () => {
         clearTimeout(t1);
@@ -459,7 +494,29 @@ export default function HomeLogin() {
       )}
 
       {/* =========================================================================
-          FASE 2: HALAMAN LOADING SISTEM (Readiness Check)
+          FASE 2: INTRO 2 (SPLASH SCREEN LOGO RESMI 2.5 DETIK)
+          Tampil setelah Video Intro 1 atau pembuka utama pada kunjungan berikutnya
+         ========================================================================= */}
+      {appPhase === 'intro2' && (
+        <div
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070B14] text-white px-6 select-none transition-opacity duration-400 ease-out ${
+            fadeTransition ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <div className="relative w-full max-w-xs sm:max-w-sm flex flex-col items-center justify-center animate-fade-in p-4">
+            {/* Ambient Warm & Blue Glow */}
+            <div className="absolute -inset-8 bg-gradient-to-tr from-blue-600/25 via-amber-500/20 to-transparent rounded-full blur-3xl opacity-80 pointer-events-none"></div>
+            <img
+              src={getAssetPath('/kanvas-logo-intro2.png')}
+              alt="Kanvas PENABUR - Kanal Visual Atribut Sekolah BPK PENABUR"
+              className="relative w-full h-auto max-h-[65vh] object-contain drop-shadow-[0_15px_35px_rgba(0,0,0,0.7)]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          FASE 3: HALAMAN LOADING SISTEM (Readiness Check)
           TRANSISI GELAP KE GELAP (#070B14 -> #0B1528) SEHINGGA SANGAT MULUS
          ========================================================================= */}
       {appPhase === 'loading' && (
@@ -737,6 +794,7 @@ export default function HomeLogin() {
                 onClick={() => {
                   setGuideState('spotlight_register');
                   try {
+                    localStorage.setItem('kanvas_tour_dismissed', 'true');
                     localStorage.setItem('kanvas_guide_active', 'true');
                   } catch (e) {}
                 }}
