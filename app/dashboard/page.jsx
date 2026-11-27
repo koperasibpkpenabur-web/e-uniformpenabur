@@ -616,8 +616,8 @@ export default function MobileStorefront() {
   // 3. Fetch live products dari Supabase (Server-Query Terarah Sesuai Jenjang Siswa Aktif)
   useEffect(() => {
     let isSubscribed = true;
-    const fetchSupabaseProducts = async () => {
-      setIsLoadingProducts(true);
+    const fetchSupabaseProducts = async (isBackground = false) => {
+      if (!isBackground) setIsLoadingProducts(true);
       try {
         const targetLvl = (activeStudent?.level || selectedLevel || 'SD').toUpperCase();
         const isInternal = activeStudent?.studentType === 'dalam';
@@ -741,13 +741,29 @@ export default function MobileStorefront() {
       } catch (err) {
         console.warn('Gagal memuat katalog seragam:', err);
       } finally {
-        if (isSubscribed) setIsLoadingProducts(false);
+        if (isSubscribed && !isBackground) setIsLoadingProducts(false);
       }
     };
 
     fetchSupabaseProducts();
+
+    // Live Realtime Listener: Sinkronisasi instan saat ada perubahan (nama/harga/stok) di Sistem Aksara
+    const channel = supabase
+      .channel(`realtime:kanvas_products_${activeStudent?.level || selectedLevel || 'SD'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        () => {
+          if (isSubscribed) {
+            fetchSupabaseProducts(true);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       isSubscribed = false;
+      supabase.removeChannel(channel);
     };
   }, [activeStudent?.level, activeStudent?.studentType, activeStudentId, selectedLevel]);
 
