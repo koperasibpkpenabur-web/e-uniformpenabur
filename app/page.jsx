@@ -525,7 +525,7 @@ export default function HomeLogin() {
             {/* Rekomendasi Badge */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-[11px] font-black uppercase tracking-wide mb-3">
               <Sparkles size={12} className="text-amber-400" />
-              <span>Aplikasi Kanal Visual Atribut Sekolah BPK PENABUR</span>
+              <span>Kanal Visual Atribut Sekolah BPK PENABUR</span>
             </div>
 
             {/* Icon Kanvas */}
@@ -842,8 +842,8 @@ export default function HomeLogin() {
                     setShowRegisterModal(true);
                   }}
                   className={`text-amber-600 hover:text-amber-700 font-bold underline cursor-pointer transition-all ${guideState === 'spotlight_register'
-                      ? 'bg-amber-400 text-slate-950 px-2.5 py-1 rounded-md ring-4 ring-amber-400/50 shadow-md font-black animate-pulse'
-                      : ''
+                    ? 'bg-amber-400 text-slate-950 px-2.5 py-1 rounded-md ring-4 ring-amber-400/50 shadow-md font-black animate-pulse'
+                    : ''
                     }`}
                 >
                   Daftar disini
@@ -1075,8 +1075,8 @@ export default function HomeLogin() {
                   <div
                     onClick={() => setRegisterForm({ ...registerForm, studentType: 'luar' })}
                     className={`p-2.5 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${registerForm.studentType === 'luar'
-                        ? 'border-blue-700 bg-blue-50/70 shadow-xs'
-                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      ? 'border-blue-700 bg-blue-50/70 shadow-xs'
+                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                       }`}
                   >
                     <span className="text-[11px] font-extrabold text-slate-900">Siswa Baru</span>
@@ -1086,8 +1086,8 @@ export default function HomeLogin() {
                   <div
                     onClick={() => setRegisterForm({ ...registerForm, studentType: 'dalam' })}
                     className={`p-3 rounded-xl border-2 cursor-pointer flex flex-col transition-all ${registerForm.studentType === 'dalam'
-                        ? 'border-blue-700 bg-blue-50/70 shadow-xs'
-                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      ? 'border-blue-700 bg-blue-50/70 shadow-xs'
+                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                       }`}
                   >
                     <span className="text-xs font-extrabold text-slate-900">Siswa Dalam</span>
