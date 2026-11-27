@@ -331,7 +331,8 @@ export default function HomeLogin() {
             sessionStorage.setItem('kanvas_install_dismissed', 'true');
           } catch (e) { }
           if (appPhase === 'install_gate') {
-            handleContinueFromInstallGate();
+            // Opsi 1: Hentikan alur video intro di browser! Arahkan ke Layar Sukses (Handoff)
+            setAppPhase('install_success');
           } else {
             setShowInstallModal(false);
           }
@@ -607,6 +608,71 @@ export default function HomeLogin() {
               className="w-full py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5"
             >
               <span>Lanjutkan Lewat Web</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          OPSI 1: LAYAR SUKSES PASANG APLIKASI (HANDOFF KE HOME SCREEN HP)
+          Hanya tampil setelah user menyetujui pemasangan aplikasi di Android
+         ========================================================================= */}
+      {appPhase === 'install_success' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#070B14] text-white p-5 select-none animate-fade-in">
+          {/* Ambient Glow Hijau-Emas */}
+          <div className="absolute -inset-10 bg-gradient-to-tr from-emerald-600/25 via-amber-500/15 to-transparent rounded-full blur-3xl opacity-75 pointer-events-none"></div>
+
+          <div className="bg-slate-900/95 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-sm w-full text-center relative z-10 shadow-2xl backdrop-blur-md animate-scale-up">
+            {/* Badge Sukses */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-[11px] font-black uppercase tracking-wide mb-3">
+              <CheckCircle2 size={13} className="text-emerald-400" />
+              <span>Aplikasi Berhasil Dipasang</span>
+            </div>
+
+            {/* Icon Kanvas dengan centang */}
+            <div className="w-16 h-16 bg-emerald-950/60 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-emerald-700/50 shadow-lg relative">
+              <img
+                src={getAssetPath('/kanvas-logo-only.png')}
+                alt="Kanvas"
+                className="w-12 h-12 object-contain drop-shadow-md"
+              />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 text-slate-950 rounded-full flex items-center justify-center shadow-md border-2 border-slate-900">
+                <Check size={14} className="stroke-[3]" />
+              </div>
+            </div>
+
+            <h2 className="text-lg font-black text-white mb-1.5">
+              Siap Digunakan di Layar HP
+            </h2>
+            <p className="text-xs text-slate-300 mb-5 leading-relaxed">
+              Ikon aplikasi <b>Kanvas PENABUR</b> telah ditambahkan ke Layar Utama (Home Screen) HP Anda.
+            </p>
+
+            {/* Kotak Petunjuk Langkah Selanjutnya */}
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 text-left text-xs text-slate-200 mb-5 space-y-2">
+              <span className="font-bold text-amber-300 block text-xs">Langkah Selanjutnya:</span>
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 text-[11px] border border-emerald-500/30">1</span>
+                <span className="text-[11px] leading-tight text-slate-200">
+                  Kembali ke <b>Layar Utama (Home Screen)</b> HP Anda.
+                </span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 text-[11px] border border-emerald-500/30">2</span>
+                <span className="text-[11px] leading-tight text-slate-200">
+                  Ketuk ikon <b>Kanvas PENABUR</b> untuk memulai pemesanan seragam resmi.
+                </span>
+              </div>
+            </div>
+
+            {/* Opsi Cadangan jika ingin tetap lanjut di browser */}
+            <button
+              type="button"
+              onClick={handleContinueFromInstallGate}
+              className="w-full py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+            >
+              <span>Tetap Buka di Browser Ini</span>
               <ArrowRight size={13} />
             </button>
           </div>
