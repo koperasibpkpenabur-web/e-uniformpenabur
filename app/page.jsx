@@ -672,7 +672,7 @@ export default function HomeLogin() {
                 <button
                   type="button"
                   onClick={handleTriggerInstall}
-                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-500/20"
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 mb-3 ring-4 ring-blue-500/20 btn-shimmer btn-ripple"
                 >
                   <Download size={16} className="text-amber-300" />
                   <span>Install Aplikasi</span>
@@ -953,7 +953,7 @@ export default function HomeLogin() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={isLoadingGoogle}
-              className="w-full py-4 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-900 text-slate-800 rounded-2xl font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+              className="w-full py-4 px-4 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-900 text-slate-800 rounded-2xl font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-3 btn-ripple"
             >
               <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path

@@ -174,6 +174,7 @@ export default function MobileStorefront() {
   // Cart: Array of { id, productId, name, size, price, quantity, imageUrl, studentName, schoolName }
   const [cart, setCart] = useState([]);
   const [addedNotice, setAddedNotice] = useState(null);
+  const [isCartBouncing, setIsCartBouncing] = useState(false);
 
   // Modals
   const [activeProductModal, setActiveProductModal] = useState(null);
@@ -1168,6 +1169,8 @@ export default function MobileStorefront() {
   // Cart actions
   const addToCart = (product, size) => {
     triggerHaptic(20);
+    setIsCartBouncing(true);
+    setTimeout(() => setIsCartBouncing(false), 500);
     const variant = product.variants.find((v) => v.size === size) || product.variants[0];
     const targetStudentName = activeStudent?.name || 'Siswa';
     const targetSchoolName = activeStudent?.school || selectedSchool;
@@ -1554,16 +1557,17 @@ export default function MobileStorefront() {
             <button
               id="guide-header-cart"
               onClick={() => {
+                triggerHaptic(10);
                 setCheckoutStep('cart');
                 if (interactiveGuideStep === 'step_3_cart' || interactiveGuideStep === 'b_cart_arrow') {
                   setInteractiveGuideStep('step_4_waiting');
                 }
               }}
-              className="relative p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 transition-all font-bold"
+              className={`relative p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 transition-all font-bold ${isCartBouncing ? 'animate-cart-pop' : ''}`}
             >
               <ShoppingBag size={18} />
               {cartTotalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#0F2C59] animate-pulse">
+                <span className={`absolute -top-1 -right-1 bg-red-600 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#0F2C59] ${isCartBouncing ? 'animate-badge-pop' : 'animate-pulse'}`}>
                   {cartTotalItems}
                 </span>
               )}
@@ -3436,7 +3440,7 @@ export default function MobileStorefront() {
                   </button>
                   <button
                     onClick={() => addToCart(activeProductModal, modalSelectedSize)}
-                    className="flex-[2] py-3 sm:py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 hover:brightness-105 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                    className="flex-[2] py-3 sm:py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 hover:brightness-105 flex items-center justify-center gap-2 active:scale-95 transition-all btn-shimmer btn-ripple"
                   >
                     <ShoppingBag size={17} />
                     <span>Tambah ke Keranjang</span>
