@@ -81,11 +81,12 @@ export default function HomeLogin() {
   // Fitur Pasang Aplikasi (PWA Direct Install)
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [showInstallGuideInline, setShowInstallGuideInline] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [isAppStandalone, setIsAppStandalone] = useState(false);
 
-  // Cek PWA install prompt, status standalone, & deteksi in-app browser (WhatsApp, Instagram, dsb)
+  // Cek PWA install prompt, status standalone, SW registration, & deteksi in-app browser
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -103,11 +104,20 @@ export default function HomeLogin() {
       const inApp = /whatsapp|fban|fbav|instagram|line|tiktok|musical_ly/.test(ua);
       setIsInAppBrowser(inApp);
 
+      // Tangkap prompt install asli dari browser (Android Chrome / Edge / Desktop)
       const handleBeforeInstall = (e) => {
         e.preventDefault();
         setDeferredPrompt(e);
       };
       window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+      // Daftarkan Service Worker agar memenuhi standar PWA Chrome & memicu dialog install resmi
+      if ('serviceWorker' in navigator) {
+        const swUrl = getAssetPath('/sw.js');
+        navigator.serviceWorker
+          .register(swUrl)
+          .catch((err) => console.log('SW registration note:', err));
+      }
 
       return () => {
         window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -309,13 +319,13 @@ export default function HomeLogin() {
     }, 300);
   };
 
-  // PWA Trigger Install
+  // PWA Trigger Install (Langsung memicu dialog install resmi OS tanpa alert popup)
   const handleTriggerInstall = async () => {
     if (deferredPrompt) {
       try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
+        await deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult?.outcome === 'accepted') {
           try {
             sessionStorage.setItem('kanvas_install_gate_dismissed', 'true');
             sessionStorage.setItem('kanvas_install_dismissed', 'true');
@@ -330,14 +340,10 @@ export default function HomeLogin() {
         console.error('PWA install error:', err);
       }
       setDeferredPrompt(null);
-    } else if (isIOSDevice) {
-      alert(
-        'Petunjuk iPhone/iPad (Safari):\n1. Ketuk ikon Bagikan (Share / kotak panah ke atas) di bilah bawah Safari.\n2. Gulir ke bawah dan pilih "Tambah ke Layar Utama" (Add to Home Screen).\n3. Ketuk "Tambah" di pojok kanan atas.'
-      );
     } else {
-      alert(
-        'Untuk memasang aplikasi Kanvas di HP:\n1. Ketuk menu titik 3 di pojok kanan atas Chrome.\n2. Pilih "Instal Aplikasi" atau "Tambahkan ke Layar Utama".'
-      );
+      // Jika browser belum siap atau di iPhone (Apple tidak mendukung 1-ketuk programmatic install),
+      // Tampilkan petunjuk visual langsung di layar tanpa notebox alert kaku!
+      setShowInstallGuideInline(true);
     }
   };
 
@@ -574,14 +580,24 @@ export default function HomeLogin() {
                 </div>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={handleTriggerInstall}
-                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-500/20"
-              >
-                <Download size={16} className="text-amber-300" />
-                <span>Install Aplikasi</span>
-              </button>
+              <>
+                {showInstallGuideInline && (
+                  <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3 text-left text-xs text-slate-200 mb-3 animate-fade-in space-y-1">
+                    <span className="font-bold text-amber-300 block text-[11.5px]">Petunjuk Pasang di Browser:</span>
+                    <p className="text-[11px] leading-snug text-slate-300">
+                      Ketuk menu titik 3 di pojok kanan atas browser Anda, lalu pilih <b>"Instal Aplikasi"</b> atau <b>"Tambahkan ke Layar Utama"</b>.
+                    </p>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleTriggerInstall}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-500/20"
+                >
+                  <Download size={16} className="text-amber-300" />
+                  <span>Install Aplikasi</span>
+                </button>
+              </>
             )}
 
             {/* Tombol Lanjutkan Lewat Web */}
@@ -1298,14 +1314,24 @@ export default function HomeLogin() {
                 </div>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={handleTriggerInstall}
-                className="w-full py-3.5 bg-gradient-to-r from-blue-900 to-blue-800 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-600/20"
-              >
-                <Download size={16} className="text-amber-400" />
-                <span>Pasang Aplikasi Sekarang (1 Ketuk)</span>
-              </button>
+              <>
+                {showInstallGuideInline && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-left text-xs text-blue-950 mb-3 animate-fade-in space-y-1">
+                    <span className="font-bold text-blue-900 block text-[11.5px]">Petunjuk Pasang di Browser:</span>
+                    <p className="text-[11px] leading-snug text-slate-600">
+                      Ketuk menu titik 3 di pojok kanan atas browser Anda, lalu pilih <b>"Instal Aplikasi"</b> atau <b>"Tambahkan ke Layar Utama"</b>.
+                    </p>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleTriggerInstall}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-900 to-blue-800 hover:brightness-110 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 mb-3 active:scale-95 ring-4 ring-blue-600/20"
+                >
+                  <Download size={16} className="text-amber-400" />
+                  <span>Pasang Aplikasi Sekarang</span>
+                </button>
+              </>
             )}
 
             <button
